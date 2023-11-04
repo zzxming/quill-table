@@ -1,9 +1,9 @@
 import Quill from 'quill';
-import TableHandler from './index';
+import TableModule from './index';
 
 Quill.register(
 	{
-		[`modules/${TableHandler.moduleName}`]: TableHandler,
+		[`modules/${TableModule.moduleName}`]: TableModule,
 	},
 	true
 );
@@ -28,8 +28,9 @@ new Quill('#editor', {
 			[{ align: [] }],
 
 			['clean'],
+			['image', 'video'],
 			['table'],
 		],
-		[`${TableHandler.moduleName}`]: TableHandler,
+		[`${TableModule.moduleName}`]: TableModule,
 	},
 });

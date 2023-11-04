@@ -185,7 +185,6 @@ export default class TableTooltip {
 			// console.log(colHeadRect, curColIndex);
 		};
 		const handleMouseup = (e) => {
-			console.log(e);
 			const w = parseInt(tipColBreak.dataset.w);
 			this.table.domNode.style.width =
 				parseFloat(this.table.domNode.style.width) -

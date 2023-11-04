@@ -57,7 +57,7 @@ Quill.register(
 import { randomId, showTableCreator } from './utils';
 import TableTooltip from './module/TableToolTip';
 
-class TableHandler extends Module {
+class TableModule extends Module {
 	constructor(quill, options) {
 		super(quill, options);
 		this.quill = quill;
@@ -67,7 +67,7 @@ class TableHandler extends Module {
 
 		const toolbar = this.quill.getModule('toolbar');
 		if (toolbar) {
-			toolbar.addHandler(TableHandler.toolName, this.handleSelectDisplay.bind(this));
+			toolbar.addHandler(TableModule.toolName, this.handleSelectDisplay.bind(this));
 		}
 		this.pasteTableHandler();
 
@@ -711,9 +711,9 @@ export const isForbidInTable = (current) => {
 		: false;
 };
 
-TableHandler.moduleName = 'table';
-TableHandler.toolName = 'table';
+TableModule.moduleName = 'table';
+TableModule.toolName = 'table';
 
 import TableSvg from './assets/icons/table.svg';
-icons[TableHandler.toolName] = TableSvg;
-export default TableHandler;
+icons[TableModule.toolName] = TableSvg;
+export default TableModule;

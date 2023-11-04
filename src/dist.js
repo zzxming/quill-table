@@ -1,1 +1,1 @@
-export { default } from './index';
+// 从左向右选择拖动能选中

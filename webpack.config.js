@@ -2,15 +2,29 @@ const pathLib = require('path');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 
 module.exports = {
-	mode: 'development',
+	mode: 'production',
 	entry: {
-		'table.js': './src/dist.js',
+		'table.js': './src/index.js',
 		table: './src/assets/style/index.less',
 		'demo.js': './src/demo.js',
 	},
 	output: {
 		path: pathLib.resolve(__dirname, './dist'),
 		filename: '[name]',
+		library: 'TableModule',
+		libraryExport: 'default',
+		libraryTarget: 'umd',
+	},
+	optimization: {
+		minimize: true,
+	},
+	externals: {
+		quill: {
+			commonjs: 'quill',
+			commonjs2: 'quill',
+			amd: 'quill',
+			root: 'Quill',
+		},
 	},
 	plugins: [
 		new MiniCssExtractPlugin({
@@ -21,12 +35,9 @@ module.exports = {
 	module: {
 		rules: [
 			{
-				test: /(\.js)$/,
+				test: /\.js$/,
 				use: {
 					loader: 'babel-loader',
-					options: {
-						presets: ['@babel/env'],
-					},
 				},
 				exclude: /node_modules/,
 			},
