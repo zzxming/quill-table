@@ -1,0 +1,80 @@
+* {
+	box-sizing: border-box;
+}
+input {
+	border: none;
+	outline: none;
+	padding: 0;
+	&:focus {
+		outline: none;
+	}
+}
+button {
+	margin: 0;
+	padding: 0;
+	border: 1px solid #dcdfe6;
+	color: #606266;
+	background-color: transparent;
+	&:focus-visible {
+		outline: 2px solid #c8c9cc;
+		outline-offset: 1px;
+	}
+}
+
+@import './dialog.less';
+@import './input.less';
+@import './create.less';
+
+@import './tableToolTip.less';
+@import './tableOpeartionMenu.less';
+
+.ql {
+	&-table {
+		border-collapse: separate;
+		&-wrapper {
+			width: 100%;
+			overflow: auto;
+			p& {
+				padding-left: 1px;
+				padding-right: 1px;
+			}
+		}
+		&-row {
+			&:first-child {
+				.ql-table-cell {
+					border-top: 1px solid #a1a1aa;
+				}
+			}
+		}
+		&-cell {
+			border: 1px solid #a1a1aa;
+			padding: 8px 12px;
+			font-size: 14px;
+			outline: none;
+			> * {
+				overflow: hidden;
+				text-overflow: ellipsis;
+				white-space: normal;
+				word-break: break-all;
+
+				line-height: 14px + 8px;
+			}
+		}
+		col {
+			border-collapse: separate;
+			text-indent: initial;
+			display: table-column;
+			table-layout: fixed;
+		}
+		&-tooltip {
+			position: absolute;
+			display: flex;
+			width: calc(100% - 30px);
+			height: 12px;
+			overflow: hidden;
+			&.ql-hidden {
+				display: none;
+			}
+		}
+	}
+}
