@@ -5,7 +5,7 @@ A table module used in QuillJS@1.3.7
 # Install
 
 ```
-npm install quill1.3.7-table
+npm install quill1.3.7-table-module
 ```
 
 # Usage
