@@ -1,6 +1,6 @@
 {
     "name": "quill1.3.7-table-module",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "description": "Module for table in quill@1.3.7.",
     "main": "dist/table.js",
     "scripts": {
