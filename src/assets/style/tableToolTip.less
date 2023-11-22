@@ -1,62 +1,62 @@
 .ql {
-	&-table {
-		&-drag-line {
-			position: absolute;
-			width: 2px;
-			background-color: #409eff;
-			cursor: e-resize;
-		}
-		&-col {
-			&-header {
-				position: relative;
-				flex-shrink: 0;
-				width: 20%;
-				height: 100%;
-				background-color: #f3f4f5;
-				border-right: 1px solid #ccc;
-				border-top: 1px solid #ccc;
-				border-bottom: 1px solid #ccc;
-				&:first-child {
-					border-left: 1px solid #ccc;
-				}
-			}
-			&-separator {
-				position: absolute;
-				top: 0px;
-				bottom: 0px;
-				right: -1px;
-				width: 1px;
-				cursor: ew-resize;
-				z-index: 1;
-				&::after {
-					right: -6px;
-				}
-				&::before {
-					left: -6px;
-				}
-				&::after,
-				&::before {
-					content: '';
-					position: absolute;
-					top: 0;
-					display: block;
-					width: 8px;
-					height: 100%;
-				}
-			}
-		}
-	}
-	&-toolbar {
-		&.ql-snow {
-			&.ql-disabled-table {
-				.ql {
-					&-table {
-						opacity: 0.3;
-						background-color: transparent;
-						cursor: not-allowed;
-					}
-				}
-			}
-		}
-	}
+    &-table {
+        &-drag-line {
+            position: absolute;
+            width: 2px;
+            background-color: #409eff;
+            cursor: e-resize;
+        }
+        &-col {
+            &-header {
+                position: relative;
+                flex-shrink: 0;
+                width: 20%;
+                height: 100%;
+                background-color: #f3f4f5;
+                border-right: 1px solid #ccc;
+                border-top: 1px solid #ccc;
+                border-bottom: 1px solid #ccc;
+                &:first-child {
+                    border-left: 1px solid #ccc;
+                }
+            }
+            &-separator {
+                position: absolute;
+                top: 0px;
+                bottom: 0px;
+                right: -1px;
+                width: 1px;
+                cursor: ew-resize;
+                z-index: 1;
+                &::after {
+                    right: -6px;
+                }
+                &::before {
+                    left: -6px;
+                }
+                &::after,
+                &::before {
+                    content: '';
+                    position: absolute;
+                    top: 0;
+                    display: block;
+                    width: 8px;
+                    height: 100%;
+                }
+            }
+        }
+    }
+    &-toolbar {
+        &.ql-snow {
+            &.ql-disabled-table {
+                .ql {
+                    &-table {
+                        opacity: 0.3;
+                        background-color: transparent;
+                        cursor: not-allowed;
+                    }
+                }
+            }
+        }
+    }
 }
