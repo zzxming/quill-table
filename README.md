@@ -12,25 +12,25 @@ npm install quill1.3.7-table-module
 
 ```javascript
 import Quill from 'quill';
-import TableHandler from 'quill1.3.7-table';
-import 'quill1.3.7-table/dist/table.css';
+import TableHandler from 'quill1.3.7-table-module';
+import 'quill1.3.7-table-module/dist/table.css';
 
 Quill.register({ [`modules/${TableHandler.moduleName}`]: TableHandler }, true);
 new Quill('#editor', {
-	theme: 'snow',
-	modules: {
-		toolbar: [TableHandler.toolName],
-		// Popup input number of rows and columns
-		// [`${TableHandler.moduleName}`]: {},
-		// Function returns the number of rows and columns
-		[`${TableHandler.moduleName}`]: {
-			size() {
-				return {
-					row: 2,
-					col: 3,
-				};
-			},
-		},
-	},
+    theme: 'snow',
+    modules: {
+        toolbar: [TableHandler.toolName],
+        // Popup input number of rows and columns
+        // [`${TableHandler.moduleName}`]: {},
+        // Function returns the number of rows and columns
+        [`${TableHandler.moduleName}`]: {
+            size() {
+                return {
+                    row: 2,
+                    col: 3,
+                };
+            },
+        },
+    },
 });
 ```
