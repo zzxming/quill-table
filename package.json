@@ -4,10 +4,10 @@
     "description": "Module for table in quill@1.3.7.",
     "main": "dist/table.js",
     "scripts": {
-        "build": "webpack --mode=production --node-env=production && del dist\\table",
+        "build": "webpack --mode=production --node-env=production && del dist\\table && del dist\\demo.js.LICENSE.txt && del dist\\table.js.LICENSE.txt",
         "dev": "webpack --config webpack.config.js",
-        "build:dev": "webpack --mode=development",
-        "build:prod": "webpack --mode=production --node-env=production",
+        "build:dev": "webpack --mode=development && del dist\\table && del dist\\demo.js.LICENSE.txt && del dist\\table.js.LICENSE.txt",
+        "build:prod": "webpack --mode=production --node-env=production && del dist\\table && del dist\\demo.js.LICENSE.txt && del dist\\table.js.LICENSE.txt",
         "watch": "webpack --watch"
     },
     "keywords": [
