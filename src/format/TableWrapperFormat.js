@@ -8,6 +8,23 @@ class TableWrapper extends Container {
 
         node.dataset.tableId = value;
 
+        node.addEventListener(
+            'dragstart',
+            (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+            },
+            true
+        );
+        // 不允许拖拽进 table
+        node.ondrop = (e) => {
+            e.preventDefault();
+        };
+        // 修改拖拽进入时的鼠标样式
+        node.ondragover = (e) => {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'none';
+        };
         return node;
     }
 

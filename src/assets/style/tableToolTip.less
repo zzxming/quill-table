@@ -1,4 +1,7 @@
 .ql {
+    &-snow {
+        overflow-x: hidden;
+    }
     &-table {
         &-drag-line {
             position: absolute;
@@ -13,9 +16,8 @@
                 width: 20%;
                 height: 100%;
                 background-color: #f3f4f5;
-                border-right: 1px solid #ccc;
-                border-top: 1px solid #ccc;
-                border-bottom: 1px solid #ccc;
+                border: 1px solid #ccc;
+                border-left: none;
                 &:first-child {
                     border-left: 1px solid #ccc;
                 }
@@ -45,17 +47,22 @@
                 }
             }
         }
+        &-tooltip {
+            position: absolute;
+            display: flex;
+            width: calc(100% - 30px); // ql-editor 的 x padding
+            overflow: hidden;
+            &.ql-hidden {
+                display: none;
+            }
+        }
     }
     &-toolbar {
         &.ql-snow {
-            &.ql-disabled-table {
-                .ql {
-                    &-table {
-                        opacity: 0.3;
-                        background-color: transparent;
-                        cursor: not-allowed;
-                    }
-                }
+            .ql-disabled-table {
+                opacity: 0.3;
+                background-color: transparent;
+                cursor: not-allowed;
             }
         }
     }

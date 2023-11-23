@@ -4,22 +4,28 @@ import { Range } from 'quill/core/selection';
 import TableWrapperFormat from '../format/TableWrapperFormat';
 import TableBodyFormat from '../format/TableBodyFormat';
 import TableColgroupFormat from '../format/TableColgroupFormat';
+import { css } from '../utils';
 
-const TIPHEIGHT = 12;
+let TIPHEIGHT = 12;
 const CELLMINWIDTH = 26;
 
+/*
+	options = {
+		tipHeight: 12,	// tooltip height
+		disableToolNames: [],	// 表格内禁用项， toolbar 的 name
+	}
+*/
 export default class TableTooltip {
     constructor(quill, options) {
         this.quill = quill;
         this.options = options;
-        this.bounds = options.bounds;
+        this.optionsMerge();
         this.boundsContainer = document.body;
 
         this.tableWrapper = null;
         this.table = null;
         this.curTableId = '';
         this.focusTableChange = false;
-        // this.rowCount = 0;
         this.tableCols = [];
         this.scrollHandler = [];
 
@@ -30,6 +36,7 @@ export default class TableTooltip {
 
         const resizeObserver = new ResizeObserver((entries) => {
             this.hide();
+            this.curTableId = '';
         });
         resizeObserver.observe(this.quill.root);
 
@@ -37,10 +44,17 @@ export default class TableTooltip {
         this.listen();
     }
 
+    optionsMerge() {
+        TIPHEIGHT = this.options.tipHeight;
+        TableTooltip.disableToolNames = Array.from(
+            new Set([...TableTooltip.disableToolNames, ...(this.options.disableToolNames || [])])
+        );
+    }
+
     listen() {
         this.quill.on(Emitter.events.SELECTION_CHANGE, (range, oldRange, source) => {
             if (range == null) return;
-            if (range.length === 0 && source === Emitter.sources.USER) {
+            if (range.length === 0) {
                 let [tableWrapper, offset] = this.quill.scroll.descendant(TableWrapperFormat, range.index);
                 if (tableWrapper !== null) {
                     // 此时在 table 内, 禁用部分功能
@@ -57,6 +71,8 @@ export default class TableTooltip {
                     let tableCols = tableWrapper.children.head?.children?.head;
                     if (tableCols.statics.blotName === TableColgroupFormat.blotName && tableCols.children.length) {
                         this.tableCols = tableCols.children.map((col) => col);
+                    } else {
+                        this.tableCols = [];
                     }
 
                     let curTableId = tableWrapper.children.head.tableId();
@@ -85,29 +101,48 @@ export default class TableTooltip {
     }
 
     disableFromTable() {
+        this.toggleDisableToolbarTools('add');
+
         const toolbar = this.quill.getModule('toolbar');
         // 防止重复触发覆盖保存事件
         if (toolbar.disableByTable) return;
         toolbar.disableByTable = true;
-        toolbar.container.classList.add('ql-disabled-table');
+
         // 去除 toolbar 对应 module 的 handler 事件, 保存在 tableDisableToolHandlers
-        for (let i = 0; i < TableTooltip.disableToolNames.length; i++) {
-            this.tableDisableToolHandlers[TableTooltip.disableToolNames[i]] =
-                toolbar.handlers[TableTooltip.disableToolNames[i]];
+        for (const toolName of TableTooltip.disableToolNames) {
+            this.tableDisableToolHandlers[toolName] = toolbar.handlers[toolName];
             // 不要使用 delete 删除属性
-            toolbar.handlers[TableTooltip.disableToolNames[i]] = () => {};
+            toolbar.handlers[toolName] = () => {};
         }
     }
 
     enableFromTable() {
+        this.toggleDisableToolbarTools('remove');
+
         const toolbar = this.quill.getModule('toolbar');
-        toolbar.container.classList.remove('ql-disabled-table');
         // 根据 tableDisableToolHandlers 恢复 handler
-        for (let k in this.tableDisableToolHandlers) {
-            toolbar.handlers[k] = this.tableDisableToolHandlers[k];
+        for (const toolName in this.tableDisableToolHandlers) {
+            toolbar.handlers[toolName] = this.tableDisableToolHandlers[toolName];
         }
         this.tableDisableToolHandlers = {};
         toolbar.disableByTable = false;
+    }
+
+    /**
+     * Toggles the disable state of toolbar tools.
+     *
+     * @param {'add' | 'remove'} type - The type of toggle action to perform.
+     */
+    toggleDisableToolbarTools(type) {
+        this.quill.getModule('toolbar').controls.map(([name, btn]) => {
+            if (TableTooltip.disableToolNames.includes(name)) {
+                if (btn.tagName.toLowerCase() === 'select') {
+                    document.querySelector(`.ql-select.${btn.className}`).classList[type]('ql-disabled-table');
+                } else {
+                    btn.classList[type]('ql-disabled-table');
+                }
+            }
+        });
     }
 
     scrollSync(dom, e) {
@@ -128,14 +163,18 @@ export default class TableTooltip {
     }
 
     position(reference) {
-        let left = 15; // editor 的左右 padding
-        let top = reference.top + this.quill.container.scrollTop - 11;
-        this.root.style.left = left + 1 + 'px';
-        this.root.style.top = top + 'px';
+        css(this.root, {
+            top: `${reference.top + this.quill.container.scrollTop - TIPHEIGHT}px`,
+            left: `${15 + 1}px`, // editor 的 x padding 为 15
+        });
     }
 
     show() {
-        if (this.focusTableChange && this.tableCols) {
+        // 若没有 colgroup col 元素，不显示
+        if (!this.tableCols.length) {
+            return;
+        }
+        if (this.focusTableChange) {
             let tableWrapperRect = this.tableWrapper.domNode.getBoundingClientRect();
             // 加 tableId 用于 table 删除时隐藏 tooltip
             this.root.dataset.tableId = this.tableWrapper.tableId();
@@ -147,8 +186,7 @@ export default class TableTooltip {
 					</div>`; // -3 为 border-width: 2, top: 1
                 })
                 .join('');
-            // 同步表格宽度, 使便于滚动同步
-            this.root.style.width = tableWrapperRect.width + 'px';
+
             setTimeout(() => {
                 this.scrollSync(this.tableWrapper.domNode);
             }, 0);
@@ -156,7 +194,6 @@ export default class TableTooltip {
 
             this.bindDrag();
         }
-
         this.root.classList.remove('ql-hidden');
     }
 
@@ -209,9 +246,11 @@ export default class TableTooltip {
             const tableRect = this.tableWrapper.domNode.getBoundingClientRect();
             const divDom = document.createElement('div');
             divDom.classList.add('ql-table-drag-line');
-            divDom.style.top = tableRect.y - TIPHEIGHT + 'px';
-            divDom.style.left = e.pageX + 'px';
-            divDom.style.height = tableRect.height + TIPHEIGHT + 'px';
+            css(divDom, {
+                top: `${tableRect.y - TIPHEIGHT}px`,
+                left: `${e.pageX}px`,
+                height: `${tableRect.height + TIPHEIGHT}px`,
+            });
             document.body.appendChild(divDom);
 
             if (tipColBreak) document.body.removeChild(tipColBreak);

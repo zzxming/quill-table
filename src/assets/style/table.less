@@ -1,0 +1,57 @@
+.ql {
+    &-table {
+        @border: 1px solid #a1a1aa;
+        border-collapse: separate;
+        &-wrapper {
+            width: 100%;
+            padding-left: 1px;
+            padding-right: 1px;
+            overflow: auto;
+            &:hover {
+                &::-webkit-scrollbar-thumb {
+                    background-color: #a1a1aa;
+                }
+            }
+            &::-webkit-scrollbar {
+                width: 4px;
+                height: 4px;
+            }
+            &::-webkit-scrollbar-thumb {
+                background-color: #d2d2d2;
+                border-radius: 4px;
+            }
+        }
+        &-row {
+            &:last-child {
+                .ql-table-cell {
+                    border-bottom: @border;
+                }
+            }
+        }
+        &-cell {
+            padding: 8px 12px;
+            border: @border;
+            border-bottom: none;
+            border-right: none;
+            font-size: 14px;
+            outline: none;
+            &:last-child {
+                border-right: @border;
+            }
+            > * {
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: normal;
+                word-break: break-all;
+
+                line-height: 14px + 8px;
+            }
+        }
+        col {
+            border-collapse: separate;
+            text-indent: initial;
+            display: table-column;
+            table-layout: fixed;
+        }
+    }
+}

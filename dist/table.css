@@ -151,6 +151,15 @@ button:focus-visible {
   outline: 2px solid #a0cfff;
   outline-offset: 1px;
 }
+.ql-table-selection_line {
+  display: none;
+  position: absolute;
+  border: 1px solid;
+  pointer-events: none;
+}
+.ql-snow {
+  overflow-x: hidden;
+}
 .ql-table-drag-line {
   position: absolute;
   width: 2px;
@@ -163,9 +172,8 @@ button:focus-visible {
   width: 20%;
   height: 100%;
   background-color: #f3f4f5;
-  border-right: 1px solid #ccc;
-  border-top: 1px solid #ccc;
-  border-bottom: 1px solid #ccc;
+  border: 1px solid #ccc;
+  border-left: none;
 }
 .ql-table-col-header:first-child {
   border-left: 1px solid #ccc;
@@ -194,7 +202,16 @@ button:focus-visible {
   width: 8px;
   height: 100%;
 }
-.ql-toolbar.ql-snow.ql-disabled-table .ql-table {
+.ql-table-tooltip {
+  position: absolute;
+  display: flex;
+  width: calc(100% - 30px);
+  overflow: hidden;
+}
+.ql-table-tooltip.ql-hidden {
+  display: none;
+}
+.ql-toolbar.ql-snow .ql-disabled-table {
   opacity: 0.3;
   background-color: transparent;
   cursor: not-allowed;
@@ -216,6 +233,17 @@ button:focus-visible {
   font-size: 14px;
   padding: 5px 16px;
 }
+.ql-table-operation-menu-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 8px;
+  font-size: 16px;
+}
+.ql-table-operation-menu-icon svg {
+  width: 1.2em;
+  height: 1.2em;
+}
 .ql-table-operation-menu-item {
   display: flex;
   align-items: center;
@@ -234,20 +262,34 @@ button:focus-visible {
 }
 .ql-table-wrapper {
   width: 100%;
-  overflow: auto;
-}
-p.ql-table-wrapper {
   padding-left: 1px;
   padding-right: 1px;
+  overflow: auto;
 }
-.ql-table-row:first-child .ql-table-cell {
-  border-top: 1px solid #a1a1aa;
+.ql-table-wrapper:hover::-webkit-scrollbar-thumb {
+  background-color: #a1a1aa;
+}
+.ql-table-wrapper::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+.ql-table-wrapper::-webkit-scrollbar-thumb {
+  background-color: #d2d2d2;
+  border-radius: 4px;
+}
+.ql-table-row:last-child .ql-table-cell {
+  border-bottom: 1px solid #a1a1aa;
 }
 .ql-table-cell {
-  border: 1px solid #a1a1aa;
   padding: 8px 12px;
+  border: 1px solid #a1a1aa;
+  border-bottom: none;
+  border-right: none;
   font-size: 14px;
   outline: none;
+}
+.ql-table-cell:last-child {
+  border-right: 1px solid #a1a1aa;
 }
 .ql-table-cell > * {
   overflow: hidden;
@@ -261,15 +303,5 @@ p.ql-table-wrapper {
   text-indent: initial;
   display: table-column;
   table-layout: fixed;
-}
-.ql-table-tooltip {
-  position: absolute;
-  display: flex;
-  width: calc(100% - 30px);
-  height: 12px;
-  overflow: hidden;
-}
-.ql-table-tooltip.ql-hidden {
-  display: none;
 }
 

@@ -83,11 +83,11 @@ class TableModule extends Module {
                         node.tagName && node.tagName.toUpperCase() === 'TABLE' && node.classList.contains('ql-table')
                     );
                 })?.[0];
-
+                // 结束位置位处于表格内不显示
                 if (tableNode) {
                     if (this.table === tableNode) return;
                     if (this.table) this.hideTableTools();
-                    this.showTableTools(tableNode, quill, options);
+                    this.showTableTools(tableNode, quill, options.selection);
                 } else if (this.table) {
                     this.hideTableTools();
                 }
@@ -105,18 +105,18 @@ class TableModule extends Module {
             const tableNode = path.filter(
                 (node) => node.tagName && node.tagName.toUpperCase() === 'TABLE' && node.classList.contains('ql-table')
             )[0];
+            // 如果没有选中任何单元格，不显示右键菜单
+            if (tableNode && this.tableSelection?.selectedTds?.length) {
+                if (this.tableOperationMenu) this.tableOperationMenu = this.tableOperationMenu.destroy();
 
-            const rowNode = path.filter(
-                (node) => node.tagName && node.tagName.toUpperCase() === 'TR' && node.getAttribute('data-row-id')
-            )[0];
+                const rowNode = path.filter(
+                    (node) => node.tagName && node.tagName.toUpperCase() === 'TR' && node.getAttribute('data-row-id')
+                )[0];
 
-            const cellNode = path.filter(
-                (node) => node.tagName && node.tagName.toUpperCase() === 'TD' && node.getAttribute('data-row-id')
-            )[0];
+                const cellNode = path.filter(
+                    (node) => node.tagName && node.tagName.toUpperCase() === 'TD' && node.getAttribute('data-row-id')
+                )[0];
 
-            if (this.tableOperationMenu) this.tableOperationMenu = this.tableOperationMenu.destroy();
-
-            if (tableNode) {
                 this.tableOperationMenu = new TableOperationMenu(
                     {
                         table: tableNode,
@@ -130,8 +130,7 @@ class TableModule extends Module {
                 );
             }
         });
-
-        this.quill.theme.tableToolTip = new TableTooltip(this.quill, this.options);
+        this.quill.theme.tableToolTip = new TableTooltip(this.quill, this.options.tableToolTip);
     }
 
     showTableTools(table, quill, options) {
@@ -197,6 +196,7 @@ class TableModule extends Module {
                 colId.push(randomId());
             }
             cellCount += 1;
+            // node.style.borderStyle = getComputedStyle(node).borderStyle.replace(/none/g, 'solid');
             return delta.compose(
                 new Delta().retain(delta.length(), {
                     [TableCellFormat.blotName]: {
@@ -212,24 +212,24 @@ class TableModule extends Module {
             );
         });
 
-        this.quill.clipboard.addMatcher(TableColFormat.blotName, (node, delta) => {
-            // console.log(node);
-            let curColId = randomId();
-            colId.push(curColId);
+        // this.quill.clipboard.addMatcher(TableColFormat.blotName, (node, delta) => {
+        //     // console.log(node);
+        //     let curColId = randomId();
+        //     colId.push(curColId);
 
-            countColOver = true;
+        //     countColOver = true;
 
-            // 复制进来 col 的 delta 长度是 0, 手动添加 \n 保证有内容能插入
-            return new Delta([{ insert: '\n' }]).compose(
-                new Delta().retain(1, {
-                    [TableColFormat.blotName]: {
-                        tableId,
-                        colId: curColId,
-                        width: node.getAttribute('width'),
-                    },
-                })
-            );
-        });
+        //     // 复制进来 col 的 delta 长度是 0, 手动添加 \n 保证有内容能插入
+        //     return new Delta([{ insert: '\n' }]).compose(
+        //         new Delta().retain(1, {
+        //             [TableColFormat.blotName]: {
+        //                 tableId,
+        //                 colId: curColId,
+        //                 width: node.getAttribute('width'),
+        //             },
+        //         })
+        //     );
+        // });
     }
 
     async handleSelectDisplay() {
@@ -487,7 +487,6 @@ class TableModule extends Module {
                     });
 
                     // 根据当前 td 在行中的 index, 找到对应的位置
-                    // let cur = nextTr.findTdWrapCol(i);
                     let cur = nextTr.findTdByCol(i);
                     // console.log(cur);
                     if (cur === null) {
