@@ -35,7 +35,7 @@ export default class TableSelection {
     }
 
     optionsMerge() {
-        this.options.primaryColor && (PRIMARY_COLOR = this.options.primaryColor);
+        this.options?.primaryColor && (PRIMARY_COLOR = this.options.primaryColor);
     }
 
     addScrollEvent(dom, handle) {

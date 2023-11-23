@@ -1,6 +1,5 @@
 .ql {
     &-table {
-        @border: 1px solid #a1a1aa;
         border-collapse: separate;
         &-wrapper {
             width: 100%;
@@ -21,23 +20,11 @@
                 border-radius: 4px;
             }
         }
-        &-row {
-            &:last-child {
-                .ql-table-cell {
-                    border-bottom: @border;
-                }
-            }
-        }
         &-cell {
             padding: 8px 12px;
-            border: @border;
-            border-bottom: none;
-            border-right: none;
+            border: 1px solid #a1a1aa;
             font-size: 14px;
             outline: none;
-            &:last-child {
-                border-right: @border;
-            }
             > * {
                 overflow: hidden;
                 text-overflow: ellipsis;

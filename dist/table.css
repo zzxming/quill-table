@@ -157,7 +157,7 @@ button:focus-visible {
   border: 1px solid;
   pointer-events: none;
 }
-.ql-snow {
+.ql-snow.ql-container {
   overflow-x: hidden;
 }
 .ql-table-drag-line {
@@ -277,19 +277,11 @@ button:focus-visible {
   background-color: #d2d2d2;
   border-radius: 4px;
 }
-.ql-table-row:last-child .ql-table-cell {
-  border-bottom: 1px solid #a1a1aa;
-}
 .ql-table-cell {
   padding: 8px 12px;
   border: 1px solid #a1a1aa;
-  border-bottom: none;
-  border-right: none;
   font-size: 14px;
   outline: none;
-}
-.ql-table-cell:last-child {
-  border-right: 1px solid #a1a1aa;
 }
 .ql-table-cell > * {
   overflow: hidden;

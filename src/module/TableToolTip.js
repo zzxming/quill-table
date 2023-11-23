@@ -47,7 +47,7 @@ export default class TableTooltip {
     optionsMerge() {
         this.options?.tipHeight && (TIPHEIGHT = this.options.tipHeight);
         TableTooltip.disableToolNames = Array.from(
-            new Set([...TableTooltip.disableToolNames, ...(this.options.disableToolNames || [])])
+            new Set([...TableTooltip.disableToolNames, ...(this.options?.disableToolNames || [])])
         );
     }
 
