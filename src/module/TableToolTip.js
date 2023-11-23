@@ -45,7 +45,7 @@ export default class TableTooltip {
     }
 
     optionsMerge() {
-        TIPHEIGHT = this.options.tipHeight;
+        this.options?.tipHeight && (TIPHEIGHT = this.options.tipHeight);
         TableTooltip.disableToolNames = Array.from(
             new Set([...TableTooltip.disableToolNames, ...(this.options.disableToolNames || [])])
         );
@@ -182,8 +182,8 @@ export default class TableTooltip {
                 .map((col) => {
                     let curColWidth = col.getWidth();
                     return `<div class="ql-table-col-header" style="width: ${curColWidth}px">
-						<div class="ql-table-col-separator" style="height: ${tableWrapperRect.height + TIPHEIGHT - 3}px"></div>
-					</div>`; // -3 为 border-width: 2, top: 1
+            			<div class="ql-table-col-separator" style="height: ${tableWrapperRect.height + TIPHEIGHT - 3}px"></div>
+            		</div>`; // -3 为 border-width: 2, top: 1
                 })
                 .join('');
 
@@ -194,6 +194,7 @@ export default class TableTooltip {
 
             this.bindDrag();
         }
+
         this.root.classList.remove('ql-hidden');
     }
 
