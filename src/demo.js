@@ -47,6 +47,15 @@ const quill = new Quill('#editor', {
 
 quill.setContents(new Delta());
 
+const contentDisplay = document.getElementsByClassName('contentDisplay')[0];
 document.getElementsByClassName('getContent')[0].onclick = () => {
-    console.log(quill.getContents());
+    const content = quill.getContents();
+    console.log(content);
+    contentDisplay.innerHTML = '';
+
+    content.map((content) => {
+        const item = document.createElement('li');
+        item.innerText = JSON.stringify(content);
+        contentDisplay.appendChild(item);
+    });
 };
