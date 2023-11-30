@@ -62,7 +62,7 @@ class TableCell extends ContainBlot {
         };
     }
 
-    indexOfCol() {
+    firstIndexOfCol() {
         const table = Quill.find(document.querySelector(`table[data-table-id="${this.domNode.dataset.tableId}"]`));
         const [colgroup] = table.descendants(TableColgroupFormat);
 

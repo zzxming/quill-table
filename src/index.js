@@ -183,20 +183,17 @@ class TableModule extends Module {
         });
 
         this.quill.clipboard.addMatcher(TableRowFormat.blotName, (node, delta) => {
-            // console.log(node);
             rowId = randomId();
             countColOver = true;
             return delta;
         });
 
         this.quill.clipboard.addMatcher(TableCellFormat.blotName, (node, delta) => {
-            // console.log(node);
             let cellId = randomId();
             if (!countColOver) {
                 colId.push(randomId());
             }
             cellCount += 1;
-            // node.style.borderStyle = getComputedStyle(node).borderStyle.replace(/none/g, 'solid');
             return delta.compose(
                 new Delta().retain(delta.length(), {
                     [TableCellFormat.blotName]: {
@@ -508,15 +505,15 @@ class TableModule extends Module {
         const newColId = randomId();
         const trs = table.children.tail.children;
         const trIterator = trs.iterator();
-        let curTr = trIterator();
 
         // 找到插入列的下标
         let firstCell = this.tableSelection.selectedTds[0];
+        let firstCellColI = firstCell.firstIndexOfCol();
         if (isRight) {
             // 数组最后一项可能是跨行的前一个, 所有循环数组找到最右边的 cell
-            let [rightCell] = this.tableSelection.selectedTds.reduce(
+            const [rightCell] = this.tableSelection.selectedTds.reduce(
                 (pre, cur) => {
-                    let curColIndex = cur.indexOfCol();
+                    let curColIndex = cur.firstIndexOfCol();
                     if (curColIndex > pre[1]) {
                         return [cur, curColIndex];
                     }
@@ -524,12 +521,14 @@ class TableModule extends Module {
                 },
                 [null, 0]
             );
-            firstCell = rightCell;
+
+            rightCell && (firstCell = rightCell);
+            firstCellColI += Number(firstCell.domNode.getAttribute('colspan')) - 1;
         }
-        let firstCellI = firstCell.indexOfCol();
 
         // 插入 cell
-        for (let i = 0; i < trs.length; i++) {
+        let curTr;
+        while ((curTr = trIterator())) {
             const td = Parchment.create(TableCellFormat.blotName, {
                 tableId,
                 rowId: curTr.rowId(),
@@ -539,21 +538,21 @@ class TableModule extends Module {
                 colspan: 1,
             });
 
-            // 可能存在跨行的 td,
-            let insertSelectTd = curTr.findTdByCol(firstCellI);
-            // console.log(insertSelectTd);
+            // 可能存在跨行的 td
+            // 找到行内第一个选中的 cell
+            const insertSelectTd = curTr.findTdByCol(firstCellColI);
+            // 如果没有表示此列在行中被跨行占据，直接新增
             if (!insertSelectTd) {
                 curTr.appendChild(td);
             } else {
-                let insertSelectTdI = insertSelectTd.indexOfCol();
-                // console.log(insertSelectTdI, firstCellI);
+                const insertSelectTdI = insertSelectTd.firstIndexOfCol();
                 if (isRight) {
-                    if (insertSelectTdI > firstCellI) {
+                    if (insertSelectTdI > firstCellColI) {
                         // console.log('right', 'colspan before', insertSelectTd.next);
                         curTr.insertBefore(td, insertSelectTd);
                     } else if (
                         insertSelectTdI + (Number(insertSelectTd.domNode.getAttribute('colspan')) || 1) - 1 <=
-                        firstCellI
+                        firstCellColI
                     ) {
                         // console.log('right', 'before', insertSelectTd.next);
                         curTr.insertBefore(td, insertSelectTd.next);
@@ -562,7 +561,7 @@ class TableModule extends Module {
                         insertSelectTd.format('colspan', Number(insertSelectTd.domNode.getAttribute('colspan')) + 1);
                     }
                 } else {
-                    if (insertSelectTdI >= firstCellI) {
+                    if (insertSelectTdI >= firstCellColI) {
                         // console.log('left', 'before', insertSelectTd);
                         curTr.insertBefore(td, insertSelectTd);
                     } else {
@@ -571,8 +570,6 @@ class TableModule extends Module {
                     }
                 }
             }
-
-            curTr = trIterator();
         }
 
         // 插入 col
@@ -582,7 +579,7 @@ class TableModule extends Module {
             colId: newColId,
             width: 280,
         });
-        let curCol = colGroup.findCol(firstCellI);
+        let curCol = colGroup.findCol(firstCellColI);
         if (isRight) {
             colGroup.insertBefore(col, curCol.next);
         } else {
@@ -603,7 +600,7 @@ class TableModule extends Module {
             }
             delColCount += Number(tds[i].domNode.getAttribute('colspan')) || 1;
         }
-        let delColStartIndex = tds[0].indexOfCol();
+        let delColStartIndex = tds[0].firstIndexOfCol();
         // console.log(delColCount, delColStartIndex);
 
         const table = this.findTable(this.tableSelection.selectedTds[0]);
@@ -655,25 +652,27 @@ class TableModule extends Module {
         const selectTds = this.tableSelection.selectedTds;
 
         // 计算需要合并的单元格的行列数
-        let counts = selectTds.reduce(
+        const counts = selectTds.reduce(
             (pre, td) => {
+                // 此单元格所在列需要跨的行数
                 const colId = td.colId();
-                const rowId = td.rowId();
                 if (!pre[0][colId]) pre[0][colId] = 0;
                 pre[0][colId] += Number(td.domNode.getAttribute('rowspan')) || 1;
-
+                // 此单元格所在行需要跨的列数
+                const rowId = td.rowId();
                 if (!pre[1][rowId]) pre[1][rowId] = 0;
                 pre[1][rowId] += Number(td.domNode.getAttribute('colspan')) || 1;
                 return pre;
             },
             [{}, {}]
         );
+        // counts[0] 记录的是 colId 对应的跨行数
+        // counts[1] 记录的是 rowId 对应的跨列数
         const rowCount = Math.max(...Object.values(counts[0]));
         const colCount = Math.max(...Object.values(counts[1]));
 
-        // console.log('col', colCount);
-        // console.log('row', rowCount);
-        // console.log(selectTds);
+        // console.log('col', counts[0]);
+        // console.log('row', counts[1]);
         const mergedCell = selectTds.reduce((pre, cur, index) => {
             if (index === 0) {
                 cur.format('rowspan', rowCount);
@@ -686,7 +685,25 @@ class TableModule extends Module {
             return pre;
         }, null);
 
-        // 是否需要合并 col, row
+        const table = Quill.find(this.table);
+        const tableRowLength = table.rowsId().length;
+        const mergeCellRowspan = Number(mergedCell.domNode.getAttribute('rowspan'));
+        // 合并后的单元格跨行等于 table 的行数，col 可以合并
+        if (tableRowLength === mergeCellRowspan) {
+            // 找到选中的所有 colId，删除合并后的 cell colId，就是要删除的 colId
+            const deleteColId = new Set(Object.keys(counts[0]));
+            deleteColId.delete(mergedCell.colId());
+
+            table.descendants(TableColFormat).map((col) => {
+                // 删除的 col 宽度移至前一个 col
+                if (deleteColId.has(col.colId())) {
+                    col.prev.format('width', col.prev.getWidth() + col.getWidth());
+                    col.remove();
+                }
+            });
+
+            mergedCell.format('colspan', 1);
+        }
     }
 }
 

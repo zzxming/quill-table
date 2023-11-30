@@ -35,6 +35,7 @@ export default class TableTooltip {
         this.root.style.height = TIPHEIGHT + 'px';
 
         const resizeObserver = new ResizeObserver((entries) => {
+            this.quill.root.blur();
             this.hide();
             this.curTableId = '';
         });
@@ -96,7 +97,6 @@ export default class TableTooltip {
                 }
             }
             this.hide();
-            this.enableFromTable();
         });
     }
 
@@ -200,6 +200,7 @@ export default class TableTooltip {
 
     hide() {
         this.root.classList.add('ql-hidden');
+        this.enableFromTable();
     }
 
     bindDrag() {
