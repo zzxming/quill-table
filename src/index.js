@@ -321,7 +321,7 @@ class TableModule extends Module {
             }, delta);
             // console.log(columns, rows);
             this.quill.updateContents(delta, Quill.sources.USER);
-            this.quill.setSelection(range.index + columns + 1, Quill.sources.API);
+            this.quill.setSelection(range.index + columns + columns * rows + 1, Quill.sources.API);
             this.quill.focus();
         }, 0);
     }
