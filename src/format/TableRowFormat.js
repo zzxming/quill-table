@@ -28,7 +28,7 @@ class TableRow extends Container {
         }
     }
 
-    findTdByCol(col) {
+    findTdByCol(index) {
         const table = this.parent.parent;
         const colsId = table.colsId();
 
@@ -38,17 +38,17 @@ class TableRow extends Container {
         while ((cur = next())) {
             i = colsId.findIndex((id) => id === cur.domNode.dataset.colId);
             let curSpanCol = Number(cur.domNode.getAttribute('colspan')) || 1;
-            if (i + curSpanCol - 1 >= col) {
+            if (i + curSpanCol - 1 >= index) {
                 break;
             }
         }
         return cur;
     }
 
-    exacFindTdByCol(col) {
+    exacFindTdByCol(index) {
         const table = this.parent.parent;
         const colsId = table.colsId();
-        const targetColId = colsId[col];
+        const targetColId = colsId[index];
 
         let next = this.children.iterator();
         let cur = null;

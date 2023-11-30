@@ -1,4 +1,5 @@
 import Quill from 'quill';
+import Delta from 'quill-delta';
 import TableModule from './index';
 
 Quill.register(
@@ -7,7 +8,7 @@ Quill.register(
     },
     true
 );
-new Quill('#editor', {
+const quill = new Quill('#editor', {
     theme: 'snow',
     modules: {
         toolbar: [
@@ -32,12 +33,6 @@ new Quill('#editor', {
             ['table'],
         ],
         [`${TableModule.moduleName}`]: {
-            size() {
-                return {
-                    row: 2,
-                    col: 3,
-                };
-            },
             tableToolTip: {
                 tipHeight: 12,
                 disableToolNames: [],
@@ -49,3 +44,9 @@ new Quill('#editor', {
         },
     },
 });
+
+quill.setContents(new Delta());
+
+document.getElementsByClassName('getContent')[0].onclick = () => {
+    console.log(quill.getContents());
+};
