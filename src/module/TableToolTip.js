@@ -35,7 +35,6 @@ export default class TableTooltip {
         this.root.style.height = TIPHEIGHT + 'px';
 
         const resizeObserver = new ResizeObserver((entries) => {
-            this.quill.root.blur();
             this.hide();
             this.curTableId = '';
         });
@@ -56,7 +55,7 @@ export default class TableTooltip {
         this.quill.on(Emitter.events.SELECTION_CHANGE, (range, oldRange, source) => {
             if (range == null) return;
             if (range.length === 0) {
-                let [tableWrapper, offset] = this.quill.scroll.descendant(TableWrapperFormat, range.index);
+                const [tableWrapper, offset] = this.quill.scroll.descendant(TableWrapperFormat, range.index);
                 if (tableWrapper !== null) {
                     // 此时在 table 内, 禁用部分功能
                     this.disableFromTable();
@@ -69,7 +68,7 @@ export default class TableTooltip {
                         tbody = tbody.children?.tail;
                     }
 
-                    let tableCols = tableWrapper.children.head?.children?.head;
+                    const tableCols = tableWrapper.children.head?.children?.head;
                     if (tableCols.statics.blotName === TableColgroupFormat.blotName && tableCols.children.length) {
                         this.tableCols = tableCols.children.map((col) => col);
                     } else {
@@ -156,7 +155,7 @@ export default class TableTooltip {
 
     clearScrollEvent() {
         for (let i = 0; i < this.scrollHandler.length; i++) {
-            let [dom, handle] = this.scrollHandler[i];
+            const [dom, handle] = this.scrollHandler[i];
             dom.removeEventListener('scroll', handle);
         }
         this.scrollHandler = [];
@@ -174,6 +173,7 @@ export default class TableTooltip {
         if (!this.tableCols.length) {
             return;
         }
+
         if (this.focusTableChange) {
             let tableWrapperRect = this.tableWrapper.domNode.getBoundingClientRect();
             // 加 tableId 用于 table 删除时隐藏 tooltip
@@ -187,14 +187,13 @@ export default class TableTooltip {
                 })
                 .join('');
 
-            setTimeout(() => {
-                this.scrollSync(this.tableWrapper.domNode);
-            }, 0);
             this.focusTableChange = false;
 
             this.bindDrag();
         }
-
+        setTimeout(() => {
+            this.scrollSync(this.tableWrapper.domNode);
+        }, 0);
         this.root.classList.remove('ql-hidden');
     }
 

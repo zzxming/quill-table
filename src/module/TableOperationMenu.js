@@ -114,13 +114,15 @@ export default class TableOperationMenu {
         this.domNode = document.createElement('div');
         this.domNode.classList.add('ql-table-operation-menu');
 
-        css(this.domNode, {
+        const style = {
             position: 'absolute',
-            left: `${left}px`,
-            top: `${top}px`,
             'min-height': `${MENU_MIN_HEIHGT}px`,
             width: `${MENU_WIDTH}px`,
-        });
+        };
+        const { innerWidth: width, innerHeight: height } = window;
+        left > width - MENU_WIDTH ? (style.right = `${width - left}px`) : (style.left = `${left}px`);
+        top > height - MENU_MIN_HEIHGT ? (style.bottom = `${height - top}px`) : (style.top = `${top}px`);
+        css(this.domNode, style);
 
         for (const name in this.menuItems) {
             if (this.menuItems[name]) {
