@@ -2,6 +2,8 @@
 
 A table module used in QuillJS@1.3.7
 
+[Demo](https://zzxming.github.io/quill-table/demo/index.html)
+
 # Install
 
 ```
