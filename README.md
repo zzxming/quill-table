@@ -49,9 +49,10 @@ new Quill('#editor', {
 
 ## OperationMenu
 
-| attribute | description      | type                               | default |
-| --------- | ---------------- | ---------------------------------- | ------- |
-| items     | Contextmenu item | Record<string, OpertationMenuItem> |         |
+| attribute    | description              | type                               | default                                                                                                              |
+| ------------ | ------------------------ | ---------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| items        | Contextmenu item         | Record<string, OpertationMenuItem> | { insertColumnLeft, insertColumnRight, insertRowTop, insertRowBottom, removeRow, removeCol, removeTable, mergeCell } |
+| replaceItems | Replace contextmenu item | Boolean                            |                                                                                                                      |
 
 #### OpertationMenuItem
 

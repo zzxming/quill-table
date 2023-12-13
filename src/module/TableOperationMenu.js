@@ -1,7 +1,7 @@
 import { css } from '../utils';
 
 const MENU_ITEMS_DEFAULT = {
-    isnertColumnLeft: {
+    insertColumnLeft: {
         text: '在左侧插入一列',
         handler() {
             const tableModule = this.quill.getModule('table');
@@ -10,7 +10,7 @@ const MENU_ITEMS_DEFAULT = {
             this.quill.theme.tableToolTip.hide();
         },
     },
-    isnertColumnRight: {
+    insertColumnRight: {
         text: '在右侧插入一列',
         handler() {
             const tableModule = this.quill.getModule('table');
@@ -103,7 +103,11 @@ export default class TableOperationMenu {
     }
 
     optionsMerge() {
-        this.menuItems = Object.assign({}, MENU_ITEMS_DEFAULT, this.options?.items ?? {});
+        if (this.options.replaceItems) {
+            this.menuItems = this.options?.items ?? {};
+        } else {
+            this.menuItems = Object.assign({}, MENU_ITEMS_DEFAULT, this.options?.items ?? {});
+        }
     }
 
     mount() {
