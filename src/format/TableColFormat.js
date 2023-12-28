@@ -1,9 +1,7 @@
 import Quill from 'quill';
 const Parchment = Quill.import('parchment');
 
-import TableFormat from './TableFormat';
-import TableWrapperFormat from './TableWrapperFormat';
-import TableColgroupFormat from './TableColgroupFormat';
+import { blotName } from '../assets/const/name';
 
 const Block = Quill.import('blots/block');
 
@@ -19,11 +17,14 @@ class TableColFormat extends Block {
         return node;
     }
 
-    getWidth() {
+    get width() {
         return Number(this.domNode.getAttribute('width'));
     }
+    set width(value) {
+        return this.domNode.setAttribute('width', value);
+    }
 
-    colId() {
+    get colId() {
         return this.domNode.dataset.colId;
     }
 
@@ -38,31 +39,18 @@ class TableColFormat extends Block {
         };
     }
 
-    format(name, value) {
-        if (name != null) {
-            if (value) {
-                this.domNode.setAttribute(name, value ?? 'auto');
-            } else {
-                this.domNode.removeAttribute(name);
-            }
-        } else {
-            super.format(name, value);
-        }
-    }
-
     optimize() {
         super.optimize();
 
         const parent = this.parent;
-        if (parent != null && parent.statics.blotName != TableColgroupFormat.blotName) {
+        if (parent != null && parent.statics.blotName != blotName.tableColGroup) {
             // we will mark td position, put in table and replace mark
             const mark = Parchment.create('block');
-
             this.parent.insertBefore(mark, this.next);
-            const tableWrapper = Parchment.create(TableWrapperFormat.blotName, this.domNode.dataset.tableId);
-            const table = Parchment.create(TableFormat.blotName, this.domNode.dataset.tableId);
 
-            const tableColgroup = Parchment.create(TableColgroupFormat.blotName);
+            const tableWrapper = Parchment.create(blotName.tableWrapper, this.domNode.dataset.tableId);
+            const table = Parchment.create(blotName.table, this.domNode.dataset.tableId);
+            const tableColgroup = Parchment.create(blotName.tableColGroup);
 
             tableColgroup.appendChild(this);
             table.appendChild(tableColgroup);
@@ -89,9 +77,8 @@ class TableColFormat extends Block {
         return this.domNode.outerHTML;
     }
 }
-TableColFormat.blotName = 'col';
+TableColFormat.blotName = blotName.tableCol;
 TableColFormat.tagName = 'col';
-// 嵌套合并必须有 scope
 TableColFormat.scope = Parchment.Scope.BLOCK_BLOT;
 
 export default TableColFormat;
