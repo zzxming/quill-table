@@ -40,16 +40,16 @@ TableCellFormat.allowedChildren = [Block, BlockEmbed, Container];
 
 Quill.register(
     {
-        [`formats/table-${ContainBlot.blotName}`]: ContainBlot,
+        [`formats/${ContainBlot.blotName}`]: ContainBlot,
 
-        [`formats/table-${TableCellFormat.blotName}`]: TableCellFormat,
-        [`formats/table-${TableRowFormat.blotName}`]: TableRowFormat,
-        [`formats/table-${TableFormat.blotName}`]: TableFormat,
-        [`formats/table-${TableWrapper.blotName}`]: TableWrapper,
-        [`formats/table-${TableBodyFormat.blotName}`]: TableBodyFormat,
+        [`formats/${TableCellFormat.blotName}`]: TableCellFormat,
+        [`formats/${TableRowFormat.blotName}`]: TableRowFormat,
+        [`formats/${TableFormat.blotName}`]: TableFormat,
+        [`formats/${TableWrapper.blotName}`]: TableWrapper,
+        [`formats/${TableBodyFormat.blotName}`]: TableBodyFormat,
 
-        [`formats/table-${TableColgroupFormat.blotName}`]: TableColgroupFormat,
-        [`formats/table-${TableColFormat.blotName}`]: TableColFormat,
+        [`formats/${TableColgroupFormat.blotName}`]: TableColgroupFormat,
+        [`formats/${TableColFormat.blotName}`]: TableColFormat,
     },
     true
 );

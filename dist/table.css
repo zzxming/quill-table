@@ -260,6 +260,7 @@ button:focus-visible {
 }
 .ql-table {
   border-collapse: separate;
+  table-layout: fixed;
 }
 .ql-table-wrapper {
   width: 100%;

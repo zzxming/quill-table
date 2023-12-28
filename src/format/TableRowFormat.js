@@ -2,7 +2,7 @@ import Quill from 'quill';
 const Container = Quill.import('blots/container');
 const Parchment = Quill.import('parchment');
 
-class TableRow extends Container {
+class TableRowFormat extends Container {
     static create(value) {
         let tagName = 'tr';
         let node = super.create(tagName);
@@ -77,8 +77,8 @@ class TableRow extends Container {
     }
 }
 
-TableRow.blotName = 'tr';
-TableRow.tagName = 'tr';
-TableRow.scope = Parchment.Scope.BLOCK_BLOT;
+TableRowFormat.blotName = 'tr';
+TableRowFormat.tagName = 'tr';
+TableRowFormat.scope = Parchment.Scope.BLOCK_BLOT;
 
-export default TableRow;
+export default TableRowFormat;

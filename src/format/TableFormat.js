@@ -3,7 +3,7 @@ const Container = Quill.import('blots/container');
 const Parchment = Quill.import('parchment');
 import TableColgroupFormat from './TableColgroupFormat';
 
-class Table extends Container {
+class TableFormat extends Container {
     constructor(domNode, value) {
         super(domNode, value);
 
@@ -88,8 +88,8 @@ class Table extends Container {
     // }
 }
 
-Table.blotName = 'table';
-Table.tagName = 'table';
-Table.scope = Parchment.Scope.BLOCK_BLOT;
+TableFormat.blotName = 'table';
+TableFormat.tagName = 'table';
+TableFormat.scope = Parchment.Scope.BLOCK_BLOT;
 
-export default Table;
+export default TableFormat;

@@ -7,11 +7,10 @@ import TableColgroupFormat from './TableColgroupFormat';
 
 const Block = Quill.import('blots/block');
 
-class TableCol extends Block {
+class TableColFormat extends Block {
     static create(value) {
-        let { width, tableId, colId } = value;
-
-        let node = super.create();
+        const { width, tableId, colId } = value;
+        const node = super.create();
 
         node.setAttribute('width', width);
         node.dataset.tableId = tableId;
@@ -90,9 +89,9 @@ class TableCol extends Block {
         return this.domNode.outerHTML;
     }
 }
-TableCol.blotName = 'col';
-TableCol.tagName = 'col';
+TableColFormat.blotName = 'col';
+TableColFormat.tagName = 'col';
 // 嵌套合并必须有 scope
-TableCol.scope = Parchment.Scope.BLOCK_BLOT;
+TableColFormat.scope = Parchment.Scope.BLOCK_BLOT;
 
-export default TableCol;
+export default TableColFormat;

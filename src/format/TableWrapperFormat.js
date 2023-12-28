@@ -2,7 +2,7 @@ import Quill from 'quill';
 const Container = Quill.import('blots/container');
 const Parchment = Quill.import('parchment');
 
-class TableWrapper extends Container {
+class TableWrapperFormat extends Container {
     static create(value) {
         const node = super.create();
 
@@ -70,10 +70,10 @@ class TableWrapper extends Container {
         document.querySelector(`.ql-table-tooltip[data-table-id="${this.tableId()}"]`)?.classList?.add('ql-hidden');
     }
 }
-TableWrapper.blotName = 'tableWrapper';
-TableWrapper.tagName = 'p';
-TableWrapper.className = 'ql-table-wrapper';
+TableWrapperFormat.blotName = 'tableWrapper';
+TableWrapperFormat.tagName = 'p';
+TableWrapperFormat.className = 'ql-table-wrapper';
 // 嵌套必须有 scope
-TableWrapper.scope = Parchment.Scope.BLOCK_BLOT;
+TableWrapperFormat.scope = Parchment.Scope.BLOCK_BLOT;
 
-export default TableWrapper;
+export default TableWrapperFormat;
