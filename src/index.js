@@ -602,7 +602,6 @@ class TableModule extends Module {
             },
             [Infinity, -Infinity]
         );
-        console.log(firstSelectColIndex, lastSelectColIndex);
 
         const rows = table.getRows();
         rows.map((row) => {
@@ -611,13 +610,10 @@ class TableModule extends Module {
                 if (i > lastSelectColIndex) return true;
                 const colspan = cell.colspan;
                 if (i + colspan - 1 > lastSelectColIndex) {
-                    console.log('1', lastSelectColIndex - Math.max(i, firstSelectColIndex) + 1);
                     cell.colspan -= lastSelectColIndex - Math.max(i, firstSelectColIndex) + 1;
                 } else if (i < firstSelectColIndex && i + colspan - 1 >= firstSelectColIndex) {
-                    console.log('2', i + colspan - firstSelectColIndex);
                     cell.colspan -= i + colspan - firstSelectColIndex;
                 } else if (i >= firstSelectColIndex) {
-                    console.log('rmo');
                     cell.remove();
                 }
 
