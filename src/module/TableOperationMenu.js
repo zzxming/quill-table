@@ -33,13 +33,6 @@ const MENU_ITEMS_DEFAULT = {
             tableModule.appendRow(true);
         },
     },
-    removeRow: {
-        text: '删除所在行',
-        handler() {
-            const tableModule = this.quill.getModule('table');
-            tableModule.removeRow();
-        },
-    },
     removeCol: {
         text: '删除所在列',
         handler() {
@@ -47,6 +40,13 @@ const MENU_ITEMS_DEFAULT = {
             tableModule.removeCol();
             this.quill.theme.tableToolTip.curTableId = null;
             this.quill.theme.tableToolTip.hide();
+        },
+    },
+    removeRow: {
+        text: '删除所在行',
+        handler() {
+            const tableModule = this.quill.getModule('table');
+            tableModule.removeRow();
         },
     },
     removeTable: {
