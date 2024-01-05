@@ -2,7 +2,7 @@ import Quill from 'quill';
 const Container = Quill.import('blots/container');
 const Parchment = Quill.import('parchment');
 
-import TableColgroupFormat from './TableColgroupFormat';
+import { blotName } from '../assets/const/name';
 
 class TableBodyFormat extends Container {
     optimize() {
@@ -21,15 +21,10 @@ class TableBodyFormat extends Container {
 
     deleteAt(index, length) {
         super.deleteAt(index, length);
-        setTimeout(() => {
-            // 所有行被删除后触发删除 body, 在此删除 colgroup, 继续清除 table 内元素
-            if (!this.children.length && this.prev?.statics?.blotName === TableColgroupFormat.blotName) {
-                this.prev.deleteAt(index, length);
-            }
-        }, 0);
+        this.parent.remove();
     }
 }
-TableBodyFormat.blotName = 'tbody';
+TableBodyFormat.blotName = blotName.tableBody;
 TableBodyFormat.tagName = 'tbody';
 // 嵌套必须有 scope
 TableBodyFormat.scope = Parchment.Scope.BLOCK_BLOT;

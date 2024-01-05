@@ -1,4 +1,5 @@
 import Quill from 'quill';
+import { blotName } from '../assets/const/name';
 const Container = Quill.import('blots/container');
 const Parchment = Quill.import('parchment');
 
@@ -28,7 +29,7 @@ class TableWrapperFormat extends Container {
         return node;
     }
 
-    tableId() {
+    get tableId() {
         return this.domNode.dataset.tableId;
     }
 
@@ -67,10 +68,10 @@ class TableWrapperFormat extends Container {
     deleteAt(index, length) {
         super.deleteAt(index, length);
         // 删除 table 时隐藏当前 table 的 tooltip
-        document.querySelector(`.ql-table-tooltip[data-table-id="${this.tableId()}"]`)?.classList?.add('ql-hidden');
+        document.querySelector(`.ql-table-tooltip[data-table-id="${this.tableId}"]`)?.classList?.add('ql-hidden');
     }
 }
-TableWrapperFormat.blotName = 'tableWrapper';
+TableWrapperFormat.blotName = blotName.tableWrapper;
 TableWrapperFormat.tagName = 'p';
 TableWrapperFormat.className = 'ql-table-wrapper';
 // 嵌套必须有 scope

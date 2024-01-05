@@ -1,4 +1,5 @@
 import Quill from 'quill';
+import { blotName } from '../assets/const/name';
 const Container = Quill.import('blots/container');
 const Parchment = Quill.import('parchment');
 
@@ -32,7 +33,7 @@ class ContainBlot extends Container {
     }
 }
 
-ContainBlot.blotName = 'contain';
+ContainBlot.blotName = blotName.contain;
 ContainBlot.tagName = 'contain';
 ContainBlot.scope = Parchment.Scope.BLOCK_BLOT;
 ContainBlot.defaultChild = 'block';
