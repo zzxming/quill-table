@@ -1,5 +1,4 @@
 import Quill from 'quill';
-import { blotName } from '../assets/const/name';
 const Container = Quill.import('blots/container');
 const Parchment = Quill.import('parchment');
 
@@ -30,9 +29,21 @@ class TableColgroupFormat extends Container {
         }
         return cur;
     }
+
+    deleteAt(index, length) {
+        setTimeout(() => {
+            if (this.next) return;
+            super.deleteAt(index, length);
+            // 删除所有 col, 清除完后 table 下没有任何子元素, table 元素会被删除
+            this.children.forEach((c) => {
+                c.deleteAt(0, 1);
+            });
+        }, 0);
+    }
 }
-TableColgroupFormat.blotName = blotName.tableColGroup;
+TableColgroupFormat.blotName = 'colgroup';
 TableColgroupFormat.tagName = 'colgroup';
+// 嵌套必须有 scope
 TableColgroupFormat.scope = Parchment.Scope.BLOCK_BLOT;
 
 export default TableColgroupFormat;

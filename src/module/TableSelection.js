@@ -1,9 +1,8 @@
 // 以 ql-better-table 的 table-selection.js 为修改基础
 
 import Quill from 'quill';
-import TableCellFormat from '../format/TableCellFormat';
+import TableCell from '../format/TableCellFormat';
 import { css, getRelativeRect, computeBoundaryFromRects } from '../utils';
-import TableCellInnerFormat from '../format/TableCellInner';
 
 let PRIMARY_COLOR = '#0589f3';
 const ERROR_LIMIT = 2;
@@ -114,7 +113,7 @@ export default class TableSelection {
 
     computeSelectedTds() {
         const tableContainer = Quill.find(this.table);
-        const tableCells = tableContainer.descendants(TableCellInnerFormat);
+        const tableCells = tableContainer.descendants(TableCell);
 
         return tableCells.reduce((selectedCells, tableCell) => {
             let { x, y, width, height } = getRelativeRect(
@@ -136,9 +135,8 @@ export default class TableSelection {
     }
 
     correctBoundary() {
-        // 边框计算任然使用 tableCell，有 padding 会影响
         const tableContainer = Quill.find(this.table);
-        const tableCells = tableContainer.descendants(TableCellFormat);
+        const tableCells = tableContainer.descendants(TableCell);
 
         tableCells.forEach((tableCell) => {
             const { x, y, width, height } = getRelativeRect(

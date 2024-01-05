@@ -2,8 +2,9 @@ import Emitter from 'quill/core/emitter';
 import { Range } from 'quill/core/selection';
 
 import TableWrapperFormat from '../format/TableWrapperFormat';
+import TableBodyFormat from '../format/TableBodyFormat';
+import TableColgroupFormat from '../format/TableColgroupFormat';
 import { css } from '../utils';
-import { blotName } from '../assets/const/name';
 
 let TIPHEIGHT = 12;
 const CELLMINWIDTH = 26;
@@ -63,18 +64,18 @@ export default class TableTooltip {
                     this.table = tableWrapper.children.head;
                     // 找到 tbody
                     let tbody = tableWrapper.children.tail;
-                    while (tbody && tbody.statics.blotName !== blotName.tableBody) {
+                    while (tbody && tbody.statics.blotName !== TableBodyFormat.blotName) {
                         tbody = tbody.children?.tail;
                     }
 
                     const tableCols = tableWrapper.children.head?.children?.head;
-                    if (tableCols.statics.blotName === blotName.tableColGroup && tableCols.children.length) {
+                    if (tableCols.statics.blotName === TableColgroupFormat.blotName && tableCols.children.length) {
                         this.tableCols = tableCols.children.map((col) => col);
                     } else {
                         this.tableCols = [];
                     }
 
-                    let curTableId = tableWrapper.children.head.tableId;
+                    let curTableId = tableWrapper.children.head.tableId();
                     if (this.curTableId !== curTableId) {
                         this.clearScrollEvent();
                         this.focusTableChange = true;
@@ -176,10 +177,11 @@ export default class TableTooltip {
         if (this.focusTableChange) {
             let tableWrapperRect = this.tableWrapper.domNode.getBoundingClientRect();
             // 加 tableId 用于 table 删除时隐藏 tooltip
-            this.root.dataset.tableId = this.tableWrapper.tableId;
+            this.root.dataset.tableId = this.tableWrapper.tableId();
             this.root.innerHTML = [...this.tableCols]
                 .map((col) => {
-                    return `<div class="ql-table-col-header" style="width: ${col.width}px">
+                    let curColWidth = col.getWidth();
+                    return `<div class="ql-table-col-header" style="width: ${curColWidth}px">
             			<div class="ql-table-col-separator" style="height: ${tableWrapperRect.height + TIPHEIGHT - 3}px"></div>
             		</div>`; // -3 为 border-width: 2, top: 1
                 })
@@ -228,7 +230,7 @@ export default class TableTooltip {
                 w +
                 'px';
             tableColHeads[curColIndex].style.width = w + 'px';
-            this.tableCols[curColIndex].width = w;
+            this.tableCols[curColIndex].format('width', w);
 
             document.body.removeChild(tipColBreak);
             tipColBreak = null;
