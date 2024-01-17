@@ -285,11 +285,8 @@ button:focus-visible {
   font-size: 14px;
   outline: none;
 }
-.ql-table-cell > * {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: normal;
-  word-break: break-all;
+.ql-table-cell-inner {
+  overflow: auto;
   line-height: 22px;
 }
 .ql-table col {
