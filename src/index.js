@@ -19,7 +19,7 @@ import TableWrapper from './format/TableWrapperFormat';
 import TableBodyFormat from './format/TableBodyFormat';
 import TableColgroupFormat from './format/TableColgroupFormat';
 import TableColFormat from './format/TableColFormat';
-import TableCellInnerFormat from './format/TableCellInner';
+import TableCellInnerFormat from './format/TableCellInnerFormat';
 
 ContainBlot.allowedChildren = [Block, BlockEmbed, Container];
 
@@ -202,7 +202,7 @@ class TableModule extends Module {
             cellCount += 1;
             return delta.compose(
                 new Delta().retain(delta.length(), {
-                    [blotName.tableCell]: {
+                    [blotName.tableCellInner]: {
                         tableId,
                         rowId,
                         colId: colId[(cellCount - 1) % colId.length],

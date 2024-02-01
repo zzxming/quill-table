@@ -6,12 +6,13 @@ const Container = Quill.import('blots/container');
 
 class TableCellFormat extends Container {
     static create(value) {
-        const { rowId, colId, rowspan, colspan } = value;
+        const { rowId, colId, rowspan, colspan, style } = value;
         const node = super.create();
         node.dataset.rowId = rowId;
         node.dataset.colId = colId;
         node.setAttribute('rowspan', rowspan || 1);
         node.setAttribute('colspan', colspan || 1);
+        node.setAttribute('style', style || '');
         return node;
     }
 

@@ -1,6 +1,6 @@
 import Quill from 'quill';
 import { blotName } from '../assets/const/name';
-import TableCellInnerFormat from './TableCellInner';
+import TableCellInnerFormat from './TableCellInnerFormat';
 const Container = Quill.import('blots/container');
 const Parchment = Quill.import('parchment');
 

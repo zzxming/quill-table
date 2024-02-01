@@ -12,7 +12,7 @@ class TableCellInnerFormat extends ContainBlot {
         node.dataset.colId = colId;
         node.dataset.rowspan = rowspan || 1;
         node.dataset.colspan = colspan || 1;
-        node.setAttribute('style', style);
+        node._style = style;
         return node;
     }
 
@@ -25,7 +25,7 @@ class TableCellInnerFormat extends ContainBlot {
                 colId,
                 rowspan,
                 colspan,
-                style: this.domNode.getAttribute('style'),
+                style: this.domNode._style,
             },
         };
     }
@@ -72,6 +72,7 @@ class TableCellInnerFormat extends ContainBlot {
                 colId,
                 rowspan,
                 colspan,
+                style: this.domNode._style,
             });
 
             td.appendChild(this);

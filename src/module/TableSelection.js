@@ -3,7 +3,7 @@
 import Quill from 'quill';
 import TableCellFormat from '../format/TableCellFormat';
 import { css, getRelativeRect, computeBoundaryFromRects } from '../utils';
-import TableCellInnerFormat from '../format/TableCellInner';
+import TableCellInnerFormat from '../format/TableCellInnerFormat';
 
 let PRIMARY_COLOR = '#0589f3';
 const ERROR_LIMIT = 2;
