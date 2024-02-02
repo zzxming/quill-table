@@ -34,6 +34,9 @@ class TableCellFormat extends Container {
     set colspan(value) {
         this.domNode.setAttribute('colspan', value);
     }
+    set style(value) {
+        this.domNode.setAttribute('style', value);
+    }
 
     optimize() {
         super.optimize();

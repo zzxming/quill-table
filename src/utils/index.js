@@ -205,3 +205,10 @@ export function computeBoundaryFromRects(startRect, endRect) {
 
     return { x, x1, y, y1, width, height };
 }
+
+export function isString(val) {
+    return typeof val === 'string';
+}
+export function isFunction(val) {
+    return typeof val === 'function';
+}

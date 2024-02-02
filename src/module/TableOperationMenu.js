@@ -1,4 +1,4 @@
-import { css } from '../utils';
+import { css, isFunction, isString } from '../utils';
 
 const MENU_ITEMS_DEFAULT = {
     insertColumnLeft: {
@@ -28,6 +28,7 @@ const MENU_ITEMS_DEFAULT = {
     },
     insertRowBottom: {
         text: '在下方插入一行',
+        groupEnd: true,
         handler() {
             const tableModule = this.quill.getModule('table');
             tableModule.appendRow(true);
@@ -51,6 +52,7 @@ const MENU_ITEMS_DEFAULT = {
     },
     removeTable: {
         text: '删除表格',
+        groupEnd: true,
         handler() {
             const tableModule = this.quill.getModule('table');
             tableModule.removeTable();
@@ -59,11 +61,28 @@ const MENU_ITEMS_DEFAULT = {
     },
     mergeCell: {
         text: '合并单元格',
+        groupEnd: true,
         handler() {
             const tableModule = this.quill.getModule('table');
             tableModule.mergeCells();
             this.quill.theme.tableToolTip.hide();
             this.tableSelection.clearSelection();
+        },
+    },
+    setBackgroundColor: {
+        subTitle: '设置背景颜色',
+        text() {
+            const tableModule = this.quill.getModule('table');
+            const input = document.createElement('input');
+            input.type = 'color';
+            input.addEventListener('click', (e) => {
+                e.stopPropagation();
+            });
+            input.addEventListener('input', () => {
+                tableModule.setBackgroundColor(input.value);
+            });
+            input.style.width = '100%';
+            return input;
         },
     },
 };
@@ -76,7 +95,8 @@ const MENU_WIDTH = 200;
            functionName: {
                 text: '显示文字',
                 handle() {},    // 触发事件
-                groupEnd: boolean, // 是否显示分隔线，最后一项即使指定了此项也不会显示
+                iconSrc: string,    // icon url
+                groupEnd: boolean, // 是否显示分隔线
                 subTitle: '显示子标题',
             }
         }
@@ -138,10 +158,7 @@ export default class TableOperationMenu {
                     this.menuItemCreator(Object.assign({}, MENU_ITEMS_DEFAULT[name], this.menuItems[name]))
                 );
 
-                if (
-                    ['insertRowBottom', 'removeTable', 'mergeCell'].indexOf(name) > -1 ||
-                    this.menuItems[name].groupEnd
-                ) {
+                if (this.menuItems[name].groupEnd) {
                     this.domNode.appendChild(dividingCreator());
                 }
             }
@@ -180,12 +197,16 @@ export default class TableOperationMenu {
             node.appendChild(iconSpan);
         }
 
-        const textSpan = document.createElement('span');
-        textSpan.classList.add('ql-table-operation-menu-text');
-        textSpan.innerText = text;
+        if (isString(text)) {
+            const textSpan = document.createElement('span');
+            textSpan.classList.add('ql-table-operation-menu-text');
+            textSpan.innerText = text;
+            node.appendChild(textSpan);
+        } else if (isFunction(text)) {
+            node.appendChild(text.call(this));
+        }
 
-        node.appendChild(textSpan);
-        node.addEventListener('click', handler.bind(this), false);
+        isFunction(handler) && node.addEventListener('click', handler.bind(this), false);
         return node;
     }
 }

@@ -157,9 +157,6 @@ button:focus-visible {
   border: 1px solid;
   pointer-events: none;
 }
-.ql-snow.ql-container {
-  overflow-x: hidden;
-}
 .ql-table-drag-line {
   position: fixed;
   width: 2px;
@@ -231,7 +228,7 @@ button:focus-visible {
 }
 .ql-table-operation-menu-subtitle {
   color: #999;
-  font-size: 14px;
+  font-size: 12px;
   padding: 5px 16px;
 }
 .ql-table-operation-menu-icon {

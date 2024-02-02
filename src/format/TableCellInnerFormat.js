@@ -50,6 +50,10 @@ class TableCellInnerFormat extends ContainBlot {
         this.parent && (this.parent.colspan = value);
         this.domNode.dataset.colspan = value;
     }
+    set style(value) {
+        this.domNode._style = value;
+        this.parent.style = value;
+    }
 
     optimize() {
         super.optimize();

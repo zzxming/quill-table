@@ -721,6 +721,13 @@ class TableModule extends Module {
             mergedCell.colspan = 1;
         }
     }
+
+    setBackgroundColor(color) {
+        if (!this.tableSelection.selectedTds.length) return;
+        const selectTds = this.tableSelection.selectedTds;
+
+        selectTds.map((cellInner) => (cellInner.style = `background-color: ${color};`));
+    }
 }
 
 // 不可插入至表格的 blot
