@@ -62,7 +62,6 @@ class TableCellInnerFormat extends ContainBlot {
         // 父级非表格，则将当前 blot 放入表格中
         const { tableId, colId, rowId, rowspan, colspan } = this.domNode.dataset;
         if (parent != null && parent.statics.blotName != blotName.tableCell) {
-            // we will mark td position, put in table and replace mark
             const mark = Parchment.create('block');
 
             this.parent.insertBefore(mark, this.next);

@@ -40,8 +40,6 @@ class TableCellFormat extends Container {
 
     optimize() {
         super.optimize();
-
-        // merge same TD id
         const { colId, rowId } = this.domNode.dataset;
         const next = this.next;
         if (

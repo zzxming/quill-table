@@ -74,7 +74,6 @@ class TableWrapperFormat extends Container {
 TableWrapperFormat.blotName = blotName.tableWrapper;
 TableWrapperFormat.tagName = 'p';
 TableWrapperFormat.className = 'ql-table-wrapper';
-// 嵌套必须有 scope
 TableWrapperFormat.scope = Parchment.Scope.BLOCK_BLOT;
 
 export default TableWrapperFormat;

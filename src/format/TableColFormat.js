@@ -44,7 +44,6 @@ class TableColFormat extends Block {
 
         const parent = this.parent;
         if (parent != null && parent.statics.blotName != blotName.tableColGroup) {
-            // we will mark td position, put in table and replace mark
             const mark = Parchment.create('block');
             this.parent.insertBefore(mark, this.next);
 
