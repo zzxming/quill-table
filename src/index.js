@@ -499,8 +499,10 @@ class TableModule extends Module {
             向右: 选中 cell 的最后一列 id, index
         找到所有 rowId, 开始遍历行内 cell 至(向右: 基准行 colId)(向左: 基准行前一行 colId) 
             有无单元格跨列超过基准列
-                向右: 若 colspan + i > index + 1, 则 colspan + 1 break
-                向左: 若 colspan + i >= index, 则 colspan + 1 break
+                向右: 若 colspan + i > index, 则 colspan + 1 
+                向左: 若 colspan + i >= index, 则 colspan + 1 
+                    colspan + 1 后判断是否跨行, 若跨行则之后 rowspan 行不进行循环
+                break
             无 
                 找到 index 所在 cell，insertBefore
     */
@@ -536,23 +538,36 @@ class TableModule extends Module {
         });
         table.formatTableWidth();
 
-        const stopColId = isRight ? baseColId : colIds[baseColIndex - 1];
-        const stopIndex = isRight ? baseColIndex : baseColIndex - 1;
+        const stopIndex = isRight ? baseColIndex : Math.max(baseColIndex - 1, 0);
+        let skipRow = 0;
         rows.map((tr) => {
             let colspanIncrease = false;
             let beforeCell = null;
             tr.foreachCellInner((cell) => {
-                const colIndexInSelected = colIds.findIndex((id) => id === cell.colId);
-                if (cell.colspan + colIndexInSelected > stopIndex) {
-                    beforeCell = cell.parent.next;
-                }
-                if (cell.colspan !== 1 && cell.colspan + colIndexInSelected > stopIndex) {
-                    cell.colspan += 1;
+                if (skipRow > 0) {
+                    skipRow -= 1;
                     colspanIncrease = true;
                     return true;
                 }
+                const colIndexInSelected = colIds.findIndex((id) => id === cell.colId);
+                if (cell.colspan + colIndexInSelected > stopIndex) {
+                    beforeCell = cell.parent;
+                    isRight && colIndexInSelected <= stopIndex && (beforeCell = beforeCell.next);
+                }
 
-                if (cell.colId === stopColId) {
+                if (cell.colspan !== 1) {
+                    if (
+                        (isRight && cell.colspan + colIndexInSelected > stopIndex + 1) ||
+                        (!isRight && cell.colspan + colIndexInSelected >= stopIndex)
+                    ) {
+                        cell.colspan += 1;
+                        colspanIncrease = true;
+                        skipRow = cell.rowspan - 1;
+                        return true;
+                    }
+                }
+
+                if (colIndexInSelected > stopIndex) {
                     return true;
                 }
             });
