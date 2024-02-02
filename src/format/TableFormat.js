@@ -25,7 +25,7 @@ class TableFormat extends Container {
 
     computedCorrectWidth(width) {
         setTimeout(() => {
-            let colgroup = this.children.head;
+            const colgroup = this.children.head;
             const colCount = colgroup.children.length;
             colgroup.children.map((col) => {
                 col.width = width / colCount;
@@ -36,24 +36,17 @@ class TableFormat extends Container {
     }
 
     colWidthFillTable() {
-        let colgroup = this.children.head;
+        const colgroup = this.children.head;
         if (!colgroup || colgroup.statics.blotName !== blotName.tableColGroup) return;
 
-        let colsWidth = colgroup.children.reduce((sum, col) => col.width + sum, 0);
+        const colsWidth = colgroup.children.reduce((sum, col) => col.width + sum, 0);
         this.domNode.style.width = colsWidth + 'px';
         return colsWidth;
     }
 
     formatTableWidth() {
         setTimeout(() => {
-            const width = getComputedStyle(this.domNode).width;
-            if (!width) return;
-            let colsWidth = this.colWidthFillTable();
-            const tableRealWidth = parseInt(width);
-            if (tableRealWidth > colsWidth) {
-                this.domNode.style.width = tableRealWidth + 'px';
-                this.computedCorrectWidth(tableRealWidth);
-            }
+            this.colWidthFillTable();
         }, 0);
     }
 

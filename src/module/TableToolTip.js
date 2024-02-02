@@ -2,7 +2,7 @@ import Emitter from 'quill/core/emitter';
 import { Range } from 'quill/core/selection';
 
 import TableWrapperFormat from '../format/TableWrapperFormat';
-import { css } from '../utils';
+import { css, getRelativeRect } from '../utils';
 import { blotName } from '../assets/const/name';
 
 let TIPHEIGHT = 12;
@@ -19,7 +19,6 @@ export default class TableTooltip {
         this.quill = quill;
         this.options = options;
         this.optionsMerge();
-        this.boundsContainer = document.body;
 
         this.tableWrapper = null;
         this.table = null;
@@ -38,6 +37,11 @@ export default class TableTooltip {
             this.curTableId = '';
         });
         resizeObserver.observe(this.quill.root);
+
+        this.isMobile = 'ontouchstart' in window;
+        this.handledEvents = this.isMobile
+            ? { down: 'touchstart', move: 'touchmove', up: 'touchend' }
+            : { down: 'mousedown', move: 'mousemove', up: 'mouseup' };
 
         this.hide();
         this.listen();
@@ -205,20 +209,19 @@ export default class TableTooltip {
         let curColIndex = -1;
         let tableColHeads = Array.from(this.root.getElementsByClassName('ql-table-col-header'));
         let tableColHeadSeparators = Array.from(this.root.getElementsByClassName('ql-table-col-separator'));
-
+        const appendTo = document.body;
         // 设置每个 drag 下标对应 col 下标，最右会多一个 drag, 与 better-table 的类似
         // 根据当前的 col left 配合 pageX 计算, 使保证最小宽度
         const handleMousemove = (e) => {
             // getBoundingClientRect 的 top/bottom/left/right, 这是根据视口距离
             const rect = tableColHeads[curColIndex].getBoundingClientRect();
-            let resX = e.pageX;
-            if (e.pageX - rect.left < CELLMINWIDTH) {
-                resX = rect.left + CELLMINWIDTH;
+            let resX = this.isMobile ? e.changedTouches[0].pageX : e.pageX;
+            if (resX - rect.x < CELLMINWIDTH) {
+                resX = rect.x + CELLMINWIDTH;
             }
             resX = Math.floor(resX);
             tipColBreak.style.left = resX + 'px';
-            tipColBreak.dataset.w = resX - rect.left;
-            // console.log(colHeadRect, curColIndex);
+            tipColBreak.dataset.w = resX - rect.x;
         };
         const handleMouseup = (e) => {
             const w = parseInt(tipColBreak.dataset.w);
@@ -230,33 +233,34 @@ export default class TableTooltip {
             tableColHeads[curColIndex].style.width = w + 'px';
             this.tableCols[curColIndex].width = w;
 
-            document.body.removeChild(tipColBreak);
+            appendTo.removeChild(tipColBreak);
             tipColBreak = null;
-
             curColIndex = -1;
-            document.removeEventListener('mouseup', handleMouseup);
-            document.removeEventListener('mousemove', handleMousemove);
+            document.removeEventListener(this.handledEvents.up, handleMouseup);
+            document.removeEventListener(this.handledEvents.move, handleMousemove);
         };
         const handleMousedown = (i, e) => {
-            document.addEventListener('mouseup', handleMouseup);
-            document.addEventListener('mousemove', handleMousemove);
+            document.addEventListener(this.handledEvents.up, handleMouseup);
+            document.addEventListener(this.handledEvents.move, handleMousemove);
             curColIndex = i;
 
-            const tableRect = this.tableWrapper.domNode.getBoundingClientRect();
             const divDom = document.createElement('div');
             divDom.classList.add('ql-table-drag-line');
+
+            const tableRect = this.tableWrapper.domNode.getBoundingClientRect();
+
             css(divDom, {
                 top: `${tableRect.y - TIPHEIGHT}px`,
-                left: `${e.pageX}px`,
+                left: `${this.isMobile ? e.changedTouches[0].pageX : e.pageX}px`,
                 height: `${tableRect.height + TIPHEIGHT}px`,
             });
-            document.body.appendChild(divDom);
+            appendTo.appendChild(divDom);
 
-            if (tipColBreak) document.body.removeChild(tipColBreak);
+            if (tipColBreak) appendTo.removeChild(tipColBreak);
             tipColBreak = divDom;
         };
         tableColHeadSeparators.map((el, i) => {
-            el.addEventListener('mousedown', handleMousedown.bind(this, i));
+            el.addEventListener(this.handledEvents.down, handleMousedown.bind(this, i));
             // 防止拖拽使触发 drag 导致可以使此元素被插入表格
             el.addEventListener('dragstart', (e) => {
                 e.preventDefault();

@@ -161,7 +161,7 @@ button:focus-visible {
   overflow-x: hidden;
 }
 .ql-table-drag-line {
-  position: absolute;
+  position: fixed;
   width: 2px;
   background-color: #409eff;
   cursor: e-resize;
