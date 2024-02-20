@@ -378,7 +378,7 @@ class TableModule extends Module {
                 // 找到当前 cell 跨列的所有 colId
                 let curCellColIds = [cell.colId];
                 if (cell.colspan > 1) {
-                    const index = colIds.findIndex((id) => id === cell.colId);
+                    let index = colIds.findIndex((id) => id === cell.colId);
                     if (index === -1) {
                         index = 0;
                     }
