@@ -21,6 +21,24 @@ button {
     }
 }
 
+.ql {
+    &-custom-select {
+        display: none;
+        position: absolute;
+        top: 100%;
+        left: 0px;
+        z-index: 1;
+        box-shadow: rgba(0, 0, 0, 0.2) 0 2px 8px;
+        background-color: rgb(255, 255, 255);
+        border: 1px solid #d1d5db;
+    }
+    &-expanded {
+        .ql-custom-select {
+            display: block;
+        }
+    }
+}
+
 @import './dialog.less';
 @import './input.less';
 @import './create.less';

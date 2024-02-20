@@ -61,19 +61,26 @@ Quill.register(
     true
 );
 
-import { randomId, showTableCreator } from './utils';
+import { isFunction, randomId, showTableSelector } from './utils';
 import TableTooltip from './module/TableToolTip';
+import { CREATE_TABLE } from './assets/const/event';
 
 class TableModule extends Module {
     constructor(quill, options) {
         super(quill, options);
         this.quill = quill;
         this.options = options;
+
         this.tableBtn = null;
         this.tableInsertSelectCloseHandler = null;
 
         const toolbar = this.quill.getModule('toolbar');
         if (toolbar) {
+            const control = toolbar.controls.find(([name]) => name === TableModule.toolName);
+            if (control) {
+                this.tableBtn = control[1];
+            }
+            this.buildCustomSelect(this.options.customSelect);
             toolbar.addHandler(TableModule.toolName, this.handleSelectDisplay.bind(this));
         }
         this.pasteTableHandler();
@@ -94,7 +101,7 @@ class TableModule extends Module {
                 if (tableNode) {
                     if (this.table === tableNode) return;
                     if (this.table) this.hideTableTools();
-                    this.showTableTools(tableNode, quill, options.selection);
+                    this.showTableTools(tableNode, quill, this.options.selection);
                 } else if (this.table) {
                     this.hideTableTools();
                 }
@@ -133,7 +140,7 @@ class TableModule extends Module {
                         top: evt.pageY,
                     },
                     quill,
-                    options.operationMenu
+                    this.options.operationMenu
                 );
             }
         });
@@ -215,27 +222,35 @@ class TableModule extends Module {
         });
     }
 
+    async buildCustomSelect(customSelect) {
+        if (!this.tableBtn) return;
+
+        const dom = document.createElement('div');
+        dom.classList.add('ql-custom-select');
+        const selector = customSelect && isFunction(customSelect) ? await customSelect() : this.createSelect();
+        dom.appendChild(selector);
+        selector.addEventListener(CREATE_TABLE, (e) => {
+            const { row, col } = e.detail;
+            if (!row || !col) return;
+            this.insertTable(row, col);
+        });
+        this.tableBtn.appendChild(dom);
+        this.tableBtn.style.position = 'relative';
+    }
+
     async handleSelectDisplay() {
         this.quill.focus();
         this.range = this.quill.getSelection();
-        if (this.options.size) {
-            const { row, col } = await this.options.size();
-            this.insertTable(row, col);
-        } else {
-            this.createSelect();
-        }
-        // this.tableBtn.classList.add('ql-expanded');
-        // this.tableBtn.dataset.active = true;
-        // window.removeEventListener('click', this.tableInsertSelectCloseHandler);
-        // this.tableInsertSelectCloseHandler = this.closeSelecte.bind(this);
-        // window.addEventListener('click', this.tableInsertSelectCloseHandler);
+
+        this.tableBtn.classList.add('ql-expanded');
+        this.tableBtn.dataset.active = true;
+        window.removeEventListener('click', this.tableInsertSelectCloseHandler);
+        this.tableInsertSelectCloseHandler = this.closeSelecte.bind(this);
+        window.addEventListener('click', this.tableInsertSelectCloseHandler);
     }
 
     createSelect() {
-        const handle = this.insertTable.bind(this);
-        showTableCreator().then(({ row, col }) => {
-            handle(row, col);
-        });
+        return showTableSelector();
     }
 
     closeSelecte(e) {
@@ -744,8 +759,10 @@ export const isForbidInTable = (current) => {
         : false;
 };
 
-TableModule.moduleName = 'table';
-TableModule.toolName = 'table';
+TableModule.moduleName = blotName.table;
+TableModule.toolName = blotName.table;
+
+TableModule.createEventName = CREATE_TABLE;
 
 import TableSvg from './assets/icons/table.svg';
 import { blotName } from './assets/const/name';

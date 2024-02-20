@@ -1,3 +1,5 @@
+import { CREATE_TABLE } from '../assets/const/event';
+
 export const randomId = () => Math.random().toString(36).slice(2);
 
 let zindex = 8000;
@@ -171,6 +173,81 @@ export const showTableCreator = async (row = 3, col = 3) => {
             close();
         };
     });
+};
+
+/**
+ * 显示表格选择器
+ */
+export const showTableSelector = () => {
+    const selectDom = document.createElement('div');
+    selectDom.classList.add('create_select');
+
+    const selectBlock = document.createElement('div');
+    selectBlock.classList.add('create_select_block');
+
+    for (let r = 0; r < 8; r++) {
+        for (let c = 0; c < 8; c++) {
+            const selectItem = document.createElement('div');
+            selectItem.classList.add('create_select_block_item');
+            selectItem.dataset.row = r + 1;
+            selectItem.dataset.col = c + 1;
+            selectBlock.appendChild(selectItem);
+        }
+    }
+
+    const selectCustom = document.createElement('div');
+    selectCustom.classList.add('create_select_custom');
+    selectCustom.innerText = '自定义行列数';
+
+    selectDom.appendChild(selectBlock);
+    selectDom.appendChild(selectCustom);
+
+    const sendTableData = ({ row, col }) => {
+        selectDom.dispatchEvent(new CustomEvent(CREATE_TABLE, { detail: { row: Number(row), col: Number(col) } }));
+    };
+    const updateSelectBlockItems = () => {
+        const { row, col } = selectDom.dataset;
+        [].forEach.call(selectBlock.querySelectorAll('.active'), (item) => {
+            item.classList.remove('active');
+        });
+        if (!row || !col) return;
+        const childs = Array.from(selectBlock.children);
+        for (let i = 0; i < childs.length; i++) {
+            if (childs[i].dataset.row > row && childs[i].dataset.col > col) {
+                return;
+            }
+            if (childs[i].dataset.row <= row && childs[i].dataset.col <= col) {
+                childs[i].classList.add('active');
+            } else {
+                childs[i].classList.remove('active');
+            }
+        }
+    };
+    selectBlock.addEventListener('mousemove', (e) => {
+        const { row, col } = e.target.dataset;
+        if (!row || !col) return;
+        selectDom.dataset.row = row;
+        selectDom.dataset.col = col;
+        updateSelectBlockItems();
+    });
+    selectBlock.addEventListener('mouseleave', (e) => {
+        selectDom.removeAttribute('data-row');
+        selectDom.removeAttribute('data-col');
+        updateSelectBlockItems();
+    });
+    selectBlock.addEventListener('click', () => {
+        const { row, col } = selectDom.dataset;
+        if (!row || !col) return;
+        sendTableData({ row, col });
+    });
+
+    selectCustom.addEventListener('click', () => {
+        showTableCreator().then(({ row, col }) => {
+            sendTableData({ row, col });
+        });
+    });
+
+    return selectDom;
 };
 
 export function css(domNode, rules) {

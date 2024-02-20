@@ -1,43 +1,74 @@
 .create {
-	&_box {
-		padding: 24px;
-	}
-	&_input {
-		&_content {
-			display: flex;
-			flex-direction: column;
-			width: 100%;
-		}
-	}
-	&_control {
-		margin-top: 8px;
-		text-align: right;
-		&_btn {
-			display: inline-flex;
-			height: 32px;
-			line-height: 1;
-			padding: 8px 16px;
-			border-radius: 4px;
-			font-size: 14px;
-			cursor: pointer;
-			& + & {
-				margin-left: 6px;
-			}
-			&:hover {
-				background-color: #f3f4f6;
-			}
-			&.confirm {
-				border-color: #409eff;
-				background-color: #409eff;
-				color: #fff;
-				&:hover {
-					background-color: #79bbff;
-				}
-				&:focus-visible {
-					outline: 2px solid #a0cfff;
-					outline-offset: 1px;
-				}
-			}
-		}
-	}
+    &_box {
+        padding: 24px;
+    }
+    &_input {
+        &_content {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+        }
+    }
+    &_control {
+        margin-top: 8px;
+        text-align: right;
+        &_btn {
+            display: inline-flex;
+            height: 32px;
+            line-height: 1;
+            padding: 8px 16px;
+            border-radius: 4px;
+            font-size: 14px;
+            cursor: pointer;
+            & + & {
+                margin-left: 6px;
+            }
+            &:hover {
+                background-color: #f3f4f6;
+            }
+            &.confirm {
+                border-color: #409eff;
+                background-color: #409eff;
+                color: #fff;
+                &:hover {
+                    background-color: #79bbff;
+                }
+                &:focus-visible {
+                    outline: 2px solid #a0cfff;
+                    outline-offset: 1px;
+                }
+            }
+        }
+    }
+
+    &_select {
+        &_block {
+            display: flex;
+            width: 160px;
+            margin: 8px;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: center;
+            &_item {
+                margin: 2px;
+                height: 16px;
+                width: 16px;
+                border: 1px solid #e5e7eb;
+                &.active {
+                    border-color: rgb(14, 165, 233);
+                    background-color: rgb(224, 242, 254);
+                }
+            }
+        }
+        &_custom {
+            padding: 8px;
+            border-top: 1px solid rgb(245, 245, 245);
+            color: rgb(0, 0, 0);
+            font-size: 16px;
+            cursor: pointer;
+            &:hover {
+                background-color: rgb(245, 245, 245);
+            }
+        }
+    }
 }
