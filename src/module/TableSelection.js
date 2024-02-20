@@ -14,7 +14,7 @@ const ERROR_LIMIT = 2;
 	}
 */
 export default class TableSelection {
-    constructor(table, quill, options) {
+    constructor(table, quill, options = {}) {
         if (!table) return null;
         this.table = table;
         this.quill = quill;

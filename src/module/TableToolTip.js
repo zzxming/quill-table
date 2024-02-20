@@ -15,7 +15,7 @@ const CELLMINWIDTH = 26;
 	}
 */
 export default class TableTooltip {
-    constructor(quill, options) {
+    constructor(quill, options = {}) {
         this.quill = quill;
         this.options = options;
         this.optionsMerge();

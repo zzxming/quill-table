@@ -103,7 +103,7 @@ const MENU_WIDTH = 200;
     }
 */
 export default class TableOperationMenu {
-    constructor(params, quill, options) {
+    constructor(params, quill, options = {}) {
         const tableModule = quill.getModule('table');
         this.tableSelection = tableModule.tableSelection;
         this.table = params.table;
@@ -123,7 +123,7 @@ export default class TableOperationMenu {
     }
 
     optionsMerge() {
-        if (this.options.replaceItems) {
+        if (this.options?.replaceItems) {
             this.menuItems = this.options?.items ?? {};
         } else {
             this.menuItems = Object.assign({}, MENU_ITEMS_DEFAULT, this.options?.items ?? {});
