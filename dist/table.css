@@ -20,6 +20,19 @@ button:focus-visible {
   outline: 2px solid #c8c9cc;
   outline-offset: 1px;
 }
+.ql-custom-select {
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: 0px;
+  z-index: 1;
+  box-shadow: rgba(0, 0, 0, 0.2) 0 2px 8px;
+  background-color: #ffffff;
+  border: 1px solid #d1d5db;
+}
+.ql-expanded .ql-custom-select {
+  display: block;
+}
 .dialog {
   position: fixed;
   top: 0;
@@ -150,6 +163,34 @@ button:focus-visible {
 .create_control_btn.confirm:focus-visible {
   outline: 2px solid #a0cfff;
   outline-offset: 1px;
+}
+.create_select_block {
+  display: flex;
+  width: 160px;
+  margin: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+}
+.create_select_block_item {
+  margin: 2px;
+  height: 16px;
+  width: 16px;
+  border: 1px solid #e5e7eb;
+}
+.create_select_block_item.active {
+  border-color: #0ea5e9;
+  background-color: #e0f2fe;
+}
+.create_select_custom {
+  padding: 8px;
+  border-top: 1px solid #f5f5f5;
+  color: #000000;
+  font-size: 16px;
+  cursor: pointer;
+}
+.create_select_custom:hover {
+  background-color: #f5f5f5;
 }
 .ql-table-selection_line {
   display: none;
