@@ -33,21 +33,25 @@ new Quill('#editor', {
 
 # Options
 
-| attribute     | description                                     | type                               |
-| ------------- | ----------------------------------------------- | ---------------------------------- |
-| size          | Function returns the number of rows and columns | () => { row: number, col: number } |
-| tableToolTip  | Table tool tip configuration                    | ToolTip                            |
-| operationMenu | OTable contextmenu configuration                | perationMenu                       |
-| selection     | Table cell selection configuration              | TableCellSelection                 |
+| attribute     | description                        | type               |
+| ------------- | ---------------------------------- | ------------------ |
+| customSelect  | Custom picker element              | () => HTMLElement  |
+| tableToolTip  | Table tool tip configuration       | ToolTip            |
+| operationMenu | OTable contextmenu configuration   | perationMenu       |
+| selection     | Table cell selection configuration | TableCellSelection |
 
-## ToolTip
+## customSelect
+
+The element returned by the customSelect method will be inserted into the toolbar, and the element needs to trigger a custom event `TableModule.createEventName` and carry data `{ row: number, col: number }` in the detail
+
+### ToolTip
 
 | attribute        | description                          | type     | default |
 | ---------------- | ------------------------------------ | -------- | ------- |
 | tipHeight        | Slider height                        | number   | 12px    |
 | disableToolNames | Disabled tools name within the table | string[] |         |
 
-## OperationMenu
+### OperationMenu
 
 | attribute    | description              | type                               | default                                                                                                              |
 | ------------ | ------------------------ | ---------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
@@ -64,7 +68,7 @@ new Quill('#editor', {
 | subTitle  | string                    | Subtitle                                                    |         |
 | groupEnd  | boolean                   | Group underline. Do not display underline for the last item |         |
 
-## TableCellSelection
+### TableCellSelection
 
 | attribute    | description  | type   | default |
 | ------------ | ------------ | ------ | ------- |
