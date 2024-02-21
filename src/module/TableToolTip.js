@@ -1,8 +1,7 @@
-import Emitter from 'quill/core/emitter';
-import { Range } from 'quill/core/selection';
+import Quill from 'quill';
 
 import TableWrapperFormat from '../format/TableWrapperFormat';
-import { css, getRelativeRect } from '../utils';
+import { css } from '../utils';
 import { blotName } from '../assets/const/name';
 
 let TIPHEIGHT = 12;
@@ -29,7 +28,7 @@ export default class TableTooltip {
 
         this.tableDisableToolHandlers = {};
 
-        this.root = quill.addContainer('ql-table-tooltip');
+        this.root = this.quill.addContainer('ql-table-tooltip');
         this.root.style.height = TIPHEIGHT + 'px';
 
         const resizeObserver = new ResizeObserver((entries) => {
@@ -55,7 +54,7 @@ export default class TableTooltip {
     }
 
     listen() {
-        this.quill.on(Emitter.events.SELECTION_CHANGE, (range, oldRange, source) => {
+        this.quill.on(Quill.events.SELECTION_CHANGE, (range, oldRange, source) => {
             if (range == null) return;
             if (range.length === 0) {
                 const [tableWrapper, offset] = this.quill.scroll.descendant(TableWrapperFormat, range.index);
@@ -90,7 +89,7 @@ export default class TableTooltip {
                     }
                     this.curTableId = curTableId;
 
-                    this.tableRange = new Range(range.index - offset, tableWrapper.length());
+                    this.tableRange = { index: range.index - offset, length: tableWrapper.length() };
                     this.show();
                     this.position(this.quill.getBounds(this.tableRange));
                     return;

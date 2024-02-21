@@ -4,9 +4,9 @@ const Delta = Quill.import('delta');
 const BlockEmbed = Quill.import('blots/block/embed');
 const Block = Quill.import('blots/block');
 const Container = Quill.import('blots/container');
-import Module from 'quill/core/module';
 const icons = Quill.import('ui/icons');
 
+import TableTooltip from './module/TableToolTip';
 import TableSelection from './module/TableSelection';
 import TableOperationMenu from './module/TableOperationMenu';
 
@@ -62,12 +62,10 @@ Quill.register(
 );
 
 import { isFunction, randomId, showTableSelector } from './utils';
-import TableTooltip from './module/TableToolTip';
 import { CREATE_TABLE } from './assets/const/event';
 
-class TableModule extends Module {
+class TableModule {
     constructor(quill, options) {
-        super(quill, options);
         this.quill = quill;
         this.options = options;
 

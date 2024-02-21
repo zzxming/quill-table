@@ -104,11 +104,11 @@ const MENU_WIDTH = 200;
 */
 export default class TableOperationMenu {
     constructor(params, quill, options = {}) {
-        const tableModule = quill.getModule('table');
-        this.tableSelection = tableModule.tableSelection;
         this.table = params.table;
         this.quill = quill;
         this.options = options;
+        const tableModule = this.quill.getModule('table');
+        this.tableSelection = tableModule.tableSelection;
         this.menuItems = {};
         this.optionsMerge();
 

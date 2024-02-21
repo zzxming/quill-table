@@ -1,6 +1,6 @@
 import Quill from 'quill';
-import Delta from 'quill-delta';
 import TableModule from './index';
+const Delta = Quill.import('delta');
 
 Quill.register(
     {
