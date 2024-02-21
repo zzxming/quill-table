@@ -551,12 +551,13 @@ class TableModule {
         });
         table.formatTableWidth();
 
-        const stopIndex = isRight ? baseColIndex : Math.max(baseColIndex - 1, 0);
+        const stopIndex = isRight ? baseColIndex : baseColIndex - 1;
         let skipRow = 0;
         rows.map((tr) => {
             let colspanIncrease = false;
             let beforeCell = null;
             tr.foreachCellInner((cell) => {
+                // 之前行有跨行且跨列的 cell 处理过, 直接跳过
                 if (skipRow > 0) {
                     skipRow -= 1;
                     colspanIncrease = true;
@@ -565,25 +566,22 @@ class TableModule {
                 const colIndexInSelected = colIds.findIndex((id) => id === cell.colId);
                 if (cell.colspan + colIndexInSelected > stopIndex) {
                     beforeCell = cell.parent;
-                    isRight && colIndexInSelected <= stopIndex && (beforeCell = beforeCell.next);
-                }
-
-                if (cell.colspan !== 1) {
-                    if (
-                        (isRight && cell.colspan + colIndexInSelected > stopIndex + 1) ||
-                        (!isRight && cell.colspan + colIndexInSelected >= stopIndex)
-                    ) {
-                        cell.colspan += 1;
-                        colspanIncrease = true;
-                        skipRow = cell.rowspan - 1;
-                        return true;
-                    }
+                    // 到达行尾且任然向右插入, 则直接 beforeCell 为 null
+                    isRight && cell.colspan + colIndexInSelected >= colIds.length && (beforeCell = beforeCell.next);
                 }
 
                 if (colIndexInSelected > stopIndex) {
                     return true;
                 }
+                // 当前 cell 跨列且跨列范围覆盖新增列的位置
+                if (cell.colspan !== 1 && cell.colspan + colIndexInSelected > stopIndex + 1) {
+                    cell.colspan += 1;
+                    colspanIncrease = true;
+                    skipRow = cell.rowspan - 1;
+                    return true;
+                }
             });
+
             if (!colspanIncrease) {
                 const newTd = Parchment.create(blotName.tableCell, {
                     rowId: tr.rowId,
