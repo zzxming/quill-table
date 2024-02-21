@@ -2,17 +2,18 @@
     "name": "quill1.3.7-table-module",
     "version": "1.2.1",
     "description": "Module for table in quill@1.3.7.",
-    "main": "dist/table.js",
+    "type": "module",
+    "main": "dist/index.js",
     "scripts": {
-        "build": "webpack --mode=production --node-env=production && del dist\\table && del dist\\demo.js.LICENSE.txt && del dist\\table.js.LICENSE.txt",
-        "dev": "webpack --config webpack.config.js",
-        "build:dev": "webpack --mode=development && del dist\\table && del dist\\demo.js.LICENSE.txt && del dist\\table.js.LICENSE.txt",
-        "build:prod": "webpack --mode=production --node-env=production && del dist\\table && del dist\\demo.js.LICENSE.txt && del dist\\table.js.LICENSE.txt",
-        "watch": "webpack --watch"
+        "build": "gulp",
+        "dev": "gulp dev"
     },
     "keywords": [
         "quill",
         "table"
+    ],
+    "files": [
+        "dist"
     ],
     "repository": {
         "type": "git",
@@ -21,23 +22,36 @@
     "author": "zzxming",
     "license": "ISC",
     "devDependencies": {
-        "@babel/core": "^7.23.2",
-        "@babel/plugin-transform-modules-umd": "^7.22.5",
-        "@babel/polyfill": "^7.12.1",
-        "@babel/preset-env": "^7.23.2",
-        "@webpack-cli/generators": "^3.0.7",
-        "babel-loader": "^9.1.3",
-        "css-loader": "^6.8.1",
-        "html-loader": "^4.2.0",
+        "@babel/preset-env": "^7.23.9",
+        "@rollup/plugin-babel": "^6.0.4",
+        "@rollup/plugin-commonjs": "^25.0.7",
+        "@rollup/plugin-node-resolve": "^15.2.3",
+        "@rollup/plugin-terser": "^0.4.4",
+        "autoprefixer": "^10.4.17",
+        "consola": "^3.2.3",
+        "gulp": "^4.0.2",
+        "gulp-clean-css": "^4.3.0",
+        "gulp-less": "^5.0.0",
+        "gulp-postcss": "^9.1.0",
+        "gulp-rename": "^2.0.0",
         "less": "^4.2.0",
-        "less-loader": "^11.1.3",
-        "mini-css-extract-plugin": "^2.7.6",
+        "postcss": "^8.4.33",
+        "postcss-preset-env": "^9.4.0",
+        "postcss-pxtorem": "^6.1.0",
         "quill": "^1.3.7",
-        "style-loader": "^3.3.3",
-        "webpack": "^5.89.0",
-        "webpack-cli": "^5.1.4"
+        "rollup": "^4.12.0",
+        "rollup-plugin-svg-import": "^3.0.0"
     },
     "peerDependencies": {
         "quill": "^1.3.7"
-    }
+    },
+    "browserslist": [
+        "> 0.5%",
+        "Chrome >= 64",
+        "Firefox >= 52",
+        "Edge >= 14",
+        "Safari >= 11",
+        "not ie 11",
+        "not op_mini all"
+    ]
 }
