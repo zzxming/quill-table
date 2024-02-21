@@ -15,7 +15,7 @@ npm install quill1.3.7-table-module
 ```javascript
 import Quill from 'quill';
 import TableHandler from 'quill1.3.7-table-module';
-import 'quill1.3.7-table-module/dist/table.css';
+import 'quill1.3.7-table-module/dist/index.css';
 
 Quill.register({ [`modules/${TableHandler.moduleName}`]: TableHandler }, true);
 new Quill('#editor', {
