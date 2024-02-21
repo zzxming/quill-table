@@ -1,50 +1,50 @@
 .input {
-	&_item {
-		display: flex;
-		align-items: center;
-		& + & {
-			margin-top: 16px;
-		}
-	}
-	&_label {
-		width: 80px;
-		flex-shrink: 0;
-	}
-	&_input {
-		--input-height: 32px;
-		position: relative;
-		display: flex;
-		flex-wrap: wrap;
-		width: 100%;
-		height: var(--input-height);
-		line-height: var(--input-height);
-		padding: 1px 8px;
-		border-radius: 4px;
-		box-shadow: 0 0 0 1px #dcdfe6 inset;
-		transition: box-shadow 0.2s linear;
-		&.focus {
-			box-shadow: 0 0 0 1px #409eff inset;
-		}
-		input {
-			--input-inner-height: calc(var(--input-height) - 2px);
-			width: 100%;
-			height: var(--input-inner-height);
-			line-height: var(--input-inner-height);
-			flex-grow: 1;
-			font-size: 14px;
-			color: #606266;
-		}
-		&.error {
-			box-shadow: 0 0 0 1px #f56c6c inset;
-			.error_tip {
-				position: absolute;
-				top: 100%;
-				left: 0;
-				padding-top: 2px;
-				font-size: 12px;
-				color: #f56c6c;
-				line-height: 1;
-			}
-		}
-	}
+    &_item {
+        display: flex;
+        align-items: center;
+        & + & {
+            margin-top: 16px;
+        }
+    }
+    &_label {
+        width: 80px;
+        flex-shrink: 0;
+    }
+    &_input {
+        --input-height: 32px;
+        position: relative;
+        display: flex;
+        flex-wrap: wrap;
+        width: 100%;
+        height: var(--input-height);
+        line-height: var(--input-height);
+        padding: 1px 8px;
+        border-radius: 4px;
+        box-shadow: 0 0 0 1px #dcdfe6 inset;
+        transition: box-shadow 0.2s linear;
+        &.focus {
+            box-shadow: 0 0 0 1px #409eff inset;
+        }
+        input {
+            --input-inner-height: calc(var(--input-height) - 2px);
+            width: 100%;
+            height: var(--input-inner-height);
+            line-height: var(--input-inner-height);
+            flex-grow: 1;
+            font-size: 14px;
+            color: #606266;
+        }
+        &.error {
+            box-shadow: 0 0 0 1px #f56c6c inset;
+            .error_tip {
+                position: absolute;
+                top: 100%;
+                left: 0;
+                padding-top: 2px;
+                font-size: 12px;
+                color: #f56c6c;
+                line-height: 1;
+            }
+        }
+    }
 }
