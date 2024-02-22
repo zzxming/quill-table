@@ -1,6 +1,6 @@
 import Quill from 'quill';
 import TableWrapperFormat from '../format/TableWrapperFormat';
-import { css } from '../utils';
+import { css, getRelativeRect } from '../utils';
 import { blotName } from '../assets/const/name';
 
 let TIPHEIGHT = 12;
@@ -88,12 +88,15 @@ export default class TableTooltip {
                     }
                     this.curTableId = curTableId;
 
-                    this.tableRange = { index: range.index - offset, length: tableWrapper.length() };
                     this.show();
-                    this.position(this.quill.getBounds(this.tableRange));
+                    const referencePosition = getRelativeRect(
+                        this.tableWrapper.domNode.getBoundingClientRect(),
+                        this.quill.container
+                    );
+                    referencePosition.top = referencePosition.y;
+                    referencePosition.left = referencePosition.x;
+                    this.position(referencePosition);
                     return;
-                } else {
-                    delete this.tableRange;
                 }
             }
             this.hide();
