@@ -648,10 +648,157 @@
     // 在 table 内时禁用的 tool 的 name
     TableTooltip.disableToolNames = ['table'];
 
-    const Parchment$8 = Quill.import('parchment');
     const Container$6 = Quill.import('blots/container');
+    const Parchment$8 = Quill.import('parchment');
 
-    class TableCellFormat extends Container$6 {
+    class ContainBlot extends Container$6 {
+        static create(value) {
+            const tagName = 'contain';
+            const node = super.create(tagName);
+            return node;
+        }
+
+        insertBefore(blot, ref) {
+            if (blot.statics.blotName == this.statics.blotName) {
+                super.insertBefore(blot.children.head, ref);
+            } else {
+                super.insertBefore(blot, ref);
+            }
+        }
+
+        formats() {
+            return { [this.statics.blotName]: this.statics.formats(this.domNode) };
+        }
+
+        replace(target) {
+            if (target.statics.blotName !== this.statics.blotName) {
+                const item = Parchment$8.create(this.statics.defaultChild);
+                target.moveChildren(item);
+                this.appendChild(item);
+            }
+            if (target.parent == null) return;
+            super.replace(target);
+        }
+    }
+
+    ContainBlot.blotName = blotName.contain;
+    ContainBlot.tagName = 'contain';
+    ContainBlot.scope = Parchment$8.Scope.BLOCK_BLOT;
+    ContainBlot.defaultChild = 'block';
+
+    const Parchment$7 = Quill.import('parchment');
+
+    class TableCellInnerFormat extends ContainBlot {
+        static create(value) {
+            const { tableId, rowId, colId, rowspan, colspan, style } = value;
+            const node = super.create();
+            node.dataset.tableId = tableId;
+            node.dataset.rowId = rowId;
+            node.dataset.colId = colId;
+            node.dataset.rowspan = rowspan || 1;
+            node.dataset.colspan = colspan || 1;
+            node._style = style;
+            return node;
+        }
+
+        formats() {
+            const { tableId, rowId, colId, rowspan, colspan } = this.domNode.dataset;
+            return {
+                [this.statics.blotName]: {
+                    tableId,
+                    rowId,
+                    colId,
+                    rowspan,
+                    colspan,
+                    style: this.domNode._style,
+                },
+            };
+        }
+
+        updateDelta() {
+            this.children.forEach((child) => {
+                child.cache = {};
+            });
+        }
+
+        get rowId() {
+            return this.domNode.dataset.rowId;
+        }
+        get colId() {
+            return this.domNode.dataset.colId;
+        }
+        get rowspan() {
+            return Number(this.domNode.dataset.rowspan);
+        }
+        set rowspan(value) {
+            this.parent && (this.parent.rowspan = value);
+            this.domNode.dataset.rowspan = value;
+            this.updateDelta();
+        }
+        get colspan() {
+            return Number(this.domNode.dataset.colspan);
+        }
+        set colspan(value) {
+            this.parent && (this.parent.colspan = value);
+            this.domNode.dataset.colspan = value;
+            this.updateDelta();
+        }
+        set style(value) {
+            this.domNode._style = value;
+            this.parent.style = value;
+            this.updateDelta();
+        }
+
+        optimize() {
+            super.optimize();
+
+            const parent = this.parent;
+            // 父级非表格，则将当前 blot 放入表格中
+            const { tableId, colId, rowId, rowspan, colspan } = this.domNode.dataset;
+            if (parent != null && parent.statics.blotName != blotName.tableCell) {
+                const mark = Parchment$7.create('block');
+
+                this.parent.insertBefore(mark, this.next);
+                const tableWrapper = Parchment$7.create(blotName.tableWrapper, tableId);
+                const table = Parchment$7.create(blotName.table, tableId);
+                const tableBody = Parchment$7.create(blotName.tableBody);
+                const tr = Parchment$7.create(blotName.tableRow, rowId);
+                const td = Parchment$7.create(blotName.tableCell, {
+                    tableId,
+                    rowId,
+                    colId,
+                    rowspan,
+                    colspan,
+                    style: this.domNode._style,
+                });
+
+                td.appendChild(this);
+                tr.appendChild(td);
+                tableBody.appendChild(tr);
+                table.appendChild(tableBody);
+                tableWrapper.appendChild(table);
+
+                tableWrapper.replace(mark);
+            }
+
+            const next = this.next;
+            // cell 下有多个 cellInner 全部合并
+            if (next != null && next.prev === this && next.statics.blotName === this.statics.blotName) {
+                next.moveChildren(this);
+                next.remove();
+            }
+        }
+    }
+
+    TableCellInnerFormat.blotName = blotName.tableCellInner;
+    TableCellInnerFormat.tagName = 'p';
+    TableCellInnerFormat.className = 'ql-table-cell-inner';
+    TableCellInnerFormat.scope = Parchment$7.Scope.BLOCK_BLOT;
+
+    const Parchment$6 = Quill.import('parchment');
+    const Container$5 = Quill.import('blots/container');
+
+    class TableCellFormat extends Container$5 {
         static create(value) {
             const { rowId, colId, rowspan, colspan, style } = value;
             const node = super.create();
@@ -685,6 +832,10 @@
             this.domNode.setAttribute('style', value);
         }
 
+        getCellInner() {
+            return this.descendants(TableCellInnerFormat)[0];
+        }
+
         optimize() {
             super.optimize();
             const { colId, rowId } = this.domNode.dataset;
@@ -701,165 +852,25 @@
             }
         }
 
-        // 需要删除整table
         deleteAt(index, length) {
-            super.deleteAt(index, length);
-            this.parent.remove();
+            if (index === 0 && length === this.length()) {
+                const cell = this.next || this.prev;
+                const cellInner = cell && cell.getCellInner();
+                if (cellInner) {
+                    cellInner.colspan += this.colspan;
+                }
+                return this.remove();
+            }
+            this.children.forEachAt(index, length, function (child, offset, length) {
+                child.deleteAt(offset, length);
+            });
         }
     }
 
     TableCellFormat.blotName = blotName.tableCell;
     TableCellFormat.tagName = 'td';
     TableCellFormat.className = 'ql-table-cell';
-    TableCellFormat.scope = Parchment$8.Scope.BLOCK_BLOT;
-
-    const Container$5 = Quill.import('blots/container');
-    const Parchment$7 = Quill.import('parchment');
-
-    class ContainBlot extends Container$5 {
-        static create(value) {
-            const tagName = 'contain';
-            const node = super.create(tagName);
-            return node;
-        }
-
-        insertBefore(blot, ref) {
-            if (blot.statics.blotName == this.statics.blotName) {
-                super.insertBefore(blot.children.head, ref);
-            } else {
-                super.insertBefore(blot, ref);
-            }
-        }
-
-        formats() {
-            return { [this.statics.blotName]: this.statics.formats(this.domNode) };
-        }
-
-        replace(target) {
-            if (target.statics.blotName !== this.statics.blotName) {
-                const item = Parchment$7.create(this.statics.defaultChild);
-                target.moveChildren(item);
-                this.appendChild(item);
-            }
-            if (target.parent == null) return;
-            super.replace(target);
-        }
-    }
-
-    ContainBlot.blotName = blotName.contain;
-    ContainBlot.tagName = 'contain';
-    ContainBlot.scope = Parchment$7.Scope.BLOCK_BLOT;
-    ContainBlot.defaultChild = 'block';
-
-    const Parchment$6 = Quill.import('parchment');
-
-    class TableCellInnerFormat extends ContainBlot {
-        static create(value) {
-            const { tableId, rowId, colId, rowspan, colspan, style } = value;
-            const node = super.create();
-            node.dataset.tableId = tableId;
-            node.dataset.rowId = rowId;
-            node.dataset.colId = colId;
-            node.dataset.rowspan = rowspan || 1;
-            node.dataset.colspan = colspan || 1;
-            node._style = style;
-            return node;
-        }
-
-        formats() {
-            const { tableId, rowId, colId, rowspan, colspan } = this.domNode.dataset;
-            return {
-                [this.statics.blotName]: {
-                    tableId,
-                    rowId,
-                    colId,
-                    rowspan,
-                    colspan,
-                    style: this.domNode._style,
-                },
-            };
-        }
-
-        get rowId() {
-            return this.domNode.dataset.rowId;
-        }
-        get colId() {
-            return this.domNode.dataset.colId;
-        }
-        get rowspan() {
-            return Number(this.domNode.dataset.rowspan);
-        }
-        set rowspan(value) {
-            this.parent && (this.parent.rowspan = value);
-            this.domNode.dataset.rowspan = value;
-        }
-        get colspan() {
-            return Number(this.domNode.dataset.colspan);
-        }
-        set colspan(value) {
-            this.parent && (this.parent.colspan = value);
-            this.domNode.dataset.colspan = value;
-        }
-        set style(value) {
-            this.domNode._style = value;
-            this.parent.style = value;
-        }
-
-        optimize() {
-            super.optimize();
-
-            const parent = this.parent;
-            // 父级非表格，则将当前 blot 放入表格中
-            const { tableId, colId, rowId, rowspan, colspan } = this.domNode.dataset;
-            if (parent != null && parent.statics.blotName != blotName.tableCell) {
-                const mark = Parchment$6.create('block');
-
-                this.parent.insertBefore(mark, this.next);
-                const tableWrapper = Parchment$6.create(blotName.tableWrapper, tableId);
-                const table = Parchment$6.create(blotName.table, tableId);
-                const tableBody = Parchment$6.create(blotName.tableBody);
-                const tr = Parchment$6.create(blotName.tableRow, rowId);
-                const td = Parchment$6.create(blotName.tableCell, {
-                    tableId,
-                    rowId,
-                    colId,
-                    rowspan,
-                    colspan,
-                    style: this.domNode._style,
-                });
-
-                td.appendChild(this);
-                tr.appendChild(td);
-                tableBody.appendChild(tr);
-                table.appendChild(tableBody);
-                tableWrapper.appendChild(table);
-
-                tableWrapper.replace(mark);
-            }
-
-            const next = this.next;
-            if (
-                next != null &&
-                next.prev === this &&
-                next.statics.blotName === this.statics.blotName &&
-                next.domNode.dataset.rowId === rowId &&
-                next.domNode.dataset.colId === colId
-            ) {
-                next.moveChildren(this);
-                next.remove();
-            }
-        }
-
-        deleteAt(index, length) {
-            super.deleteAt(index, length);
-            this.parent.remove();
-        }
-    }
-
-    TableCellInnerFormat.blotName = blotName.tableCellInner;
-    TableCellInnerFormat.tagName = 'p';
-    TableCellInnerFormat.className = 'ql-table-cell-inner';
-    TableCellInnerFormat.scope = Parchment$6.Scope.BLOCK_BLOT;
+    TableCellFormat.scope = Parchment$6.Scope.BLOCK_BLOT;
 
     // 以 ql-better-table 的 table-selection.js 为修改基础
 
@@ -891,7 +902,7 @@
 
             this.helpLinesInitial();
             this.quill.root.addEventListener('mousedown', this.selectingHandler, false);
-            this.quill.on('text-change', this.clearSelectionHandler);
+            this.quill.on(Quill.events.TEXT_CHANGE, this.clearSelectionHandler);
         }
 
         optionsMerge() {
@@ -1301,13 +1312,6 @@
                 if (func(tableCell, i++)) break;
             }
         }
-
-        deleteAt(index, length) {
-            super.deleteAt(index, length);
-            if (this.prev?.statics?.blotName === this.statics.blotName) {
-                this.prev.deleteAt(index, length);
-            }
-        }
     }
 
     TableRowFormat.blotName = blotName.tableRow;
@@ -1316,7 +1320,6 @@
     TableRowFormat.scope = Parchment$5.Scope.BLOCK_BLOT;
 
     const Parchment$4 = Quill.import('parchment');
-
     const Block$1 = Quill.import('blots/block');
 
     class TableColFormat extends Block$1 {
@@ -1499,13 +1502,16 @@
         }
 
         deleteAt(index, length) {
-            super.deleteAt(index, length);
-            this.parent.remove();
+            if (index === 0 && length === this.length()) {
+                this.parent.remove();
+            }
+            this.children.forEachAt(index, length, function (child, offset, length) {
+                child.deleteAt(offset, length);
+            });
         }
     }
     TableBodyFormat.blotName = blotName.tableBody;
     TableBodyFormat.tagName = 'tbody';
-    // 嵌套必须有 scope
     TableBodyFormat.scope = Parchment$2.Scope.BLOCK_BLOT;
 
     const Container$1 = Quill.import('blots/container');
