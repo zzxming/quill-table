@@ -1,7 +1,7 @@
 import Quill from 'quill';
-const Parchment = Quill.import('parchment');
-
 import { blotName } from '../assets/const/name';
+import TableCellInnerFormat from './TableCellInnerFormat';
+const Parchment = Quill.import('parchment');
 const Container = Quill.import('blots/container');
 
 class TableCellFormat extends Container {
@@ -38,6 +38,10 @@ class TableCellFormat extends Container {
         this.domNode.setAttribute('style', value);
     }
 
+    getCellInner() {
+        return this.descendants(TableCellInnerFormat)[0];
+    }
+
     optimize() {
         super.optimize();
         const { colId, rowId } = this.domNode.dataset;
@@ -54,10 +58,18 @@ class TableCellFormat extends Container {
         }
     }
 
-    // 需要删除整table
     deleteAt(index, length) {
-        super.deleteAt(index, length);
-        this.parent.remove();
+        if (index === 0 && length === this.length()) {
+            const cell = this.next || this.prev;
+            const cellInner = cell && cell.getCellInner();
+            if (cellInner) {
+                cellInner.colspan += this.colspan;
+            }
+            return this.remove();
+        }
+        this.children.forEachAt(index, length, function (child, offset, length) {
+            child.deleteAt(offset, length);
+        });
     }
 }
 

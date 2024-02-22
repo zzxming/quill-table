@@ -38,13 +38,6 @@ class TableRowFormat extends Container {
             if (func(tableCell, i++)) break;
         }
     }
-
-    deleteAt(index, length) {
-        super.deleteAt(index, length);
-        if (this.prev?.statics?.blotName === this.statics.blotName) {
-            this.prev.deleteAt(index, length);
-        }
-    }
 }
 
 TableRowFormat.blotName = blotName.tableRow;

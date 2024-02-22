@@ -1,8 +1,7 @@
 import Quill from 'quill';
+import { blotName } from '../assets/const/name';
 const Container = Quill.import('blots/container');
 const Parchment = Quill.import('parchment');
-
-import { blotName } from '../assets/const/name';
 
 class TableBodyFormat extends Container {
     optimize() {
@@ -20,13 +19,16 @@ class TableBodyFormat extends Container {
     }
 
     deleteAt(index, length) {
-        super.deleteAt(index, length);
-        this.parent.remove();
+        if (index === 0 && length === this.length()) {
+            this.parent.remove();
+        }
+        this.children.forEachAt(index, length, function (child, offset, length) {
+            child.deleteAt(offset, length);
+        });
     }
 }
 TableBodyFormat.blotName = blotName.tableBody;
 TableBodyFormat.tagName = 'tbody';
-// 嵌套必须有 scope
 TableBodyFormat.scope = Parchment.Scope.BLOCK_BLOT;
 
 export default TableBodyFormat;

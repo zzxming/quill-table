@@ -30,6 +30,12 @@ class TableCellInnerFormat extends ContainBlot {
         };
     }
 
+    updateDelta() {
+        this.children.forEach((child) => {
+            child.cache = {};
+        });
+    }
+
     get rowId() {
         return this.domNode.dataset.rowId;
     }
@@ -42,6 +48,7 @@ class TableCellInnerFormat extends ContainBlot {
     set rowspan(value) {
         this.parent && (this.parent.rowspan = value);
         this.domNode.dataset.rowspan = value;
+        this.updateDelta();
     }
     get colspan() {
         return Number(this.domNode.dataset.colspan);
@@ -49,10 +56,12 @@ class TableCellInnerFormat extends ContainBlot {
     set colspan(value) {
         this.parent && (this.parent.colspan = value);
         this.domNode.dataset.colspan = value;
+        this.updateDelta();
     }
     set style(value) {
         this.domNode._style = value;
         this.parent.style = value;
+        this.updateDelta();
     }
 
     optimize() {
@@ -88,21 +97,11 @@ class TableCellInnerFormat extends ContainBlot {
         }
 
         const next = this.next;
-        if (
-            next != null &&
-            next.prev === this &&
-            next.statics.blotName === this.statics.blotName &&
-            next.domNode.dataset.rowId === rowId &&
-            next.domNode.dataset.colId === colId
-        ) {
+        // cell 下有多个 cellInner 全部合并
+        if (next != null && next.prev === this && next.statics.blotName === this.statics.blotName) {
             next.moveChildren(this);
             next.remove();
         }
-    }
-
-    deleteAt(index, length) {
-        super.deleteAt(index, length);
-        this.parent.remove();
     }
 }
 
