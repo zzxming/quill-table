@@ -466,12 +466,15 @@
                         }
                         this.curTableId = curTableId;
 
-                        this.tableRange = { index: range.index - offset, length: tableWrapper.length() };
                         this.show();
-                        this.position(this.quill.getBounds(this.tableRange));
+                        const referencePosition = getRelativeRect(
+                            this.tableWrapper.domNode.getBoundingClientRect(),
+                            this.quill.container
+                        );
+                        referencePosition.top = referencePosition.y;
+                        referencePosition.left = referencePosition.x;
+                        this.position(referencePosition);
                         return;
-                    } else {
-                        delete this.tableRange;
                     }
                 }
                 this.hide();
