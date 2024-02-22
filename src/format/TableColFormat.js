@@ -1,8 +1,6 @@
 import Quill from 'quill';
-const Parchment = Quill.import('parchment');
-
 import { blotName } from '../assets/const/name';
-
+const Parchment = Quill.import('parchment');
 const Block = Quill.import('blots/block');
 
 class TableColFormat extends Block {

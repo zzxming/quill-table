@@ -32,7 +32,7 @@ export default class TableSelection {
 
         this.helpLinesInitial();
         this.quill.root.addEventListener('mousedown', this.selectingHandler, false);
-        this.quill.on('text-change', this.clearSelectionHandler);
+        this.quill.on(Quill.events.TEXT_CHANGE, this.clearSelectionHandler);
     }
 
     optionsMerge() {

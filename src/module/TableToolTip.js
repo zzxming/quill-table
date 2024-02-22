@@ -1,5 +1,4 @@
 import Quill from 'quill';
-
 import TableWrapperFormat from '../format/TableWrapperFormat';
 import { css } from '../utils';
 import { blotName } from '../assets/const/name';

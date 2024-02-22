@@ -1,9 +1,9 @@
 import Quill from 'quill';
-const Container = Quill.import('blots/container');
-const Parchment = Quill.import('parchment');
 import { blotName } from '../assets/const/name';
 import TableRowFormat from './TableRowFormat';
 import TableColFormat from './TableColFormat';
+const Container = Quill.import('blots/container');
+const Parchment = Quill.import('parchment');
 
 class TableFormat extends Container {
     constructor(domNode, value) {
