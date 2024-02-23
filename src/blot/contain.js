@@ -18,6 +18,10 @@ class ContainBlot extends Container {
         }
     }
 
+    format(name, value) {
+        this.domNode.lastChild.setAttribute(name, value);
+    }
+
     formats() {
         return { [this.statics.blotName]: this.statics.formats(this.domNode) };
     }
