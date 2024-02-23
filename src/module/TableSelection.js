@@ -3,7 +3,6 @@
 import Quill from 'quill';
 import TableCellFormat from '../format/TableCellFormat';
 import { css, getRelativeRect, computeBoundaryFromRects } from '../utils';
-import TableCellInnerFormat from '../format/TableCellInnerFormat';
 
 let PRIMARY_COLOR = '#0589f3';
 const ERROR_LIMIT = 2;
@@ -26,13 +25,11 @@ export default class TableSelection {
         this.selectedTds = [];
         this.dragging = false;
         this.selectingHandler = this.mouseDownHandler.bind(this);
-        this.clearSelectionHandler = this.clearSelection.bind(this);
         this.cellSelect = null; // selection 显示边框
         this.scrollHandler = [];
 
         this.helpLinesInitial();
         this.quill.root.addEventListener('mousedown', this.selectingHandler, false);
-        this.quill.on(Quill.events.TEXT_CHANGE, this.clearSelectionHandler);
     }
 
     optionsMerge() {
@@ -114,7 +111,8 @@ export default class TableSelection {
 
     computeSelectedTds() {
         const tableContainer = Quill.find(this.table);
-        const tableCells = tableContainer.descendants(TableCellInnerFormat);
+        // 选中范围计算任然使用 tableCell, tableCellInner 可滚动, width 会影响
+        const tableCells = tableContainer.descendants(TableCellFormat);
 
         return tableCells.reduce((selectedCells, tableCell) => {
             let { x, y, width, height } = getRelativeRect(
@@ -128,7 +126,7 @@ export default class TableSelection {
                 y - ERROR_LIMIT + height <= this.boundary.y1;
 
             if (isCellIncluded) {
-                selectedCells.push(tableCell);
+                selectedCells.push(tableCell.getCellInner());
             }
 
             return selectedCells;
@@ -136,7 +134,7 @@ export default class TableSelection {
     }
 
     correctBoundary() {
-        // 边框计算任然使用 tableCell，有 padding 会影响
+        // 边框计算任然使用 tableCell, 有 padding 会影响
         const tableContainer = Quill.find(this.table);
         const tableCells = tableContainer.descendants(TableCellFormat);
 
@@ -183,12 +181,12 @@ export default class TableSelection {
     }
 
     destroy() {
+        this.clearSelection();
         this.cellSelect.remove();
         this.cellSelect = null;
         this.clearScrollEvent();
 
         this.quill.root.removeEventListener('mousedown', this.selectingHandler, false);
-        this.quill.off('text-change', this.clearSelectionHandler);
 
         return null;
     }

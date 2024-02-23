@@ -65,8 +65,7 @@ const MENU_ITEMS_DEFAULT = {
         handler() {
             const tableModule = this.quill.getModule('table');
             tableModule.mergeCells();
-            this.quill.theme.tableToolTip.hide();
-            this.tableSelection.clearSelection();
+            tableModule.hideTableTools();
         },
     },
     setBackgroundColor: {

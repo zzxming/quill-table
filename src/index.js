@@ -6,7 +6,7 @@ const Block = Quill.import('blots/block');
 const Container = Quill.import('blots/container');
 const icons = Quill.import('ui/icons');
 
-import TableTooltip from './module/TableToolTip';
+import TableToolTip from './module/TableToolTip';
 import TableSelection from './module/TableSelection';
 import TableOperationMenu from './module/TableOperationMenu';
 
@@ -142,7 +142,7 @@ class TableModule {
                 );
             }
         });
-        this.quill.theme.tableToolTip = new TableTooltip(this.quill, this.options.tableToolTip);
+        this.quill.theme.tableToolTip = new TableToolTip(this.quill, this.options.tableToolTip);
     }
 
     showTableTools(table, quill, options) {
@@ -512,9 +512,10 @@ class TableModule {
             向右: 选中 cell 的最后一列 id, index
         找到所有 rowId, 开始遍历行内 cell 至(向右: 基准行 colId)(向左: 基准行前一行 colId) 
             有无单元格跨列超过基准列
-                向右: 若 colspan + i > index, 则 colspan + 1 
-                向左: 若 colspan + i >= index, 则 colspan + 1 
-                    colspan + 1 后判断是否跨行, 若跨行则之后 rowspan 行不进行循环
+                // 因为 colspan 最少为 1, 判断时需要 + 1
+                向右: 若 colspan + i > 1 + index, 则 colspan + 1 
+                向左: 若 colspan + i > 1 + index, 则 colspan + 1 
+                colspan + 1 后判断是否跨行, 若跨行则之后 rowspan 行不进行循环
                 break
             无 
                 找到 index 所在 cell，insertBefore
@@ -526,7 +527,6 @@ class TableModule {
         const cols = table.getCols();
         const colIds = table.getColIds();
         const rows = table.getRows();
-
         const newColId = randomId();
 
         let baseColId;
@@ -551,7 +551,7 @@ class TableModule {
         });
         table.formatTableWidth();
 
-        const stopIndex = isRight ? baseColIndex : baseColIndex - 1;
+        const stopIndex = isRight ? baseColIndex + 1 : baseColIndex;
         let skipRow = 0;
         rows.map((tr) => {
             let colspanIncrease = false;
@@ -566,18 +566,17 @@ class TableModule {
                 const colIndexInSelected = colIds.findIndex((id) => id === cell.colId);
                 if (cell.colspan + colIndexInSelected > stopIndex) {
                     beforeCell = cell.parent;
-                    // 到达行尾且任然向右插入, 则直接 beforeCell 为 null
-                    isRight && cell.colspan + colIndexInSelected >= colIds.length && (beforeCell = beforeCell.next);
+
+                    // 当前 cell 跨列且不是终止位
+                    if (cell.colspan !== 1 && colIndexInSelected !== stopIndex) {
+                        cell.colspan += 1;
+                        colspanIncrease = true;
+                        skipRow = cell.rowspan - 1;
+                        return true;
+                    }
                 }
 
-                if (colIndexInSelected > stopIndex) {
-                    return true;
-                }
-                // 当前 cell 跨列且跨列范围覆盖新增列的位置
-                if (cell.colspan !== 1 && cell.colspan + colIndexInSelected > stopIndex + 1) {
-                    cell.colspan += 1;
-                    colspanIncrease = true;
-                    skipRow = cell.rowspan - 1;
+                if (colIndexInSelected >= stopIndex) {
                     return true;
                 }
             });
