@@ -30,6 +30,11 @@ export default class TableSelection {
 
         this.helpLinesInitial();
         this.quill.root.addEventListener('mousedown', this.selectingHandler, false);
+        this.closeHandler = (delta) => {
+            if (!delta.ops.find((item) => !!item.insert)) return;
+            this.clearSelection();
+        };
+        this.quill.on(Quill.events.TEXT_CHANGE, this.closeHandler);
     }
 
     optionsMerge() {
@@ -187,6 +192,7 @@ export default class TableSelection {
         this.clearScrollEvent();
 
         this.quill.root.removeEventListener('mousedown', this.selectingHandler, false);
+        this.quill.off(Quill.events.TEXT_CHANGE, this.closeHandler);
 
         return null;
     }
