@@ -45,7 +45,7 @@ const quill = new Quill('#editor', {
     },
 });
 
-quill.setContents(new Delta());
+quill.setContents(new Delta([]));
 
 const contentDisplay = document.getElementsByClassName('contentDisplay')[0];
 document.getElementsByClassName('getContent')[0].onclick = () => {
@@ -56,6 +56,6 @@ document.getElementsByClassName('getContent')[0].onclick = () => {
     content.map((content) => {
         const item = document.createElement('li');
         item.innerText = JSON.stringify(content);
-        contentDisplay.appendChild(item);
+        contentDisplay.appendChild(item + ',');
     });
 };

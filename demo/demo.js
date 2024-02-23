@@ -899,13 +899,11 @@
             this.selectedTds = [];
             this.dragging = false;
             this.selectingHandler = this.mouseDownHandler.bind(this);
-            this.clearSelectionHandler = this.clearSelection.bind(this);
             this.cellSelect = null; // selection 显示边框
             this.scrollHandler = [];
 
             this.helpLinesInitial();
             this.quill.root.addEventListener('mousedown', this.selectingHandler, false);
-            this.quill.on(Quill.events.TEXT_CHANGE, this.clearSelectionHandler);
         }
 
         optionsMerge() {
@@ -987,7 +985,8 @@
 
         computeSelectedTds() {
             const tableContainer = Quill.find(this.table);
-            const tableCells = tableContainer.descendants(TableCellInnerFormat);
+            // 选中范围计算任然使用 tableCell, tableCellInner 可滚动, width 会影响
+            const tableCells = tableContainer.descendants(TableCellFormat);
 
             return tableCells.reduce((selectedCells, tableCell) => {
                 let { x, y, width, height } = getRelativeRect(
@@ -1001,7 +1000,7 @@
                     y - ERROR_LIMIT + height <= this.boundary.y1;
 
                 if (isCellIncluded) {
-                    selectedCells.push(tableCell);
+                    selectedCells.push(tableCell.getCellInner());
                 }
 
                 return selectedCells;
@@ -1009,7 +1008,7 @@
         }
 
         correctBoundary() {
-            // 边框计算任然使用 tableCell，有 padding 会影响
+            // 边框计算任然使用 tableCell, 有 padding 会影响
             const tableContainer = Quill.find(this.table);
             const tableCells = tableContainer.descendants(TableCellFormat);
 
@@ -1056,12 +1055,12 @@
         }
 
         destroy() {
+            this.clearSelection();
             this.cellSelect.remove();
             this.cellSelect = null;
             this.clearScrollEvent();
 
             this.quill.root.removeEventListener('mousedown', this.selectingHandler, false);
-            this.quill.off('text-change', this.clearSelectionHandler);
 
             return null;
         }
@@ -1132,8 +1131,7 @@
             handler() {
                 const tableModule = this.quill.getModule('table');
                 tableModule.mergeCells();
-                this.quill.theme.tableToolTip.hide();
-                this.tableSelection.clearSelection();
+                tableModule.hideTableTools();
             },
         },
         setBackgroundColor: {
@@ -2049,9 +2047,10 @@
                 向右: 选中 cell 的最后一列 id, index
             找到所有 rowId, 开始遍历行内 cell 至(向右: 基准行 colId)(向左: 基准行前一行 colId) 
                 有无单元格跨列超过基准列
-                    向右: 若 colspan + i > index, 则 colspan + 1 
-                    向左: 若 colspan + i >= index, 则 colspan + 1 
-                        colspan + 1 后判断是否跨行, 若跨行则之后 rowspan 行不进行循环
+                    // 因为 colspan 最少为 1, 判断时需要 + 1
+                    向右: 若 colspan + i > 1 + index, 则 colspan + 1 
+                    向左: 若 colspan + i > 1 + index, 则 colspan + 1 
+                    colspan + 1 后判断是否跨行, 若跨行则之后 rowspan 行不进行循环
                     break
                 无 
                     找到 index 所在 cell，insertBefore
@@ -2063,7 +2062,6 @@
             const cols = table.getCols();
             const colIds = table.getColIds();
             const rows = table.getRows();
-
             const newColId = randomId();
 
             let baseColId;
@@ -2088,7 +2086,7 @@
             });
             table.formatTableWidth();
 
-            const stopIndex = isRight ? baseColIndex : baseColIndex - 1;
+            const stopIndex = isRight ? baseColIndex + 1 : baseColIndex;
             let skipRow = 0;
             rows.map((tr) => {
                 let colspanIncrease = false;
@@ -2103,18 +2101,17 @@
                     const colIndexInSelected = colIds.findIndex((id) => id === cell.colId);
                     if (cell.colspan + colIndexInSelected > stopIndex) {
                         beforeCell = cell.parent;
-                        // 到达行尾且任然向右插入, 则直接 beforeCell 为 null
-                        isRight && cell.colspan + colIndexInSelected >= colIds.length && (beforeCell = beforeCell.next);
+
+                        // 当前 cell 跨列且不是终止位
+                        if (cell.colspan !== 1 && colIndexInSelected !== stopIndex) {
+                            cell.colspan += 1;
+                            colspanIncrease = true;
+                            skipRow = cell.rowspan - 1;
+                            return true;
+                        }
                     }
 
-                    if (colIndexInSelected > stopIndex) {
-                        return true;
-                    }
-                    // 当前 cell 跨列且跨列范围覆盖新增列的位置
-                    if (cell.colspan !== 1 && cell.colspan + colIndexInSelected > stopIndex + 1) {
-                        cell.colspan += 1;
-                        colspanIncrease = true;
-                        skipRow = cell.rowspan - 1;
+                    if (colIndexInSelected >= stopIndex) {
                         return true;
                     }
                 });
@@ -2343,7 +2340,7 @@
         },
     });
 
-    quill.setContents(new Delta());
+    quill.setContents(new Delta([]));
 
     const contentDisplay = document.getElementsByClassName('contentDisplay')[0];
     document.getElementsByClassName('getContent')[0].onclick = () => {
@@ -2354,7 +2351,7 @@
         content.map((content) => {
             const item = document.createElement('li');
             item.innerText = JSON.stringify(content);
-            contentDisplay.appendChild(item);
+            contentDisplay.appendChild(item + ',');
         });
     };
 
