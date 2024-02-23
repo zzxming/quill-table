@@ -669,6 +669,10 @@
             }
         }
 
+        format(name, value) {
+            this.domNode.lastChild.setAttribute(name, value);
+        }
+
         formats() {
             return { [this.statics.blotName]: this.statics.formats(this.domNode) };
         }
@@ -904,6 +908,11 @@
 
             this.helpLinesInitial();
             this.quill.root.addEventListener('mousedown', this.selectingHandler, false);
+            this.closeHandler = (delta) => {
+                if (!delta.ops.find((item) => !!item.insert)) return;
+                this.clearSelection();
+            };
+            this.quill.on(Quill.events.TEXT_CHANGE, this.closeHandler);
         }
 
         optionsMerge() {
@@ -1061,6 +1070,7 @@
             this.clearScrollEvent();
 
             this.quill.root.removeEventListener('mousedown', this.selectingHandler, false);
+            this.quill.off(Quill.events.TEXT_CHANGE, this.closeHandler);
 
             return null;
         }
@@ -2340,7 +2350,7 @@
         },
     });
 
-    quill.setContents(new Delta([]));
+    quill.setContents(new Delta());
 
     const contentDisplay = document.getElementsByClassName('contentDisplay')[0];
     document.getElementsByClassName('getContent')[0].onclick = () => {
@@ -2350,8 +2360,8 @@
 
         content.map((content) => {
             const item = document.createElement('li');
-            item.innerText = JSON.stringify(content);
-            contentDisplay.appendChild(item + ',');
+            item.innerText = JSON.stringify(content) + ',';
+            contentDisplay.appendChild(item);
         });
     };
 
