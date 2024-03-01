@@ -1,10 +1,11 @@
 import { css, isFunction, isString } from '../utils';
+import { moduleName } from '../assets/const/name';
 
 const MENU_ITEMS_DEFAULT = {
     insertColumnLeft: {
         text: '在左侧插入一列',
         handler() {
-            const tableModule = this.quill.getModule('table');
+            const tableModule = this.quill.getModule(moduleName.table);
             tableModule.appendCol();
             this.quill.theme.tableToolTip.curTableId = null;
             this.quill.theme.tableToolTip.hide();
@@ -13,7 +14,7 @@ const MENU_ITEMS_DEFAULT = {
     insertColumnRight: {
         text: '在右侧插入一列',
         handler() {
-            const tableModule = this.quill.getModule('table');
+            const tableModule = this.quill.getModule(moduleName.table);
             tableModule.appendCol(true);
             this.quill.theme.tableToolTip.curTableId = null;
             this.quill.theme.tableToolTip.hide();
@@ -22,7 +23,7 @@ const MENU_ITEMS_DEFAULT = {
     insertRowTop: {
         text: '在上方插入一行',
         handler() {
-            const tableModule = this.quill.getModule('table');
+            const tableModule = this.quill.getModule(moduleName.table);
             tableModule.appendRow();
         },
     },
@@ -30,14 +31,14 @@ const MENU_ITEMS_DEFAULT = {
         text: '在下方插入一行',
         groupEnd: true,
         handler() {
-            const tableModule = this.quill.getModule('table');
+            const tableModule = this.quill.getModule(moduleName.table);
             tableModule.appendRow(true);
         },
     },
     removeCol: {
         text: '删除所在列',
         handler() {
-            const tableModule = this.quill.getModule('table');
+            const tableModule = this.quill.getModule(moduleName.table);
             tableModule.removeCol();
             this.quill.theme.tableToolTip.curTableId = null;
             this.quill.theme.tableToolTip.hide();
@@ -46,7 +47,7 @@ const MENU_ITEMS_DEFAULT = {
     removeRow: {
         text: '删除所在行',
         handler() {
-            const tableModule = this.quill.getModule('table');
+            const tableModule = this.quill.getModule(moduleName.table);
             tableModule.removeRow();
         },
     },
@@ -54,7 +55,7 @@ const MENU_ITEMS_DEFAULT = {
         text: '删除表格',
         groupEnd: true,
         handler() {
-            const tableModule = this.quill.getModule('table');
+            const tableModule = this.quill.getModule(moduleName.table);
             tableModule.removeTable();
             this.quill.theme.tableToolTip.hide();
         },
@@ -63,7 +64,7 @@ const MENU_ITEMS_DEFAULT = {
         text: '合并单元格',
         groupEnd: true,
         handler() {
-            const tableModule = this.quill.getModule('table');
+            const tableModule = this.quill.getModule(moduleName.table);
             tableModule.mergeCells();
             tableModule.hideTableTools();
         },
@@ -71,7 +72,7 @@ const MENU_ITEMS_DEFAULT = {
     setBackgroundColor: {
         subTitle: '设置背景颜色',
         text() {
-            const tableModule = this.quill.getModule('table');
+            const tableModule = this.quill.getModule(moduleName.table);
             const input = document.createElement('input');
             input.type = 'color';
             input.addEventListener('click', (e) => {
@@ -106,7 +107,7 @@ export default class TableOperationMenu {
         this.table = params.table;
         this.quill = quill;
         this.options = options;
-        const tableModule = this.quill.getModule('table');
+        const tableModule = this.quill.getModule(moduleName.table);
         this.tableSelection = tableModule.tableSelection;
         this.menuItems = {};
         this.optionsMerge();

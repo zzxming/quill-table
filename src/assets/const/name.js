@@ -9,3 +9,9 @@ export const blotName = {
     tableCell: 'td',
     tableCellInner: 'tableCellInner',
 };
+export const moduleName = {
+    table: 'table',
+};
+export const toolName = {
+    table: 'table',
+};

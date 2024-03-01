@@ -1,7 +1,7 @@
 import Quill from 'quill';
 import TableWrapperFormat from '../format/TableWrapperFormat';
 import { css, getRelativeRect } from '../utils';
-import { blotName } from '../assets/const/name';
+import { blotName, toolName } from '../assets/const/name';
 
 let TIPHEIGHT = 12;
 const CELLMINWIDTH = 26;
@@ -239,6 +239,9 @@ export default class TableTooltip {
             curColIndex = -1;
             document.removeEventListener(this.handledEvents.up, handleMouseup);
             document.removeEventListener(this.handledEvents.move, handleMousemove);
+
+            const tableModule = this.quill.getModule(toolName.table);
+            tableModule.hideTableTools();
         };
         const handleMousedown = (i, e) => {
             document.addEventListener(this.handledEvents.up, handleMouseup);
@@ -271,4 +274,4 @@ export default class TableTooltip {
 }
 
 // 在 table 内时禁用的 tool 的 name
-TableTooltip.disableToolNames = ['table'];
+TableTooltip.disableToolNames = [toolName.table];
