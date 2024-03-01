@@ -12,6 +12,12 @@
         tableCell: 'td',
         tableCellInner: 'tableCellInner',
     };
+    const moduleName = {
+        table: 'table',
+    };
+    const toolName = {
+        table: 'table',
+    };
 
     const Container$7 = Quill.import('blots/container');
     const Parchment$9 = Quill.import('parchment');
@@ -617,6 +623,9 @@
                 curColIndex = -1;
                 document.removeEventListener(this.handledEvents.up, handleMouseup);
                 document.removeEventListener(this.handledEvents.move, handleMousemove);
+
+                const tableModule = this.quill.getModule(toolName.table);
+                tableModule.hideTableTools();
             };
             const handleMousedown = (i, e) => {
                 document.addEventListener(this.handledEvents.up, handleMouseup);
@@ -649,7 +658,7 @@
     }
 
     // 在 table 内时禁用的 tool 的 name
-    TableTooltip.disableToolNames = ['table'];
+    TableTooltip.disableToolNames = [toolName.table];
 
     const Container$6 = Quill.import('blots/container');
     const Parchment$8 = Quill.import('parchment');
@@ -1080,7 +1089,7 @@
         insertColumnLeft: {
             text: '在左侧插入一列',
             handler() {
-                const tableModule = this.quill.getModule('table');
+                const tableModule = this.quill.getModule(moduleName.table);
                 tableModule.appendCol();
                 this.quill.theme.tableToolTip.curTableId = null;
                 this.quill.theme.tableToolTip.hide();
@@ -1089,7 +1098,7 @@
         insertColumnRight: {
             text: '在右侧插入一列',
             handler() {
-                const tableModule = this.quill.getModule('table');
+                const tableModule = this.quill.getModule(moduleName.table);
                 tableModule.appendCol(true);
                 this.quill.theme.tableToolTip.curTableId = null;
                 this.quill.theme.tableToolTip.hide();
@@ -1098,7 +1107,7 @@
         insertRowTop: {
             text: '在上方插入一行',
             handler() {
-                const tableModule = this.quill.getModule('table');
+                const tableModule = this.quill.getModule(moduleName.table);
                 tableModule.appendRow();
             },
         },
@@ -1106,14 +1115,14 @@
             text: '在下方插入一行',
             groupEnd: true,
             handler() {
-                const tableModule = this.quill.getModule('table');
+                const tableModule = this.quill.getModule(moduleName.table);
                 tableModule.appendRow(true);
             },
         },
         removeCol: {
             text: '删除所在列',
             handler() {
-                const tableModule = this.quill.getModule('table');
+                const tableModule = this.quill.getModule(moduleName.table);
                 tableModule.removeCol();
                 this.quill.theme.tableToolTip.curTableId = null;
                 this.quill.theme.tableToolTip.hide();
@@ -1122,7 +1131,7 @@
         removeRow: {
             text: '删除所在行',
             handler() {
-                const tableModule = this.quill.getModule('table');
+                const tableModule = this.quill.getModule(moduleName.table);
                 tableModule.removeRow();
             },
         },
@@ -1130,7 +1139,7 @@
             text: '删除表格',
             groupEnd: true,
             handler() {
-                const tableModule = this.quill.getModule('table');
+                const tableModule = this.quill.getModule(moduleName.table);
                 tableModule.removeTable();
                 this.quill.theme.tableToolTip.hide();
             },
@@ -1139,7 +1148,7 @@
             text: '合并单元格',
             groupEnd: true,
             handler() {
-                const tableModule = this.quill.getModule('table');
+                const tableModule = this.quill.getModule(moduleName.table);
                 tableModule.mergeCells();
                 tableModule.hideTableTools();
             },
@@ -1147,7 +1156,7 @@
         setBackgroundColor: {
             subTitle: '设置背景颜色',
             text() {
-                const tableModule = this.quill.getModule('table');
+                const tableModule = this.quill.getModule(moduleName.table);
                 const input = document.createElement('input');
                 input.type = 'color';
                 input.addEventListener('click', (e) => {
@@ -1182,7 +1191,7 @@
             this.table = params.table;
             this.quill = quill;
             this.options = options;
-            const tableModule = this.quill.getModule('table');
+            const tableModule = this.quill.getModule(moduleName.table);
             this.tableSelection = tableModule.tableSelection;
             this.menuItems = {};
             this.optionsMerge();
@@ -1584,8 +1593,6 @@
 
     TableRowFormat.allowedChildren = [TableCellFormat];
     TableRowFormat.requiredContainer = TableBodyFormat;
-
-    TableCellFormat.allowedChildren = [Block, BlockEmbed, Container];
 
     TableCellFormat.allowedChildren = [TableCellInnerFormat];
 
@@ -2298,9 +2305,8 @@
                 : isForbidInTable(current.parent)
             : false;
     };
-
-    TableModule.moduleName = blotName.table;
-    TableModule.toolName = blotName.table;
+    TableModule.moduleName = moduleName.table;
+    TableModule.toolName = toolName.table;
 
     TableModule.createEventName = CREATE_TABLE;
     icons[TableModule.toolName] = TableSvg;
