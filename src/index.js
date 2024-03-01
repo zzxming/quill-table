@@ -37,8 +37,6 @@ TableColgroupFormat.requiredContainer = TableFormat;
 TableRowFormat.allowedChildren = [TableCellFormat];
 TableRowFormat.requiredContainer = TableBodyFormat;
 
-TableCellFormat.allowedChildren = [Block, BlockEmbed, Container];
-
 TableCellFormat.allowedChildren = [TableCellInnerFormat];
 
 TableCellInnerFormat.defaultChild = 'block';
@@ -754,12 +752,12 @@ export const isForbidInTable = (current) => {
         : false;
 };
 
-TableModule.moduleName = blotName.table;
-TableModule.toolName = blotName.table;
+import { blotName, moduleName, toolName } from './assets/const/name';
+TableModule.moduleName = moduleName.table;
+TableModule.toolName = toolName.table;
 
 TableModule.createEventName = CREATE_TABLE;
 
 import TableSvg from './assets/icons/table.svg';
-import { blotName } from './assets/const/name';
 icons[TableModule.toolName] = TableSvg;
 export default TableModule;
