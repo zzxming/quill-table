@@ -110,6 +110,12 @@ export default class TableSelection {
             // 处理 boundary, 使滚动时 left 等跟随滚动
             this.repositionHelpLines();
         });
+
+        const srcollHide = () => {
+            this.clearSelection();
+            this.quill.root.removeEventListener('scroll', srcollHide);
+        };
+        this.quill.root.addEventListener('scroll', srcollHide);
     }
 
     computeSelectedTds() {

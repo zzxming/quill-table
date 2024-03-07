@@ -32,6 +32,7 @@ export default class TableTooltip {
 
         const resizeObserver = new ResizeObserver((entries) => {
             this.hide();
+            this.focusTableChange = true;
             this.curTableId = '';
         });
         resizeObserver.observe(this.quill.root);
@@ -89,13 +90,7 @@ export default class TableTooltip {
                     this.curTableId = curTableId;
 
                     this.show();
-                    const referencePosition = getRelativeRect(
-                        this.tableWrapper.domNode.getBoundingClientRect(),
-                        this.quill.container
-                    );
-                    referencePosition.top = referencePosition.y;
-                    referencePosition.left = referencePosition.x;
-                    this.position(referencePosition);
+                    this.position();
                     return;
                 }
             }
@@ -165,13 +160,15 @@ export default class TableTooltip {
         this.scrollHandler = [];
     }
 
-    position(reference) {
+    position = () => {
         const rootLRelativeLeft = getComputedStyle(this.quill.root).paddingLeft;
+        const tableTop = this.table.domNode.offsetTop;
+        const rootScrollTop = this.quill.root.scrollTop;
         css(this.root, {
-            top: `${reference.top + this.quill.container.scrollTop - TIP_HEIGHT}px`,
+            top: `${tableTop - rootScrollTop - TIP_HEIGHT}px`,
             left: rootLRelativeLeft, // editor 的 padding left
         });
-    }
+    };
 
     show() {
         // 若没有 colgroup col 元素，不显示
@@ -180,7 +177,7 @@ export default class TableTooltip {
         }
 
         if (this.focusTableChange) {
-            let tableWrapperRect = this.tableWrapper.domNode.getBoundingClientRect();
+            const tableWrapperRect = this.tableWrapper.domNode.getBoundingClientRect();
             // 加 tableId 用于 table 删除时隐藏 tooltip
             this.root.dataset.tableId = this.tableWrapper.tableId;
             this.root.innerHTML = [...this.tableCols]
@@ -196,6 +193,9 @@ export default class TableTooltip {
                 .join('');
 
             this.focusTableChange = false;
+            Object.assign(this.root.style, {
+                width: tableWrapperRect.width + 'px',
+            });
 
             this.bindDrag();
         }
@@ -203,6 +203,12 @@ export default class TableTooltip {
             this.scrollSync(this.tableWrapper.domNode);
         }, 0);
         this.root.classList.remove('ql-hidden');
+
+        const srcollHide = () => {
+            this.hide();
+            this.quill.root.removeEventListener('scroll', srcollHide);
+        };
+        this.quill.root.addEventListener('scroll', srcollHide);
     }
 
     hide() {
