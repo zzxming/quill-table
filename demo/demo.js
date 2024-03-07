@@ -550,9 +550,10 @@
         }
 
         position(reference) {
+            const rootLRelativeLeft = getComputedStyle(this.quill.root).paddingLeft;
             css(this.root, {
                 top: `${reference.top + this.quill.container.scrollTop - TIPHEIGHT}px`,
-                left: `${15 + 1}px`, // editor 的 x padding 为 15
+                left: rootLRelativeLeft, // editor 的 padding left
             });
         }
 
@@ -566,9 +567,18 @@
                 let tableWrapperRect = this.tableWrapper.domNode.getBoundingClientRect();
                 // 加 tableId 用于 table 删除时隐藏 tooltip
                 this.root.dataset.tableId = this.tableWrapper.tableId;
+                const tableWidth = this.table.domNode.getBoundingClientRect().width;
                 this.root.innerHTML = [...this.tableCols]
                     .map((col) => {
-                        return `<div class="ql-table-col-header" style="width: ${col.width}px">
+                        // 百分比、null 判断
+                        let width = col.width + 'px';
+                        if (!col.width) {
+                            const realWidth = col.domNode.getBoundingClientRect().width;
+                            width = (realWidth / tableWidth) * 100 + '%';
+                        } else if (col.width.endsWith('%')) {
+                            width = col.width;
+                        }
+                        return `<div class="ql-table-col-header" style="width: ${width}">
             			<div class="ql-table-col-separator" style="height: ${tableWrapperRect.height + TIPHEIGHT - 3}px"></div>
             		</div>`; // -3 为 border-width: 2, top: 1
                     })
@@ -609,14 +619,19 @@
                 tipColBreak.dataset.w = resX - rect.x;
             };
             const handleMouseup = (e) => {
-                const w = parseInt(tipColBreak.dataset.w);
-                this.table.domNode.style.width =
-                    parseFloat(this.table.domNode.style.width) -
-                    parseFloat(tableColHeads[curColIndex].style.width) +
-                    w +
-                    'px';
-                tableColHeads[curColIndex].style.width = w + 'px';
-                this.tableCols[curColIndex].width = w;
+                let w = parseInt(tipColBreak.dataset.w);
+                // table full 时处理为百分比
+                if (this.table.full) {
+                    this.tableCols[curColIndex].width = (w / this.table.domNode.getBoundingClientRect().width) * 100 + '%';
+                } else {
+                    this.table.domNode.style.width =
+                        parseFloat(this.table.domNode.style.width) -
+                        parseFloat(tableColHeads[curColIndex].style.width) +
+                        w +
+                        'px';
+                    tableColHeads[curColIndex].style.width = w + 'px';
+                    this.tableCols[curColIndex].width = w;
+                }
 
                 appendTo.removeChild(tipColBreak);
                 tipColBreak = null;
@@ -914,13 +929,15 @@
             this.selectingHandler = this.mouseDownHandler.bind(this);
             this.cellSelect = null; // selection 显示边框
             this.scrollHandler = [];
-
             this.helpLinesInitial();
-            this.quill.root.addEventListener('mousedown', this.selectingHandler, false);
-            this.closeHandler = (delta) => {
-                if (!delta.ops.find((item) => !!item.insert)) return;
+
+            const resizeObserver = new ResizeObserver((entries) => {
                 this.clearSelection();
-            };
+            });
+            resizeObserver.observe(this.quill.root);
+
+            this.quill.root.addEventListener('mousedown', this.selectingHandler, false);
+            this.closeHandler = this.clearSelection.bind(this);
             this.quill.on(Quill.events.TEXT_CHANGE, this.closeHandler);
         }
 
@@ -943,14 +960,10 @@
 
         // 初始化边框 dom
         helpLinesInitial() {
-            let parent = this.quill.root.parentNode;
-
-            this.cellSelect = document.createElement('div');
-            this.cellSelect.classList.add('ql-table-selection_line');
+            this.cellSelect = this.quill.addContainer('ql-table-selection_line');
             css(this.cellSelect, {
                 'border-color': PRIMARY_COLOR,
             });
-            parent.appendChild(this.cellSelect);
         }
 
         mouseDownHandler(e) {
@@ -1066,9 +1079,10 @@
             this.boundary = {};
             this.selectedTds = [];
 
-            css(this.cellSelect, {
-                display: 'none',
-            });
+            this.cellSelect &&
+                css(this.cellSelect, {
+                    display: 'none',
+                });
             this.clearScrollEvent();
         }
 
@@ -1091,8 +1105,7 @@
             handler() {
                 const tableModule = this.quill.getModule(moduleName.table);
                 tableModule.appendCol();
-                this.quill.theme.tableToolTip.curTableId = null;
-                this.quill.theme.tableToolTip.hide();
+                tableModule.hideTableTools();
             },
         },
         insertColumnRight: {
@@ -1100,8 +1113,7 @@
             handler() {
                 const tableModule = this.quill.getModule(moduleName.table);
                 tableModule.appendCol(true);
-                this.quill.theme.tableToolTip.curTableId = null;
-                this.quill.theme.tableToolTip.hide();
+                tableModule.hideTableTools();
             },
         },
         insertRowTop: {
@@ -1109,6 +1121,7 @@
             handler() {
                 const tableModule = this.quill.getModule(moduleName.table);
                 tableModule.appendRow();
+                tableModule.hideTableTools();
             },
         },
         insertRowBottom: {
@@ -1117,6 +1130,7 @@
             handler() {
                 const tableModule = this.quill.getModule(moduleName.table);
                 tableModule.appendRow(true);
+                tableModule.hideTableTools();
             },
         },
         removeCol: {
@@ -1124,8 +1138,7 @@
             handler() {
                 const tableModule = this.quill.getModule(moduleName.table);
                 tableModule.removeCol();
-                this.quill.theme.tableToolTip.curTableId = null;
-                this.quill.theme.tableToolTip.hide();
+                tableModule.hideTableTools();
             },
         },
         removeRow: {
@@ -1133,6 +1146,7 @@
             handler() {
                 const tableModule = this.quill.getModule(moduleName.table);
                 tableModule.removeRow();
+                tableModule.hideTableTools();
             },
         },
         removeTable: {
@@ -1141,7 +1155,7 @@
             handler() {
                 const tableModule = this.quill.getModule(moduleName.table);
                 tableModule.removeTable();
-                this.quill.theme.tableToolTip.hide();
+                tableModule.hideTableTools();
             },
         },
         mergeCell: {
@@ -1355,7 +1369,9 @@
         }
 
         get width() {
-            return Number(this.domNode.getAttribute('width'));
+            const width = this.domNode.getAttribute('width');
+            if (isNaN(width) && !width.endsWith('%')) return null;
+            return width;
         }
         set width(value) {
             return this.domNode.setAttribute('width', value);
@@ -1386,6 +1402,9 @@
 
                 const tableWrapper = Parchment$4.create(blotName.tableWrapper, this.domNode.dataset.tableId);
                 const table = Parchment$4.create(blotName.table, this.domNode.dataset.tableId);
+                if (!this.width) {
+                    table.full = true;
+                }
                 const tableColgroup = Parchment$4.create(blotName.tableColGroup);
 
                 tableColgroup.appendChild(this);
@@ -1455,6 +1474,7 @@
             if (!colgroup || colgroup.statics.blotName !== blotName.tableColGroup) return;
 
             const colsWidth = colgroup.children.reduce((sum, col) => col.width + sum, 0);
+            if (colsWidth === 0 || isNaN(colsWidth)) return null;
             this.domNode.style.width = colsWidth + 'px';
             return colsWidth;
         }
@@ -1467,6 +1487,12 @@
 
         get tableId() {
             return this.domNode.dataset.tableId;
+        }
+        get full() {
+            return this.domNode.hasAttribute('data-full');
+        }
+        set full(value) {
+            this.domNode[value ? 'setAttribute' : 'removeAttribute']('data-full', '');
         }
 
         getRows() {
@@ -1616,6 +1642,8 @@
         true
     );
 
+    // 给 table 标记 full, 显示 tooltip
+    // tooltip 的拖拽在 full 时的最大宽度是 cur + next, next 为 null 则是 cur + 0
     class TableModule {
         constructor(quill, options) {
             this.quill = quill;
@@ -1694,6 +1722,7 @@
                     );
                 }
             });
+
             this.quill.theme.tableToolTip = new TableTooltip(this.quill, this.options.tableToolTip);
         }
 
@@ -1705,6 +1734,10 @@
         hideTableTools() {
             this.tableSelection && this.tableSelection.destroy();
             this.tableOperationMenu && this.tableOperationMenu.destroy();
+            if (this.quill.theme.tableToolTip) {
+                this.quill.theme.tableToolTip.curTableId = null;
+                this.quill.theme.tableToolTip.hide();
+            }
             this.tableSelection = null;
             this.tableOperationMenu = null;
             this.table = null;
@@ -1721,24 +1754,26 @@
             // 重新生成 table 里的所有 id, cellFormat 和 colFormat 进行 table 的添加
             // addMatcher 匹配的是标签字符串, 不是 blotName, 只是这些 blotName 设置的是标签字符串
             this.quill.clipboard.addMatcher(blotName.table, (node, delta) => {
-                // 添加 col
-                const tdWidth = Array.from(node.getElementsByTagName('tr')).reduce((pre, cur) => {
-                    const w = Array.from(cur.getElementsByTagName('td')).map((td) => td.getBoundingClientRect().width);
-                    if (w.length < pre.length) return pre;
-                    return w.map((width, i) => Math.max(width, pre[i] ?? 0)).concat(pre.slice(w.length));
-                }, []);
-
                 const colDelta = new Delta$1();
-                colId.map((id, i) => {
-                    colDelta.insert('\n', {
-                        [blotName.tableCol]: {
-                            colId: id,
-                            tableId,
-                            width: tdWidth[i] ?? 150,
-                        },
-                    });
-                });
+                if (!this.options.fullWidth) {
+                    // 添加 col
+                    const tdWidth = Array.from(node.getElementsByTagName('tr')).reduce((pre, cur) => {
+                        const w = Array.from(cur.getElementsByTagName('td')).map((td) => td.getBoundingClientRect().width);
+                        if (w.length < pre.length) return pre;
+                        return w.map((width, i) => Math.max(width, pre[i] ?? 0)).concat(pre.slice(w.length));
+                    }, []);
 
+                    const colDelta = new Delta$1();
+                    colId.map((id, i) => {
+                        colDelta.insert('\n', {
+                            [blotName.tableCol]: {
+                                colId: id,
+                                tableId,
+                                width: tdWidth[i] ?? 150,
+                            },
+                        });
+                    });
+                }
                 tableId = randomId();
                 colId = [];
                 countColOver = false;
@@ -1757,6 +1792,10 @@
                     colId.push(randomId());
                 }
                 cellCount += 1;
+                if (delta.slice(delta.length() - 1).ops[0]?.insert !== '\n') {
+                    delta.insert('\n');
+                }
+
                 return delta.compose(
                     new Delta$1().retain(delta.length(), {
                         [blotName.tableCellInner]: {
@@ -1844,7 +1883,9 @@
                 delta = new Array(columns).fill('\n').reduce((memo, text, i) => {
                     memo.insert(text, {
                         [blotName.tableCol]: {
-                            width: Math.floor((width - paddingLeft - paddingRight - 1) / columns), // 1px border
+                            width: !this.options.fullWidth
+                                ? Math.floor((width - paddingLeft - paddingRight - 1) / columns)
+                                : null, // 1px border
                             tableId,
                             colId: colId[i],
                         },
@@ -2093,7 +2134,7 @@
             const baseColIndex = cols.findIndex((col) => {
                 if (col.colId === baseColId) {
                     const newCol = Parchment.create(blotName.tableCol, {
-                        width: 160,
+                        width: !this.options.fullWidth ? 160 : null,
                         tableId: table.tableId,
                         colId: newColId,
                     });
@@ -2272,7 +2313,12 @@
                     if (deleteCount <= 0) break;
                     // 先删再判断, 防止删除合并后的最后一个单元格
                     if (startDeleteIndex !== null) {
-                        tableCols[startDeleteIndex].width += tableCols[i].width;
+                        // 若合并 col 中存在 width 为 null, 则合并后的 col 为 null
+                        if (tableCols[startDeleteIndex].width === null || tableCols[i].width === null) {
+                            tableCols[startDeleteIndex].width = null;
+                        } else {
+                            tableCols[startDeleteIndex].width += tableCols[i].width;
+                        }
                         tableCols[i].remove();
                         deleteCount -= 1;
                     }
@@ -2344,6 +2390,7 @@
                 ['table'],
             ],
             [`${TableModule.moduleName}`]: {
+                fullWidth: true,
                 tableToolTip: {
                     tipHeight: 12,
                     disableToolNames: [],
@@ -2356,7 +2403,132 @@
         },
     });
 
-    quill.setContents(new Delta());
+    quill.setContents(
+        new Delta([
+            { insert: '\n' },
+            { attributes: { col: { tableId: 'w9tilwkgm1e', colId: '7arx3sf4z5v', width: 'null' } }, insert: '\n' },
+            { attributes: { col: { tableId: 'w9tilwkgm1e', colId: 'klrrpz1qhhr', width: 'null' } }, insert: '\n' },
+            { attributes: { col: { tableId: 'w9tilwkgm1e', colId: 'k9yw1zl8lyg', width: 'null' } }, insert: '\n' },
+            { insert: '1' },
+            {
+                attributes: {
+                    tableCellInner: {
+                        tableId: 'w9tilwkgm1e',
+                        rowId: '44kczjr1q8v',
+                        colId: '7arx3sf4z5v',
+                        rowspan: '1',
+                        colspan: '1',
+                    },
+                },
+                insert: '\n',
+            },
+            { insert: '2' },
+            {
+                attributes: {
+                    tableCellInner: {
+                        tableId: 'w9tilwkgm1e',
+                        rowId: '44kczjr1q8v',
+                        colId: 'klrrpz1qhhr',
+                        rowspan: '1',
+                        colspan: '1',
+                    },
+                },
+                insert: '\n',
+            },
+            { insert: '3' },
+            {
+                attributes: {
+                    tableCellInner: {
+                        tableId: 'w9tilwkgm1e',
+                        rowId: '44kczjr1q8v',
+                        colId: 'k9yw1zl8lyg',
+                        rowspan: '1',
+                        colspan: '1',
+                    },
+                },
+                insert: '\n',
+            },
+            { insert: '4' },
+            {
+                attributes: {
+                    tableCellInner: {
+                        tableId: 'w9tilwkgm1e',
+                        rowId: 'c74r2a835vl',
+                        colId: '7arx3sf4z5v',
+                        rowspan: '1',
+                        colspan: '1',
+                    },
+                },
+                insert: '\n',
+            },
+            { insert: '5' },
+            {
+                attributes: {
+                    tableCellInner: {
+                        tableId: 'w9tilwkgm1e',
+                        rowId: 'c74r2a835vl',
+                        colId: 'klrrpz1qhhr',
+                        rowspan: '1',
+                        colspan: '1',
+                    },
+                },
+                insert: '\n',
+            },
+            { insert: '6' },
+            {
+                attributes: {
+                    tableCellInner: {
+                        tableId: 'w9tilwkgm1e',
+                        rowId: 'c74r2a835vl',
+                        colId: 'k9yw1zl8lyg',
+                        rowspan: '1',
+                        colspan: '1',
+                    },
+                },
+                insert: '\n',
+            },
+            { insert: '7' },
+            {
+                attributes: {
+                    tableCellInner: {
+                        tableId: 'w9tilwkgm1e',
+                        rowId: 'bljhr2ww5ac',
+                        colId: '7arx3sf4z5v',
+                        rowspan: '1',
+                        colspan: '1',
+                    },
+                },
+                insert: '\n',
+            },
+            { insert: '8' },
+            {
+                attributes: {
+                    tableCellInner: {
+                        tableId: 'w9tilwkgm1e',
+                        rowId: 'bljhr2ww5ac',
+                        colId: 'klrrpz1qhhr',
+                        rowspan: '1',
+                        colspan: '1',
+                    },
+                },
+                insert: '\n',
+            },
+            { insert: '9' },
+            {
+                attributes: {
+                    tableCellInner: {
+                        tableId: 'w9tilwkgm1e',
+                        rowId: 'bljhr2ww5ac',
+                        colId: 'k9yw1zl8lyg',
+                        rowspan: '1',
+                        colspan: '1',
+                    },
+                },
+                insert: '\n',
+            },
+            { insert: '\n' },
+        ])
+    );
 
     const contentDisplay = document.getElementsByClassName('contentDisplay')[0];
     document.getElementsByClassName('getContent')[0].onclick = () => {
