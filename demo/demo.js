@@ -387,9 +387,9 @@
         return typeof val === 'function';
     }
 
-    let TIPHEIGHT = 12;
-    const CELLMINWIDTH = 26;
-
+    let TIP_HEIGHT = 12;
+    const CELL_MIN_WIDTH = 26;
+    const MIN_PRE = 3;
     /*
     	options = {
     		tipHeight: 12,	// tooltip height
@@ -412,7 +412,7 @@
             this.tableDisableToolHandlers = {};
 
             this.root = this.quill.addContainer('ql-table-tooltip');
-            this.root.style.height = TIPHEIGHT + 'px';
+            this.root.style.height = TIP_HEIGHT + 'px';
 
             const resizeObserver = new ResizeObserver((entries) => {
                 this.hide();
@@ -430,7 +430,7 @@
         }
 
         optionsMerge() {
-            this.options?.tipHeight && (TIPHEIGHT = this.options.tipHeight);
+            this.options?.tipHeight && (TIP_HEIGHT = this.options.tipHeight);
             TableTooltip.disableToolNames = Array.from(
                 new Set([...TableTooltip.disableToolNames, ...(this.options?.disableToolNames || [])])
             );
@@ -552,7 +552,7 @@
         position(reference) {
             const rootLRelativeLeft = getComputedStyle(this.quill.root).paddingLeft;
             css(this.root, {
-                top: `${reference.top + this.quill.container.scrollTop - TIPHEIGHT}px`,
+                top: `${reference.top + this.quill.container.scrollTop - TIP_HEIGHT}px`,
                 left: rootLRelativeLeft, // editor 的 padding left
             });
         }
@@ -567,19 +567,14 @@
                 let tableWrapperRect = this.tableWrapper.domNode.getBoundingClientRect();
                 // 加 tableId 用于 table 删除时隐藏 tooltip
                 this.root.dataset.tableId = this.tableWrapper.tableId;
-                const tableWidth = this.table.domNode.getBoundingClientRect().width;
                 this.root.innerHTML = [...this.tableCols]
                     .map((col) => {
-                        // 百分比、null 判断
-                        let width = col.width + 'px';
+                        let width = col.width + (this.table.full ? '%' : 'px');
                         if (!col.width) {
-                            const realWidth = col.domNode.getBoundingClientRect().width;
-                            width = (realWidth / tableWidth) * 100 + '%';
-                        } else if (col.width.endsWith('%')) {
-                            width = col.width;
+                            width = col.domNode.getBoundingClientRect().width + 'px';
                         }
                         return `<div class="ql-table-col-header" style="width: ${width}">
-            			<div class="ql-table-col-separator" style="height: ${tableWrapperRect.height + TIPHEIGHT - 3}px"></div>
+            			<div class="ql-table-col-separator" style="height: ${tableWrapperRect.height + TIP_HEIGHT - 3}px"></div>
             		</div>`; // -3 为 border-width: 2, top: 1
                     })
                     .join('');
@@ -610,9 +605,25 @@
             const handleMousemove = (e) => {
                 // getBoundingClientRect 的 top/bottom/left/right, 这是根据视口距离
                 const rect = tableColHeads[curColIndex].getBoundingClientRect();
+                const tableWidth = this.table.domNode.getBoundingClientRect().width;
                 let resX = this.isMobile ? e.changedTouches[0].pageX : e.pageX;
-                if (resX - rect.x < CELLMINWIDTH) {
-                    resX = rect.x + CELLMINWIDTH;
+
+                if (this.table.full) {
+                    // 拖拽的最大宽度是当前 col 宽度 + next col 宽度, 最后一个 col 最大宽度是当前宽度
+                    const minWidth = (MIN_PRE / 100) * tableWidth;
+                    const maxRange =
+                        resX > rect.right
+                            ? tableColHeads[curColIndex + 1]
+                                ? tableColHeads[curColIndex + 1].getBoundingClientRect().right - minWidth
+                                : rect.right - minWidth
+                            : Infinity;
+                    const minRange = rect.x + minWidth;
+
+                    resX = Math.min(Math.max(resX, minRange), maxRange);
+                } else {
+                    if (resX - rect.x < CELL_MIN_WIDTH) {
+                        resX = rect.x + CELL_MIN_WIDTH;
+                    }
                 }
                 resX = Math.floor(resX);
                 tipColBreak.style.left = resX + 'px';
@@ -620,9 +631,32 @@
             };
             const handleMouseup = (e) => {
                 let w = parseInt(tipColBreak.dataset.w);
-                // table full 时处理为百分比
+                // table full 时处理不同
                 if (this.table.full) {
-                    this.tableCols[curColIndex].width = (w / this.table.domNode.getBoundingClientRect().width) * 100 + '%';
+                    // 在调整一个后把所有 col 都变成百分比
+                    let pre = (w / this.table.domNode.getBoundingClientRect().width) * 100;
+                    let oldWidthPre = this.tableCols[curColIndex].width;
+                    if (pre < oldWidthPre) {
+                        // 缩小时若不是最后一个, 则把减少的量加在后面一个
+                        // 若是最后一个则把减少的量加在前面一个
+                        pre = Math.max(MIN_PRE, pre);
+                        const last = oldWidthPre - pre;
+                        if (this.tableCols[curColIndex + 1]) {
+                            this.tableCols[curColIndex + 1].width = `${this.tableCols[curColIndex + 1].width + last}%`;
+                        } else {
+                            this.tableCols[curColIndex - 1].width = `${this.tableCols[curColIndex - 1].width + last}%`;
+                        }
+                        this.tableCols[curColIndex].width = `${pre}%`;
+                    } else {
+                        // 增大时若不是最后一个, 则与后面一个的宽度合并, 最大不能超过合并的宽度, 增加的量来自后面一个的减少量
+                        // 若是最后一个则不处理
+                        if (this.tableCols[curColIndex + 1]) {
+                            const totalWidthNextPre = oldWidthPre + this.tableCols[curColIndex + 1].width;
+                            pre = Math.min(totalWidthNextPre - MIN_PRE, pre);
+                            this.tableCols[curColIndex].width = `${pre}%`;
+                            this.tableCols[curColIndex + 1].width = totalWidthNextPre - pre + '%';
+                        }
+                    }
                 } else {
                     this.table.domNode.style.width =
                         parseFloat(this.table.domNode.style.width) -
@@ -653,9 +687,9 @@
                 const tableRect = this.tableWrapper.domNode.getBoundingClientRect();
 
                 css(divDom, {
-                    top: `${tableRect.y - TIPHEIGHT}px`,
+                    top: `${tableRect.y - TIP_HEIGHT}px`,
                     left: `${this.isMobile ? e.changedTouches[0].pageX : e.pageX}px`,
-                    height: `${tableRect.height + TIPHEIGHT}px`,
+                    height: `${tableRect.height + TIP_HEIGHT}px`,
                 });
                 appendTo.appendChild(divDom);
 
@@ -1358,10 +1392,10 @@
 
     class TableColFormat extends Block$1 {
         static create(value) {
-            const { width, tableId, colId } = value;
+            const { width, tableId, colId, full } = value;
             const node = super.create();
-
             node.setAttribute('width', width);
+            node.setAttribute('data-full', full);
             node.dataset.tableId = tableId;
             node.dataset.colId = colId;
 
@@ -1371,7 +1405,7 @@
         get width() {
             const width = this.domNode.getAttribute('width');
             if (isNaN(width) && !width.endsWith('%')) return null;
-            return width;
+            return parseFloat(width);
         }
         set width(value) {
             return this.domNode.setAttribute('width', value);
@@ -1381,6 +1415,10 @@
             return this.domNode.dataset.colId;
         }
 
+        get full() {
+            return this.domNode.hasAttribute('data-full');
+        }
+
         formats() {
             const { tableId, colId } = this.domNode.dataset;
             return {
@@ -1388,6 +1426,7 @@
                     tableId,
                     colId,
                     width: this.domNode.getAttribute('width'),
+                    full: this.domNode.getAttribute('data-full'),
                 },
             };
         }
@@ -1402,9 +1441,9 @@
 
                 const tableWrapper = Parchment$4.create(blotName.tableWrapper, this.domNode.dataset.tableId);
                 const table = Parchment$4.create(blotName.table, this.domNode.dataset.tableId);
-                if (!this.width) {
-                    table.full = true;
-                }
+
+                this.full && (table.full = true);
+
                 const tableColgroup = Parchment$4.create(blotName.tableColGroup);
 
                 tableColgroup.appendChild(this);
@@ -1457,24 +1496,12 @@
             return node;
         }
 
-        computedCorrectWidth(width) {
-            setTimeout(() => {
-                const colgroup = this.children.head;
-                const colCount = colgroup.children.length;
-                colgroup.children.map((col) => {
-                    col.width = width / colCount;
-                });
-
-                this.colWidthFillTable();
-            }, 0);
-        }
-
         colWidthFillTable() {
             const colgroup = this.children.head;
             if (!colgroup || colgroup.statics.blotName !== blotName.tableColGroup) return;
 
             const colsWidth = colgroup.children.reduce((sum, col) => col.width + sum, 0);
-            if (colsWidth === 0 || isNaN(colsWidth)) return null;
+            if (colsWidth === 0 || isNaN(colsWidth) || this.full) return null;
             this.domNode.style.width = colsWidth + 'px';
             return colsWidth;
         }
@@ -1598,7 +1625,7 @@
     var TableSvg = "<svg viewBox=\"0 0 24 24\"><path class=\"ql-stroke\" fill=\"none\" stroke=\"currentColor\" stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M3 5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5zm0 5h18M10 3v18\"/></svg>";
 
     const Parchment = Quill.import('parchment');
-    const Delta$1 = Quill.import('delta');
+    const Delta = Quill.import('delta');
     const BlockEmbed = Quill.import('blots/block/embed');
     const Block = Quill.import('blots/block');
     const Container = Quill.import('blots/container');
@@ -1754,26 +1781,24 @@
             // 重新生成 table 里的所有 id, cellFormat 和 colFormat 进行 table 的添加
             // addMatcher 匹配的是标签字符串, 不是 blotName, 只是这些 blotName 设置的是标签字符串
             this.quill.clipboard.addMatcher(blotName.table, (node, delta) => {
-                const colDelta = new Delta$1();
-                if (!this.options.fullWidth) {
-                    // 添加 col
-                    const tdWidth = Array.from(node.getElementsByTagName('tr')).reduce((pre, cur) => {
-                        const w = Array.from(cur.getElementsByTagName('td')).map((td) => td.getBoundingClientRect().width);
-                        if (w.length < pre.length) return pre;
-                        return w.map((width, i) => Math.max(width, pre[i] ?? 0)).concat(pre.slice(w.length));
-                    }, []);
+                // 添加 col
+                const tdWidth = Array.from(node.getElementsByTagName('tr')).reduce((pre, cur) => {
+                    const w = Array.from(cur.getElementsByTagName('td')).map((td) => td.getBoundingClientRect().width);
+                    if (w.length < pre.length) return pre;
+                    return w.map((width, i) => Math.max(width, pre[i] ?? 0)).concat(pre.slice(w.length));
+                }, []);
 
-                    const colDelta = new Delta$1();
-                    colId.map((id, i) => {
-                        colDelta.insert('\n', {
-                            [blotName.tableCol]: {
-                                colId: id,
-                                tableId,
-                                width: tdWidth[i] ?? 150,
-                            },
-                        });
+                const colDelta = new Delta();
+                colId.map((id, i) => {
+                    colDelta.insert('\n', {
+                        [blotName.tableCol]: {
+                            colId: id,
+                            tableId,
+                            width: this.options.fullWidth ? (1 / tdWidth.length) * 100 + '%' : tdWidth[i] ?? 150,
+                            full: this.options.fullWidth,
+                        },
                     });
-                }
+                });
                 tableId = randomId();
                 colId = [];
                 countColOver = false;
@@ -1797,7 +1822,7 @@
                 }
 
                 return delta.compose(
-                    new Delta$1().retain(delta.length(), {
+                    new Delta().retain(delta.length(), {
                         [blotName.tableCellInner]: {
                             tableId,
                             rowId,
@@ -1870,7 +1895,7 @@
             }
 
             setTimeout(() => {
-                let delta = new Delta$1().retain(range.index);
+                let delta = new Delta().retain(range.index);
                 delta.insert('\n');
                 const tableId = randomId();
                 const colId = new Array(columns).fill(0).map(() => randomId());
@@ -1879,15 +1904,15 @@
                 width = parseInt(width);
                 paddingLeft = parseInt(paddingLeft);
                 paddingRight = parseInt(paddingRight);
+                width = width - paddingLeft - paddingRight;
 
                 delta = new Array(columns).fill('\n').reduce((memo, text, i) => {
                     memo.insert(text, {
                         [blotName.tableCol]: {
-                            width: !this.options.fullWidth
-                                ? Math.floor((width - paddingLeft - paddingRight - 1) / columns)
-                                : null, // 1px border
+                            width: !this.options.fullWidth ? Math.floor(width / columns) : (1 / columns) * 100 + '%',
                             tableId,
                             colId: colId[i],
+                            full: this.options.fullWidth,
                         },
                     });
                     return memo;
@@ -2357,7 +2382,7 @@
     TableModule.createEventName = CREATE_TABLE;
     icons[TableModule.toolName] = TableSvg;
 
-    const Delta = Quill.import('delta');
+    Quill.import('delta');
 
     Quill.register(
         {
@@ -2403,132 +2428,133 @@
         },
     });
 
-    quill.setContents(
-        new Delta([
-            { insert: '\n' },
-            { attributes: { col: { tableId: 'w9tilwkgm1e', colId: '7arx3sf4z5v', width: 'null' } }, insert: '\n' },
-            { attributes: { col: { tableId: 'w9tilwkgm1e', colId: 'klrrpz1qhhr', width: 'null' } }, insert: '\n' },
-            { attributes: { col: { tableId: 'w9tilwkgm1e', colId: 'k9yw1zl8lyg', width: 'null' } }, insert: '\n' },
-            { insert: '1' },
-            {
-                attributes: {
-                    tableCellInner: {
-                        tableId: 'w9tilwkgm1e',
-                        rowId: '44kczjr1q8v',
-                        colId: '7arx3sf4z5v',
-                        rowspan: '1',
-                        colspan: '1',
-                    },
-                },
-                insert: '\n',
-            },
-            { insert: '2' },
-            {
-                attributes: {
-                    tableCellInner: {
-                        tableId: 'w9tilwkgm1e',
-                        rowId: '44kczjr1q8v',
-                        colId: 'klrrpz1qhhr',
-                        rowspan: '1',
-                        colspan: '1',
-                    },
-                },
-                insert: '\n',
-            },
-            { insert: '3' },
-            {
-                attributes: {
-                    tableCellInner: {
-                        tableId: 'w9tilwkgm1e',
-                        rowId: '44kczjr1q8v',
-                        colId: 'k9yw1zl8lyg',
-                        rowspan: '1',
-                        colspan: '1',
-                    },
-                },
-                insert: '\n',
-            },
-            { insert: '4' },
-            {
-                attributes: {
-                    tableCellInner: {
-                        tableId: 'w9tilwkgm1e',
-                        rowId: 'c74r2a835vl',
-                        colId: '7arx3sf4z5v',
-                        rowspan: '1',
-                        colspan: '1',
-                    },
-                },
-                insert: '\n',
-            },
-            { insert: '5' },
-            {
-                attributes: {
-                    tableCellInner: {
-                        tableId: 'w9tilwkgm1e',
-                        rowId: 'c74r2a835vl',
-                        colId: 'klrrpz1qhhr',
-                        rowspan: '1',
-                        colspan: '1',
-                    },
-                },
-                insert: '\n',
-            },
-            { insert: '6' },
-            {
-                attributes: {
-                    tableCellInner: {
-                        tableId: 'w9tilwkgm1e',
-                        rowId: 'c74r2a835vl',
-                        colId: 'k9yw1zl8lyg',
-                        rowspan: '1',
-                        colspan: '1',
-                    },
-                },
-                insert: '\n',
-            },
-            { insert: '7' },
-            {
-                attributes: {
-                    tableCellInner: {
-                        tableId: 'w9tilwkgm1e',
-                        rowId: 'bljhr2ww5ac',
-                        colId: '7arx3sf4z5v',
-                        rowspan: '1',
-                        colspan: '1',
-                    },
-                },
-                insert: '\n',
-            },
-            { insert: '8' },
-            {
-                attributes: {
-                    tableCellInner: {
-                        tableId: 'w9tilwkgm1e',
-                        rowId: 'bljhr2ww5ac',
-                        colId: 'klrrpz1qhhr',
-                        rowspan: '1',
-                        colspan: '1',
-                    },
-                },
-                insert: '\n',
-            },
-            { insert: '9' },
-            {
-                attributes: {
-                    tableCellInner: {
-                        tableId: 'w9tilwkgm1e',
-                        rowId: 'bljhr2ww5ac',
-                        colId: 'k9yw1zl8lyg',
-                        rowspan: '1',
-                        colspan: '1',
-                    },
-                },
-                insert: '\n',
-            },
-            { insert: '\n' },
-        ])
-    );
+    quill
+        .setContents
+        // new Delta([
+        //     { insert: '\n' },
+        //     { attributes: { col: { tableId: 'w9tilwkgm1e', colId: '7arx3sf4z5v', width: '33.333333%' } }, insert: '\n' },
+        //     { attributes: { col: { tableId: 'w9tilwkgm1e', colId: 'klrrpz1qhhr', width: '33.333333%' } }, insert: '\n' },
+        //     { attributes: { col: { tableId: 'w9tilwkgm1e', colId: 'k9yw1zl8lyg', width: '33.333333%' } }, insert: '\n' },
+        //     { insert: '1' },
+        //     {
+        //         attributes: {
+        //             tableCellInner: {
+        //                 tableId: 'w9tilwkgm1e',
+        //                 rowId: '44kczjr1q8v',
+        //                 colId: '7arx3sf4z5v',
+        //                 rowspan: '1',
+        //                 colspan: '1',
+        //             },
+        //         },
+        //         insert: '\n',
+        //     },
+        //     { insert: '2' },
+        //     {
+        //         attributes: {
+        //             tableCellInner: {
+        //                 tableId: 'w9tilwkgm1e',
+        //                 rowId: '44kczjr1q8v',
+        //                 colId: 'klrrpz1qhhr',
+        //                 rowspan: '1',
+        //                 colspan: '1',
+        //             },
+        //         },
+        //         insert: '\n',
+        //     },
+        //     { insert: '3' },
+        //     {
+        //         attributes: {
+        //             tableCellInner: {
+        //                 tableId: 'w9tilwkgm1e',
+        //                 rowId: '44kczjr1q8v',
+        //                 colId: 'k9yw1zl8lyg',
+        //                 rowspan: '1',
+        //                 colspan: '1',
+        //             },
+        //         },
+        //         insert: '\n',
+        //     },
+        //     { insert: '4' },
+        //     {
+        //         attributes: {
+        //             tableCellInner: {
+        //                 tableId: 'w9tilwkgm1e',
+        //                 rowId: 'c74r2a835vl',
+        //                 colId: '7arx3sf4z5v',
+        //                 rowspan: '1',
+        //                 colspan: '1',
+        //             },
+        //         },
+        //         insert: '\n',
+        //     },
+        //     { insert: '5' },
+        //     {
+        //         attributes: {
+        //             tableCellInner: {
+        //                 tableId: 'w9tilwkgm1e',
+        //                 rowId: 'c74r2a835vl',
+        //                 colId: 'klrrpz1qhhr',
+        //                 rowspan: '1',
+        //                 colspan: '1',
+        //             },
+        //         },
+        //         insert: '\n',
+        //     },
+        //     { insert: '6' },
+        //     {
+        //         attributes: {
+        //             tableCellInner: {
+        //                 tableId: 'w9tilwkgm1e',
+        //                 rowId: 'c74r2a835vl',
+        //                 colId: 'k9yw1zl8lyg',
+        //                 rowspan: '1',
+        //                 colspan: '1',
+        //             },
+        //         },
+        //         insert: '\n',
+        //     },
+        //     { insert: '7' },
+        //     {
+        //         attributes: {
+        //             tableCellInner: {
+        //                 tableId: 'w9tilwkgm1e',
+        //                 rowId: 'bljhr2ww5ac',
+        //                 colId: '7arx3sf4z5v',
+        //                 rowspan: '1',
+        //                 colspan: '1',
+        //             },
+        //         },
+        //         insert: '\n',
+        //     },
+        //     { insert: '8' },
+        //     {
+        //         attributes: {
+        //             tableCellInner: {
+        //                 tableId: 'w9tilwkgm1e',
+        //                 rowId: 'bljhr2ww5ac',
+        //                 colId: 'klrrpz1qhhr',
+        //                 rowspan: '1',
+        //                 colspan: '1',
+        //             },
+        //         },
+        //         insert: '\n',
+        //     },
+        //     { insert: '9' },
+        //     {
+        //         attributes: {
+        //             tableCellInner: {
+        //                 tableId: 'w9tilwkgm1e',
+        //                 rowId: 'bljhr2ww5ac',
+        //                 colId: 'k9yw1zl8lyg',
+        //                 rowspan: '1',
+        //                 colspan: '1',
+        //             },
+        //         },
+        //         insert: '\n',
+        //     },
+        //     { insert: '\n' },
+        // ])
+        ();
 
     const contentDisplay = document.getElementsByClassName('contentDisplay')[0];
     document.getElementsByClassName('getContent')[0].onclick = () => {
