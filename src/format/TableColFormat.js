@@ -5,10 +5,10 @@ const Block = Quill.import('blots/block');
 
 class TableColFormat extends Block {
     static create(value) {
-        const { width, tableId, colId } = value;
+        const { width, tableId, colId, full } = value;
         const node = super.create();
-
         node.setAttribute('width', width);
+        node.setAttribute('data-full', full);
         node.dataset.tableId = tableId;
         node.dataset.colId = colId;
 
@@ -18,7 +18,7 @@ class TableColFormat extends Block {
     get width() {
         const width = this.domNode.getAttribute('width');
         if (isNaN(width) && !width.endsWith('%')) return null;
-        return width;
+        return parseFloat(width);
     }
     set width(value) {
         return this.domNode.setAttribute('width', value);
@@ -28,6 +28,10 @@ class TableColFormat extends Block {
         return this.domNode.dataset.colId;
     }
 
+    get full() {
+        return this.domNode.hasAttribute('data-full');
+    }
+
     formats() {
         const { tableId, colId } = this.domNode.dataset;
         return {
@@ -35,6 +39,7 @@ class TableColFormat extends Block {
                 tableId,
                 colId,
                 width: this.domNode.getAttribute('width'),
+                full: this.domNode.getAttribute('data-full'),
             },
         };
     }
@@ -49,9 +54,9 @@ class TableColFormat extends Block {
 
             const tableWrapper = Parchment.create(blotName.tableWrapper, this.domNode.dataset.tableId);
             const table = Parchment.create(blotName.table, this.domNode.dataset.tableId);
-            if (!this.width) {
-                table.full = true;
-            }
+
+            this.full && (table.full = true);
+
             const tableColgroup = Parchment.create(blotName.tableColGroup);
 
             tableColgroup.appendChild(this);

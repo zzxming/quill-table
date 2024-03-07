@@ -23,24 +23,12 @@ class TableFormat extends Container {
         return node;
     }
 
-    computedCorrectWidth(width) {
-        setTimeout(() => {
-            const colgroup = this.children.head;
-            const colCount = colgroup.children.length;
-            colgroup.children.map((col) => {
-                col.width = width / colCount;
-            });
-
-            this.colWidthFillTable();
-        }, 0);
-    }
-
     colWidthFillTable() {
         const colgroup = this.children.head;
         if (!colgroup || colgroup.statics.blotName !== blotName.tableColGroup) return;
 
         const colsWidth = colgroup.children.reduce((sum, col) => col.width + sum, 0);
-        if (colsWidth === 0 || isNaN(colsWidth)) return null;
+        if (colsWidth === 0 || isNaN(colsWidth) || this.full) return null;
         this.domNode.style.width = colsWidth + 'px';
         return colsWidth;
     }

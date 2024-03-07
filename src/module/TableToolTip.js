@@ -3,9 +3,9 @@ import TableWrapperFormat from '../format/TableWrapperFormat';
 import { css, getRelativeRect } from '../utils';
 import { blotName, toolName } from '../assets/const/name';
 
-let TIPHEIGHT = 12;
-const CELLMINWIDTH = 26;
-
+let TIP_HEIGHT = 12;
+const CELL_MIN_WIDTH = 26;
+const MIN_PRE = 3;
 /*
 	options = {
 		tipHeight: 12,	// tooltip height
@@ -28,7 +28,7 @@ export default class TableTooltip {
         this.tableDisableToolHandlers = {};
 
         this.root = this.quill.addContainer('ql-table-tooltip');
-        this.root.style.height = TIPHEIGHT + 'px';
+        this.root.style.height = TIP_HEIGHT + 'px';
 
         const resizeObserver = new ResizeObserver((entries) => {
             this.hide();
@@ -46,7 +46,7 @@ export default class TableTooltip {
     }
 
     optionsMerge() {
-        this.options?.tipHeight && (TIPHEIGHT = this.options.tipHeight);
+        this.options?.tipHeight && (TIP_HEIGHT = this.options.tipHeight);
         TableTooltip.disableToolNames = Array.from(
             new Set([...TableTooltip.disableToolNames, ...(this.options?.disableToolNames || [])])
         );
@@ -168,7 +168,7 @@ export default class TableTooltip {
     position(reference) {
         const rootLRelativeLeft = getComputedStyle(this.quill.root).paddingLeft;
         css(this.root, {
-            top: `${reference.top + this.quill.container.scrollTop - TIPHEIGHT}px`,
+            top: `${reference.top + this.quill.container.scrollTop - TIP_HEIGHT}px`,
             left: rootLRelativeLeft, // editor 的 padding left
         });
     }
@@ -183,19 +183,14 @@ export default class TableTooltip {
             let tableWrapperRect = this.tableWrapper.domNode.getBoundingClientRect();
             // 加 tableId 用于 table 删除时隐藏 tooltip
             this.root.dataset.tableId = this.tableWrapper.tableId;
-            const tableWidth = this.table.domNode.getBoundingClientRect().width;
             this.root.innerHTML = [...this.tableCols]
                 .map((col) => {
-                    // 百分比、null 判断
-                    let width = col.width + 'px';
+                    let width = col.width + (this.table.full ? '%' : 'px');
                     if (!col.width) {
-                        const realWidth = col.domNode.getBoundingClientRect().width;
-                        width = (realWidth / tableWidth) * 100 + '%';
-                    } else if (col.width.endsWith('%')) {
-                        width = col.width;
+                        width = col.domNode.getBoundingClientRect().width + 'px';
                     }
                     return `<div class="ql-table-col-header" style="width: ${width}">
-            			<div class="ql-table-col-separator" style="height: ${tableWrapperRect.height + TIPHEIGHT - 3}px"></div>
+            			<div class="ql-table-col-separator" style="height: ${tableWrapperRect.height + TIP_HEIGHT - 3}px"></div>
             		</div>`; // -3 为 border-width: 2, top: 1
                 })
                 .join('');
@@ -226,9 +221,25 @@ export default class TableTooltip {
         const handleMousemove = (e) => {
             // getBoundingClientRect 的 top/bottom/left/right, 这是根据视口距离
             const rect = tableColHeads[curColIndex].getBoundingClientRect();
+            const tableWidth = this.table.domNode.getBoundingClientRect().width;
             let resX = this.isMobile ? e.changedTouches[0].pageX : e.pageX;
-            if (resX - rect.x < CELLMINWIDTH) {
-                resX = rect.x + CELLMINWIDTH;
+
+            if (this.table.full) {
+                // 拖拽的最大宽度是当前 col 宽度 + next col 宽度, 最后一个 col 最大宽度是当前宽度
+                const minWidth = (MIN_PRE / 100) * tableWidth;
+                const maxRange =
+                    resX > rect.right
+                        ? tableColHeads[curColIndex + 1]
+                            ? tableColHeads[curColIndex + 1].getBoundingClientRect().right - minWidth
+                            : rect.right - minWidth
+                        : Infinity;
+                const minRange = rect.x + minWidth;
+
+                resX = Math.min(Math.max(resX, minRange), maxRange);
+            } else {
+                if (resX - rect.x < CELL_MIN_WIDTH) {
+                    resX = rect.x + CELL_MIN_WIDTH;
+                }
             }
             resX = Math.floor(resX);
             tipColBreak.style.left = resX + 'px';
@@ -236,9 +247,32 @@ export default class TableTooltip {
         };
         const handleMouseup = (e) => {
             let w = parseInt(tipColBreak.dataset.w);
-            // table full 时处理为百分比
+            // table full 时处理不同
             if (this.table.full) {
-                this.tableCols[curColIndex].width = (w / this.table.domNode.getBoundingClientRect().width) * 100 + '%';
+                // 在调整一个后把所有 col 都变成百分比
+                let pre = (w / this.table.domNode.getBoundingClientRect().width) * 100;
+                let oldWidthPre = this.tableCols[curColIndex].width;
+                if (pre < oldWidthPre) {
+                    // 缩小时若不是最后一个, 则把减少的量加在后面一个
+                    // 若是最后一个则把减少的量加在前面一个
+                    pre = Math.max(MIN_PRE, pre);
+                    const last = oldWidthPre - pre;
+                    if (this.tableCols[curColIndex + 1]) {
+                        this.tableCols[curColIndex + 1].width = `${this.tableCols[curColIndex + 1].width + last}%`;
+                    } else {
+                        this.tableCols[curColIndex - 1].width = `${this.tableCols[curColIndex - 1].width + last}%`;
+                    }
+                    this.tableCols[curColIndex].width = `${pre}%`;
+                } else {
+                    // 增大时若不是最后一个, 则与后面一个的宽度合并, 最大不能超过合并的宽度, 增加的量来自后面一个的减少量
+                    // 若是最后一个则不处理
+                    if (this.tableCols[curColIndex + 1]) {
+                        const totalWidthNextPre = oldWidthPre + this.tableCols[curColIndex + 1].width;
+                        pre = Math.min(totalWidthNextPre - MIN_PRE, pre);
+                        this.tableCols[curColIndex].width = `${pre}%`;
+                        this.tableCols[curColIndex + 1].width = totalWidthNextPre - pre + '%';
+                    }
+                }
             } else {
                 this.table.domNode.style.width =
                     parseFloat(this.table.domNode.style.width) -
@@ -269,9 +303,9 @@ export default class TableTooltip {
             const tableRect = this.tableWrapper.domNode.getBoundingClientRect();
 
             css(divDom, {
-                top: `${tableRect.y - TIPHEIGHT}px`,
+                top: `${tableRect.y - TIP_HEIGHT}px`,
                 left: `${this.isMobile ? e.changedTouches[0].pageX : e.pageX}px`,
-                height: `${tableRect.height + TIPHEIGHT}px`,
+                height: `${tableRect.height + TIP_HEIGHT}px`,
             });
             appendTo.appendChild(divDom);
 

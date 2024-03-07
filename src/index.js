@@ -174,26 +174,24 @@ class TableModule {
         // 重新生成 table 里的所有 id, cellFormat 和 colFormat 进行 table 的添加
         // addMatcher 匹配的是标签字符串, 不是 blotName, 只是这些 blotName 设置的是标签字符串
         this.quill.clipboard.addMatcher(blotName.table, (node, delta) => {
-            const colDelta = new Delta();
-            if (!this.options.fullWidth) {
-                // 添加 col
-                const tdWidth = Array.from(node.getElementsByTagName('tr')).reduce((pre, cur) => {
-                    const w = Array.from(cur.getElementsByTagName('td')).map((td) => td.getBoundingClientRect().width);
-                    if (w.length < pre.length) return pre;
-                    return w.map((width, i) => Math.max(width, pre[i] ?? 0)).concat(pre.slice(w.length));
-                }, []);
+            // 添加 col
+            const tdWidth = Array.from(node.getElementsByTagName('tr')).reduce((pre, cur) => {
+                const w = Array.from(cur.getElementsByTagName('td')).map((td) => td.getBoundingClientRect().width);
+                if (w.length < pre.length) return pre;
+                return w.map((width, i) => Math.max(width, pre[i] ?? 0)).concat(pre.slice(w.length));
+            }, []);
 
-                const colDelta = new Delta();
-                colId.map((id, i) => {
-                    colDelta.insert('\n', {
-                        [blotName.tableCol]: {
-                            colId: id,
-                            tableId,
-                            width: tdWidth[i] ?? 150,
-                        },
-                    });
+            const colDelta = new Delta();
+            colId.map((id, i) => {
+                colDelta.insert('\n', {
+                    [blotName.tableCol]: {
+                        colId: id,
+                        tableId,
+                        width: this.options.fullWidth ? (1 / tdWidth.length) * 100 + '%' : tdWidth[i] ?? 150,
+                        full: this.options.fullWidth,
+                    },
                 });
-            }
+            });
             tableId = randomId();
             colId = [];
             countColOver = false;
@@ -299,15 +297,15 @@ class TableModule {
             width = parseInt(width);
             paddingLeft = parseInt(paddingLeft);
             paddingRight = parseInt(paddingRight);
+            width = width - paddingLeft - paddingRight;
 
             delta = new Array(columns).fill('\n').reduce((memo, text, i) => {
                 memo.insert(text, {
                     [blotName.tableCol]: {
-                        width: !this.options.fullWidth
-                            ? Math.floor((width - paddingLeft - paddingRight - 1) / columns)
-                            : null, // 1px border
+                        width: !this.options.fullWidth ? Math.floor(width / columns) : (1 / columns) * 100 + '%',
                         tableId,
                         colId: colId[i],
+                        full: this.options.fullWidth,
                     },
                 });
                 return memo;
