@@ -166,9 +166,10 @@ export default class TableTooltip {
     }
 
     position(reference) {
+        const rootLRelativeLeft = getComputedStyle(this.quill.root).paddingLeft;
         css(this.root, {
             top: `${reference.top + this.quill.container.scrollTop - TIPHEIGHT}px`,
-            left: `${15 + 1}px`, // editor 的 x padding 为 15
+            left: rootLRelativeLeft, // editor 的 padding left
         });
     }
 
@@ -182,9 +183,18 @@ export default class TableTooltip {
             let tableWrapperRect = this.tableWrapper.domNode.getBoundingClientRect();
             // 加 tableId 用于 table 删除时隐藏 tooltip
             this.root.dataset.tableId = this.tableWrapper.tableId;
+            const tableWidth = this.table.domNode.getBoundingClientRect().width;
             this.root.innerHTML = [...this.tableCols]
                 .map((col) => {
-                    return `<div class="ql-table-col-header" style="width: ${col.width}px">
+                    // 百分比、null 判断
+                    let width = col.width + 'px';
+                    if (!col.width) {
+                        const realWidth = col.domNode.getBoundingClientRect().width;
+                        width = (realWidth / tableWidth) * 100 + '%';
+                    } else if (col.width.endsWith('%')) {
+                        width = col.width;
+                    }
+                    return `<div class="ql-table-col-header" style="width: ${width}">
             			<div class="ql-table-col-separator" style="height: ${tableWrapperRect.height + TIPHEIGHT - 3}px"></div>
             		</div>`; // -3 为 border-width: 2, top: 1
                 })
@@ -225,14 +235,19 @@ export default class TableTooltip {
             tipColBreak.dataset.w = resX - rect.x;
         };
         const handleMouseup = (e) => {
-            const w = parseInt(tipColBreak.dataset.w);
-            this.table.domNode.style.width =
-                parseFloat(this.table.domNode.style.width) -
-                parseFloat(tableColHeads[curColIndex].style.width) +
-                w +
-                'px';
-            tableColHeads[curColIndex].style.width = w + 'px';
-            this.tableCols[curColIndex].width = w;
+            let w = parseInt(tipColBreak.dataset.w);
+            // table full 时处理为百分比
+            if (this.table.full) {
+                this.tableCols[curColIndex].width = (w / this.table.domNode.getBoundingClientRect().width) * 100 + '%';
+            } else {
+                this.table.domNode.style.width =
+                    parseFloat(this.table.domNode.style.width) -
+                    parseFloat(tableColHeads[curColIndex].style.width) +
+                    w +
+                    'px';
+                tableColHeads[curColIndex].style.width = w + 'px';
+                this.tableCols[curColIndex].width = w;
+            }
 
             appendTo.removeChild(tipColBreak);
             tipColBreak = null;

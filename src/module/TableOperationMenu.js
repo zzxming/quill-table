@@ -7,8 +7,7 @@ const MENU_ITEMS_DEFAULT = {
         handler() {
             const tableModule = this.quill.getModule(moduleName.table);
             tableModule.appendCol();
-            this.quill.theme.tableToolTip.curTableId = null;
-            this.quill.theme.tableToolTip.hide();
+            tableModule.hideTableTools();
         },
     },
     insertColumnRight: {
@@ -16,8 +15,7 @@ const MENU_ITEMS_DEFAULT = {
         handler() {
             const tableModule = this.quill.getModule(moduleName.table);
             tableModule.appendCol(true);
-            this.quill.theme.tableToolTip.curTableId = null;
-            this.quill.theme.tableToolTip.hide();
+            tableModule.hideTableTools();
         },
     },
     insertRowTop: {
@@ -25,6 +23,7 @@ const MENU_ITEMS_DEFAULT = {
         handler() {
             const tableModule = this.quill.getModule(moduleName.table);
             tableModule.appendRow();
+            tableModule.hideTableTools();
         },
     },
     insertRowBottom: {
@@ -33,6 +32,7 @@ const MENU_ITEMS_DEFAULT = {
         handler() {
             const tableModule = this.quill.getModule(moduleName.table);
             tableModule.appendRow(true);
+            tableModule.hideTableTools();
         },
     },
     removeCol: {
@@ -40,8 +40,7 @@ const MENU_ITEMS_DEFAULT = {
         handler() {
             const tableModule = this.quill.getModule(moduleName.table);
             tableModule.removeCol();
-            this.quill.theme.tableToolTip.curTableId = null;
-            this.quill.theme.tableToolTip.hide();
+            tableModule.hideTableTools();
         },
     },
     removeRow: {
@@ -49,6 +48,7 @@ const MENU_ITEMS_DEFAULT = {
         handler() {
             const tableModule = this.quill.getModule(moduleName.table);
             tableModule.removeRow();
+            tableModule.hideTableTools();
         },
     },
     removeTable: {
@@ -57,7 +57,7 @@ const MENU_ITEMS_DEFAULT = {
         handler() {
             const tableModule = this.quill.getModule(moduleName.table);
             tableModule.removeTable();
-            this.quill.theme.tableToolTip.hide();
+            tableModule.hideTableTools();
         },
     },
     mergeCell: {

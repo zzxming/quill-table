@@ -16,7 +16,9 @@ class TableColFormat extends Block {
     }
 
     get width() {
-        return Number(this.domNode.getAttribute('width'));
+        const width = this.domNode.getAttribute('width');
+        if (isNaN(width) && !width.endsWith('%')) return null;
+        return width;
     }
     set width(value) {
         return this.domNode.setAttribute('width', value);
@@ -47,6 +49,9 @@ class TableColFormat extends Block {
 
             const tableWrapper = Parchment.create(blotName.tableWrapper, this.domNode.dataset.tableId);
             const table = Parchment.create(blotName.table, this.domNode.dataset.tableId);
+            if (!this.width) {
+                table.full = true;
+            }
             const tableColgroup = Parchment.create(blotName.tableColGroup);
 
             tableColgroup.appendChild(this);
