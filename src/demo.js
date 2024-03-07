@@ -33,6 +33,7 @@ const quill = new Quill('#editor', {
             ['table'],
         ],
         [`${TableModule.moduleName}`]: {
+            fullWidth: true,
             tableToolTip: {
                 tipHeight: 12,
                 disableToolNames: [],
@@ -45,7 +46,132 @@ const quill = new Quill('#editor', {
     },
 });
 
-quill.setContents(new Delta());
+quill.setContents(
+    new Delta([
+        { insert: '\n' },
+        { attributes: { col: { tableId: 'w9tilwkgm1e', colId: '7arx3sf4z5v', width: 'null' } }, insert: '\n' },
+        { attributes: { col: { tableId: 'w9tilwkgm1e', colId: 'klrrpz1qhhr', width: 'null' } }, insert: '\n' },
+        { attributes: { col: { tableId: 'w9tilwkgm1e', colId: 'k9yw1zl8lyg', width: 'null' } }, insert: '\n' },
+        { insert: '1' },
+        {
+            attributes: {
+                tableCellInner: {
+                    tableId: 'w9tilwkgm1e',
+                    rowId: '44kczjr1q8v',
+                    colId: '7arx3sf4z5v',
+                    rowspan: '1',
+                    colspan: '1',
+                },
+            },
+            insert: '\n',
+        },
+        { insert: '2' },
+        {
+            attributes: {
+                tableCellInner: {
+                    tableId: 'w9tilwkgm1e',
+                    rowId: '44kczjr1q8v',
+                    colId: 'klrrpz1qhhr',
+                    rowspan: '1',
+                    colspan: '1',
+                },
+            },
+            insert: '\n',
+        },
+        { insert: '3' },
+        {
+            attributes: {
+                tableCellInner: {
+                    tableId: 'w9tilwkgm1e',
+                    rowId: '44kczjr1q8v',
+                    colId: 'k9yw1zl8lyg',
+                    rowspan: '1',
+                    colspan: '1',
+                },
+            },
+            insert: '\n',
+        },
+        { insert: '4' },
+        {
+            attributes: {
+                tableCellInner: {
+                    tableId: 'w9tilwkgm1e',
+                    rowId: 'c74r2a835vl',
+                    colId: '7arx3sf4z5v',
+                    rowspan: '1',
+                    colspan: '1',
+                },
+            },
+            insert: '\n',
+        },
+        { insert: '5' },
+        {
+            attributes: {
+                tableCellInner: {
+                    tableId: 'w9tilwkgm1e',
+                    rowId: 'c74r2a835vl',
+                    colId: 'klrrpz1qhhr',
+                    rowspan: '1',
+                    colspan: '1',
+                },
+            },
+            insert: '\n',
+        },
+        { insert: '6' },
+        {
+            attributes: {
+                tableCellInner: {
+                    tableId: 'w9tilwkgm1e',
+                    rowId: 'c74r2a835vl',
+                    colId: 'k9yw1zl8lyg',
+                    rowspan: '1',
+                    colspan: '1',
+                },
+            },
+            insert: '\n',
+        },
+        { insert: '7' },
+        {
+            attributes: {
+                tableCellInner: {
+                    tableId: 'w9tilwkgm1e',
+                    rowId: 'bljhr2ww5ac',
+                    colId: '7arx3sf4z5v',
+                    rowspan: '1',
+                    colspan: '1',
+                },
+            },
+            insert: '\n',
+        },
+        { insert: '8' },
+        {
+            attributes: {
+                tableCellInner: {
+                    tableId: 'w9tilwkgm1e',
+                    rowId: 'bljhr2ww5ac',
+                    colId: 'klrrpz1qhhr',
+                    rowspan: '1',
+                    colspan: '1',
+                },
+            },
+            insert: '\n',
+        },
+        { insert: '9' },
+        {
+            attributes: {
+                tableCellInner: {
+                    tableId: 'w9tilwkgm1e',
+                    rowId: 'bljhr2ww5ac',
+                    colId: 'k9yw1zl8lyg',
+                    rowspan: '1',
+                    colspan: '1',
+                },
+            },
+            insert: '\n',
+        },
+        { insert: '\n' },
+    ])
+);
 
 const contentDisplay = document.getElementsByClassName('contentDisplay')[0];
 document.getElementsByClassName('getContent')[0].onclick = () => {
