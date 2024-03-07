@@ -27,13 +27,15 @@ export default class TableSelection {
         this.selectingHandler = this.mouseDownHandler.bind(this);
         this.cellSelect = null; // selection 显示边框
         this.scrollHandler = [];
-
         this.helpLinesInitial();
-        this.quill.root.addEventListener('mousedown', this.selectingHandler, false);
-        this.closeHandler = (delta) => {
-            if (!delta.ops.find((item) => !!item.insert)) return;
+
+        const resizeObserver = new ResizeObserver((entries) => {
             this.clearSelection();
-        };
+        });
+        resizeObserver.observe(this.quill.root);
+
+        this.quill.root.addEventListener('mousedown', this.selectingHandler, false);
+        this.closeHandler = this.clearSelection.bind(this);
         this.quill.on(Quill.events.TEXT_CHANGE, this.closeHandler);
     }
 
@@ -56,14 +58,10 @@ export default class TableSelection {
 
     // 初始化边框 dom
     helpLinesInitial() {
-        let parent = this.quill.root.parentNode;
-
-        this.cellSelect = document.createElement('div');
-        this.cellSelect.classList.add('ql-table-selection_line');
+        this.cellSelect = this.quill.addContainer('ql-table-selection_line');
         css(this.cellSelect, {
             'border-color': PRIMARY_COLOR,
         });
-        parent.appendChild(this.cellSelect);
     }
 
     mouseDownHandler(e) {
@@ -179,9 +177,10 @@ export default class TableSelection {
         this.boundary = {};
         this.selectedTds = [];
 
-        css(this.cellSelect, {
-            display: 'none',
-        });
+        this.cellSelect &&
+            css(this.cellSelect, {
+                display: 'none',
+            });
         this.clearScrollEvent();
     }
 

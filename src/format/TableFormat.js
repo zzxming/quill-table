@@ -40,6 +40,7 @@ class TableFormat extends Container {
         if (!colgroup || colgroup.statics.blotName !== blotName.tableColGroup) return;
 
         const colsWidth = colgroup.children.reduce((sum, col) => col.width + sum, 0);
+        if (colsWidth === 0 || isNaN(colsWidth)) return null;
         this.domNode.style.width = colsWidth + 'px';
         return colsWidth;
     }
@@ -52,6 +53,12 @@ class TableFormat extends Container {
 
     get tableId() {
         return this.domNode.dataset.tableId;
+    }
+    get full() {
+        return this.domNode.hasAttribute('data-full');
+    }
+    set full(value) {
+        this.domNode[value ? 'setAttribute' : 'removeAttribute']('data-full', '');
     }
 
     getRows() {

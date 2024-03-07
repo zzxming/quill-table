@@ -62,6 +62,8 @@ Quill.register(
 import { isFunction, randomId, showTableSelector } from './utils';
 import { CREATE_TABLE } from './assets/const/event';
 
+// 给 table 标记 full, 显示 tooltip
+// tooltip 的拖拽在 full 时的最大宽度是 cur + next, next 为 null 则是 cur + 0
 class TableModule {
     constructor(quill, options) {
         this.quill = quill;
@@ -140,6 +142,7 @@ class TableModule {
                 );
             }
         });
+
         this.quill.theme.tableToolTip = new TableToolTip(this.quill, this.options.tableToolTip);
     }
 
@@ -151,6 +154,10 @@ class TableModule {
     hideTableTools() {
         this.tableSelection && this.tableSelection.destroy();
         this.tableOperationMenu && this.tableOperationMenu.destroy();
+        if (this.quill.theme.tableToolTip) {
+            this.quill.theme.tableToolTip.curTableId = null;
+            this.quill.theme.tableToolTip.hide();
+        }
         this.tableSelection = null;
         this.tableOperationMenu = null;
         this.table = null;
@@ -167,24 +174,26 @@ class TableModule {
         // 重新生成 table 里的所有 id, cellFormat 和 colFormat 进行 table 的添加
         // addMatcher 匹配的是标签字符串, 不是 blotName, 只是这些 blotName 设置的是标签字符串
         this.quill.clipboard.addMatcher(blotName.table, (node, delta) => {
-            // 添加 col
-            const tdWidth = Array.from(node.getElementsByTagName('tr')).reduce((pre, cur) => {
-                const w = Array.from(cur.getElementsByTagName('td')).map((td) => td.getBoundingClientRect().width);
-                if (w.length < pre.length) return pre;
-                return w.map((width, i) => Math.max(width, pre[i] ?? 0)).concat(pre.slice(w.length));
-            }, []);
-
             const colDelta = new Delta();
-            colId.map((id, i) => {
-                colDelta.insert('\n', {
-                    [blotName.tableCol]: {
-                        colId: id,
-                        tableId,
-                        width: tdWidth[i] ?? 150,
-                    },
-                });
-            });
+            if (!this.options.fullWidth) {
+                // 添加 col
+                const tdWidth = Array.from(node.getElementsByTagName('tr')).reduce((pre, cur) => {
+                    const w = Array.from(cur.getElementsByTagName('td')).map((td) => td.getBoundingClientRect().width);
+                    if (w.length < pre.length) return pre;
+                    return w.map((width, i) => Math.max(width, pre[i] ?? 0)).concat(pre.slice(w.length));
+                }, []);
 
+                const colDelta = new Delta();
+                colId.map((id, i) => {
+                    colDelta.insert('\n', {
+                        [blotName.tableCol]: {
+                            colId: id,
+                            tableId,
+                            width: tdWidth[i] ?? 150,
+                        },
+                    });
+                });
+            }
             tableId = randomId();
             colId = [];
             countColOver = false;
@@ -203,6 +212,10 @@ class TableModule {
                 colId.push(randomId());
             }
             cellCount += 1;
+            if (delta.slice(delta.length() - 1).ops[0]?.insert !== '\n') {
+                delta.insert('\n');
+            }
+
             return delta.compose(
                 new Delta().retain(delta.length(), {
                     [blotName.tableCellInner]: {
@@ -290,7 +303,9 @@ class TableModule {
             delta = new Array(columns).fill('\n').reduce((memo, text, i) => {
                 memo.insert(text, {
                     [blotName.tableCol]: {
-                        width: Math.floor((width - paddingLeft - paddingRight - 1) / columns), // 1px border
+                        width: !this.options.fullWidth
+                            ? Math.floor((width - paddingLeft - paddingRight - 1) / columns)
+                            : null, // 1px border
                         tableId,
                         colId: colId[i],
                     },
@@ -539,7 +554,7 @@ class TableModule {
         const baseColIndex = cols.findIndex((col) => {
             if (col.colId === baseColId) {
                 const newCol = Parchment.create(blotName.tableCol, {
-                    width: 160,
+                    width: !this.options.fullWidth ? 160 : null,
                     tableId: table.tableId,
                     colId: newColId,
                 });
@@ -718,7 +733,12 @@ class TableModule {
                 if (deleteCount <= 0) break;
                 // 先删再判断, 防止删除合并后的最后一个单元格
                 if (startDeleteIndex !== null) {
-                    tableCols[startDeleteIndex].width += tableCols[i].width;
+                    // 若合并 col 中存在 width 为 null, 则合并后的 col 为 null
+                    if (tableCols[startDeleteIndex].width === null || tableCols[i].width === null) {
+                        tableCols[startDeleteIndex].width = null;
+                    } else {
+                        tableCols[startDeleteIndex].width += tableCols[i].width;
+                    }
                     tableCols[i].remove();
                     deleteCount -= 1;
                 }
