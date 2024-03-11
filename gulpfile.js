@@ -71,7 +71,7 @@ const buildModule = async () => {
     return bundle.write({
         file: resolve(distBundle, 'index.js'),
         format: 'es',
-        sourcemap: false,
+        sourcemap: true,
     });
 };
 const buildDemo = async () => {
