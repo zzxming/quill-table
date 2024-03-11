@@ -135,7 +135,7 @@ export default class TableTooltip {
         this.quill.getModule('toolbar').controls.map(([name, btn]) => {
             if (TableTooltip.disableToolNames.includes(name)) {
                 if (btn.tagName.toLowerCase() === 'select') {
-                    document.querySelector(`.ql-select.${btn.className}`).classList[type]('ql-disabled-table');
+                    document.querySelector(`.ql-select.${btn.className}`)?.classList[type]('ql-disabled-table');
                 } else {
                     btn.classList[type]('ql-disabled-table');
                 }
@@ -223,12 +223,12 @@ export default class TableTooltip {
         let tableColHeadSeparators = Array.from(this.root.getElementsByClassName('ql-table-col-separator'));
         const appendTo = document.body;
         // 设置每个 drag 下标对应 col 下标，最右会多一个 drag, 与 better-table 的类似
-        // 根据当前的 col left 配合 pageX 计算, 使保证最小宽度
+        // 根据当前的 col left 配合 clientX 计算, 使保证最小宽度
         const handleMousemove = (e) => {
             // getBoundingClientRect 的 top/bottom/left/right, 这是根据视口距离
             const rect = tableColHeads[curColIndex].getBoundingClientRect();
             const tableWidth = this.table.domNode.getBoundingClientRect().width;
-            let resX = this.isMobile ? e.changedTouches[0].pageX : e.pageX;
+            let resX = this.isMobile ? e.changedTouches[0].clientX : e.clientX;
 
             if (this.table.full) {
                 // 拖拽的最大宽度是当前 col 宽度 + next col 宽度, 最后一个 col 最大宽度是当前宽度
@@ -307,10 +307,9 @@ export default class TableTooltip {
             divDom.classList.add('ql-table-drag-line');
 
             const tableRect = this.tableWrapper.domNode.getBoundingClientRect();
-
             css(divDom, {
                 top: `${tableRect.y - TIP_HEIGHT}px`,
-                left: `${this.isMobile ? e.changedTouches[0].pageX : e.pageX}px`,
+                left: `${this.isMobile ? e.changedTouches[0].clientX : e.clientX}px`,
                 height: `${tableRect.height + TIP_HEIGHT}px`,
             });
             appendTo.appendChild(divDom);

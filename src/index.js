@@ -61,22 +61,28 @@ Quill.register(
 
 import { isFunction, randomId, showTableSelector } from './utils';
 import { CREATE_TABLE } from './assets/const/event';
+import TableSvg from './assets/icons/table.svg';
 
-// 给 table 标记 full, 显示 tooltip
-// tooltip 的拖拽在 full 时的最大宽度是 cur + next, next 为 null 则是 cur + 0
 class TableModule {
     constructor(quill, options) {
         this.quill = quill;
         this.options = options;
 
-        this.tableBtn = null;
+        this.controlItem = null;
         this.tableInsertSelectCloseHandler = null;
 
         const toolbar = this.quill.getModule('toolbar');
         if (toolbar) {
             const control = toolbar.controls.find(([name]) => name === TableModule.toolName);
             if (control) {
-                this.tableBtn = control[1];
+                this.controlItem = control[1].parentNode.getElementsByClassName('ql-picker')?.[0];
+                // 使用 button 时会在点击后立刻聚焦输入, 若有横向滚动条会时视口锁定到 focus, 使用 select 就不会
+                if (this.controlItem) {
+                    const label = this.controlItem.getElementsByClassName('ql-picker-label')?.[0];
+                    label.innerHTML = TableSvg;
+                } else {
+                    this.controlItem = control[1];
+                }
             }
             this.buildCustomSelect(this.options.customSelect);
             toolbar.addHandler(TableModule.toolName, this.handleSelectDisplay.bind(this));
@@ -164,6 +170,7 @@ class TableModule {
     }
 
     // 粘贴表格处理
+    // 需要带上 col 的 width, 处理 px 和 %
     pasteTableHandler() {
         let tableId = randomId();
         let rowId = randomId();
@@ -230,7 +237,7 @@ class TableModule {
     }
 
     async buildCustomSelect(customSelect) {
-        if (!this.tableBtn) return;
+        if (!this.controlItem) return;
 
         const dom = document.createElement('div');
         dom.classList.add('ql-custom-select');
@@ -241,18 +248,21 @@ class TableModule {
             if (!row || !col) return;
             this.insertTable(row, col);
         });
-        this.tableBtn.appendChild(dom);
-        this.tableBtn.style.position = 'relative';
+        this.controlItem.appendChild(dom);
+        this.controlItem.style.position = 'relative';
     }
 
     async handleSelectDisplay() {
-        this.quill.focus();
-        this.range = this.quill.getSelection();
-
-        this.tableBtn.classList.add('ql-expanded');
-        this.tableBtn.dataset.active = true;
+        this.controlItem.classList.add('ql-expanded');
+        this.controlItem.dataset.active = true;
         window.removeEventListener('click', this.tableInsertSelectCloseHandler);
-        this.tableInsertSelectCloseHandler = this.closeSelecte.bind(this);
+        this.tableInsertSelectCloseHandler = (e) => {
+            const path = (e.composedPath && e.composedPath()) || e.path;
+            const i = path.findIndex((el) => el === this.controlItem);
+            if (i > 2 || i === -1) {
+                this.closeSelecte();
+            }
+        };
         window.addEventListener('click', this.tableInsertSelectCloseHandler);
     }
 
@@ -260,14 +270,10 @@ class TableModule {
         return showTableSelector();
     }
 
-    closeSelecte(e) {
-        const path = (e.composedPath && e.composedPath()) || e.path;
-        const i = path.findIndex((el) => el === this.tableBtn);
-        if (i > 2 || i === -1) {
-            this.tableBtn.classList.remove('ql-expanded');
-            this.tableBtn.dataset.active = false;
-            window.removeEventListener('click', this.tableInsertSelectCloseHandler);
-        }
+    closeSelecte() {
+        this.controlItem.classList.remove('ql-expanded');
+        this.controlItem.dataset.active = false;
+        window.removeEventListener('click', this.tableInsertSelectCloseHandler);
     }
 
     // 以上为 toolbar table 按钮的选择生成器相关
@@ -278,7 +284,8 @@ class TableModule {
             throw new Error('Both rows and columns must be less than 100.');
         }
 
-        // const range = this.quill.getSelection(true);
+        this.quill.focus();
+        this.range = this.quill.getSelection();
         const range = this.range;
         if (range == null) return;
         const currentBlot = this.quill.getLeaf(range.index)[0];
@@ -331,6 +338,8 @@ class TableModule {
             this.quill.updateContents(delta, Quill.sources.USER);
             this.quill.setSelection(range.index + columns + columns * rows + 1, Quill.sources.API);
             this.quill.focus();
+
+            this.closeSelecte();
         }, 0);
     }
 
@@ -775,7 +784,6 @@ TableModule.moduleName = moduleName.table;
 TableModule.toolName = toolName.table;
 
 TableModule.createEventName = CREATE_TABLE;
-
-import TableSvg from './assets/icons/table.svg';
 icons[TableModule.toolName] = TableSvg;
+
 export default TableModule;

@@ -30,7 +30,7 @@ const quill = new Quill('#editor', {
 
             ['clean'],
             ['image', 'video'],
-            ['table'],
+            [{ table: [] }],
         ],
         [`${TableModule.moduleName}`]: {
             fullWidth: true,
