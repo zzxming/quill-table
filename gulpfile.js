@@ -102,6 +102,7 @@ export const theme = buildTheme;
 export const module = buildModule;
 export const demo = buildDemo;
 export const dev = () => {
-    watch('./src/**/*.js', build);
+    watch('./src/**/*.js', series(buildModule, buildDemo));
+    watch('./src/**/*.less', buildTheme);
 };
 export default build;
