@@ -1692,7 +1692,7 @@
             if (toolbar) {
                 const control = toolbar.controls.find(([name]) => name === TableModule.toolName);
                 if (control) {
-                    this.controlItem = control[1].parentNode.getElementsByClassName('ql-picker')?.[0];
+                    this.controlItem = control[1].parentNode.querySelector('.ql-table.ql-picker');
                     // 使用 button 时会在点击后立刻聚焦输入, 若有横向滚动条会时视口锁定到 focus, 使用 select 就不会
                     if (this.controlItem) {
                         const label = this.controlItem.getElementsByClassName('ql-picker-label')?.[0];
