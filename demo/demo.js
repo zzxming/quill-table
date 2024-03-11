@@ -519,7 +519,7 @@
             this.quill.getModule('toolbar').controls.map(([name, btn]) => {
                 if (TableTooltip.disableToolNames.includes(name)) {
                     if (btn.tagName.toLowerCase() === 'select') {
-                        document.querySelector(`.ql-select.${btn.className}`).classList[type]('ql-disabled-table');
+                        document.querySelector(`.ql-select.${btn.className}`)?.classList[type]('ql-disabled-table');
                     } else {
                         btn.classList[type]('ql-disabled-table');
                     }
@@ -607,12 +607,12 @@
             let tableColHeadSeparators = Array.from(this.root.getElementsByClassName('ql-table-col-separator'));
             const appendTo = document.body;
             // 设置每个 drag 下标对应 col 下标，最右会多一个 drag, 与 better-table 的类似
-            // 根据当前的 col left 配合 pageX 计算, 使保证最小宽度
+            // 根据当前的 col left 配合 clientX 计算, 使保证最小宽度
             const handleMousemove = (e) => {
                 // getBoundingClientRect 的 top/bottom/left/right, 这是根据视口距离
                 const rect = tableColHeads[curColIndex].getBoundingClientRect();
                 const tableWidth = this.table.domNode.getBoundingClientRect().width;
-                let resX = this.isMobile ? e.changedTouches[0].pageX : e.pageX;
+                let resX = this.isMobile ? e.changedTouches[0].clientX : e.clientX;
 
                 if (this.table.full) {
                     // 拖拽的最大宽度是当前 col 宽度 + next col 宽度, 最后一个 col 最大宽度是当前宽度
@@ -691,10 +691,9 @@
                 divDom.classList.add('ql-table-drag-line');
 
                 const tableRect = this.tableWrapper.domNode.getBoundingClientRect();
-
                 css(divDom, {
                     top: `${tableRect.y - TIP_HEIGHT}px`,
-                    left: `${this.isMobile ? e.changedTouches[0].pageX : e.pageX}px`,
+                    left: `${this.isMobile ? e.changedTouches[0].clientX : e.clientX}px`,
                     height: `${tableRect.height + TIP_HEIGHT}px`,
                 });
                 appendTo.appendChild(divDom);
@@ -1681,21 +1680,26 @@
         true
     );
 
-    // 给 table 标记 full, 显示 tooltip
-    // tooltip 的拖拽在 full 时的最大宽度是 cur + next, next 为 null 则是 cur + 0
     class TableModule {
         constructor(quill, options) {
             this.quill = quill;
             this.options = options;
 
-            this.tableBtn = null;
+            this.controlItem = null;
             this.tableInsertSelectCloseHandler = null;
 
             const toolbar = this.quill.getModule('toolbar');
             if (toolbar) {
                 const control = toolbar.controls.find(([name]) => name === TableModule.toolName);
                 if (control) {
-                    this.tableBtn = control[1];
+                    this.controlItem = control[1].parentNode.getElementsByClassName('ql-picker')?.[0];
+                    // 使用 button 时会在点击后立刻聚焦输入, 若有横向滚动条会时视口锁定到 focus, 使用 select 就不会
+                    if (this.controlItem) {
+                        const label = this.controlItem.getElementsByClassName('ql-picker-label')?.[0];
+                        label.innerHTML = TableSvg;
+                    } else {
+                        this.controlItem = control[1];
+                    }
                 }
                 this.buildCustomSelect(this.options.customSelect);
                 toolbar.addHandler(TableModule.toolName, this.handleSelectDisplay.bind(this));
@@ -1783,6 +1787,7 @@
         }
 
         // 粘贴表格处理
+        // 需要带上 col 的 width, 处理 px 和 %
         pasteTableHandler() {
             let tableId = randomId();
             let rowId = randomId();
@@ -1849,7 +1854,7 @@
         }
 
         async buildCustomSelect(customSelect) {
-            if (!this.tableBtn) return;
+            if (!this.controlItem) return;
 
             const dom = document.createElement('div');
             dom.classList.add('ql-custom-select');
@@ -1860,18 +1865,21 @@
                 if (!row || !col) return;
                 this.insertTable(row, col);
             });
-            this.tableBtn.appendChild(dom);
-            this.tableBtn.style.position = 'relative';
+            this.controlItem.appendChild(dom);
+            this.controlItem.style.position = 'relative';
         }
 
         async handleSelectDisplay() {
-            this.quill.focus();
-            this.range = this.quill.getSelection();
-
-            this.tableBtn.classList.add('ql-expanded');
-            this.tableBtn.dataset.active = true;
+            this.controlItem.classList.add('ql-expanded');
+            this.controlItem.dataset.active = true;
             window.removeEventListener('click', this.tableInsertSelectCloseHandler);
-            this.tableInsertSelectCloseHandler = this.closeSelecte.bind(this);
+            this.tableInsertSelectCloseHandler = (e) => {
+                const path = (e.composedPath && e.composedPath()) || e.path;
+                const i = path.findIndex((el) => el === this.controlItem);
+                if (i > 2 || i === -1) {
+                    this.closeSelecte();
+                }
+            };
             window.addEventListener('click', this.tableInsertSelectCloseHandler);
         }
 
@@ -1879,14 +1887,10 @@
             return showTableSelector();
         }
 
-        closeSelecte(e) {
-            const path = (e.composedPath && e.composedPath()) || e.path;
-            const i = path.findIndex((el) => el === this.tableBtn);
-            if (i > 2 || i === -1) {
-                this.tableBtn.classList.remove('ql-expanded');
-                this.tableBtn.dataset.active = false;
-                window.removeEventListener('click', this.tableInsertSelectCloseHandler);
-            }
+        closeSelecte() {
+            this.controlItem.classList.remove('ql-expanded');
+            this.controlItem.dataset.active = false;
+            window.removeEventListener('click', this.tableInsertSelectCloseHandler);
         }
 
         // 以上为 toolbar table 按钮的选择生成器相关
@@ -1897,7 +1901,8 @@
                 throw new Error('Both rows and columns must be less than 100.');
             }
 
-            // const range = this.quill.getSelection(true);
+            this.quill.focus();
+            this.range = this.quill.getSelection();
             const range = this.range;
             if (range == null) return;
             const currentBlot = this.quill.getLeaf(range.index)[0];
@@ -1950,6 +1955,8 @@
                 this.quill.updateContents(delta, Quill.sources.USER);
                 this.quill.setSelection(range.index + columns + columns * rows + 1, Quill.sources.API);
                 this.quill.focus();
+
+                this.closeSelecte();
             }, 0);
         }
 
@@ -2424,7 +2431,7 @@
 
                 ['clean'],
                 ['image', 'video'],
-                ['table'],
+                [{ table: [] }],
             ],
             [`${TableModule.moduleName}`]: {
                 fullWidth: true,
