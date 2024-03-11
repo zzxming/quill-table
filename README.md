@@ -21,6 +21,7 @@ Quill.register({ [`modules/${TableHandler.moduleName}`]: TableHandler }, true);
 new Quill('#editor', {
     theme: 'snow',
     modules: {
+        fullWidth: true,
         toolbar: [TableHandler.toolName],
         [`${TableHandler.moduleName}`]: {
             tableToolTip: {},
@@ -35,6 +36,7 @@ new Quill('#editor', {
 
 | attribute     | description                        | type               |
 | ------------- | ---------------------------------- | ------------------ |
+| fullWidth     | Always 100% width                  | boolean            |
 | customSelect  | Custom picker element              | () => HTMLElement  |
 | tableToolTip  | Table tool tip configuration       | ToolTip            |
 | operationMenu | OTable contextmenu configuration   | perationMenu       |
