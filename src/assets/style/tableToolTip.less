@@ -56,10 +56,30 @@
     }
     &-toolbar {
         &.ql-snow {
+            .ql-table {
+                &.ql-picker {
+                    .ql-picker-label {
+                        padding: 2px 4px;
+                        svg {
+                            position: static;
+                            margin-top: 0px;
+                        }
+                    }
+                    .ql-picker-options {
+                        padding: 0px;
+                    }
+                }
+            }
             .ql-disabled-table {
                 opacity: 0.3;
                 background-color: transparent;
                 cursor: not-allowed;
+                .ql-picker-label {
+                    cursor: not-allowed;
+                }
+                .ql-picker-options {
+                    display: none;
+                }
             }
         }
     }

@@ -83,9 +83,9 @@ class TableModule {
                 } else {
                     this.controlItem = control[1];
                 }
+                this.buildCustomSelect(this.options.customSelect, control[1].tagName.toLowerCase());
+                toolbar.addHandler(TableModule.toolName, this.handleSelectDisplay.bind(this));
             }
-            this.buildCustomSelect(this.options.customSelect);
-            toolbar.addHandler(TableModule.toolName, this.handleSelectDisplay.bind(this));
         }
         this.pasteTableHandler();
 
@@ -236,20 +236,23 @@ class TableModule {
         });
     }
 
-    async buildCustomSelect(customSelect) {
-        if (!this.controlItem) return;
-
+    async buildCustomSelect(customSelect, tagName) {
         const dom = document.createElement('div');
         dom.classList.add('ql-custom-select');
         const selector = customSelect && isFunction(customSelect) ? await customSelect() : this.createSelect();
         dom.appendChild(selector);
+
+        let appendTo = this.controlItem;
+        if (tagName === 'select') {
+            appendTo = this.controlItem.querySelector('.ql-picker-options');
+        }
+        if (!appendTo) return;
         selector.addEventListener(CREATE_TABLE, (e) => {
             const { row, col } = e.detail;
             if (!row || !col) return;
             this.insertTable(row, col);
         });
-        this.controlItem.appendChild(dom);
-        this.controlItem.style.position = 'relative';
+        appendTo.appendChild(dom);
     }
 
     async handleSelectDisplay() {

@@ -25,8 +25,6 @@ export default class TableTooltip {
         this.tableCols = [];
         this.scrollHandler = [];
 
-        this.tableDisableToolHandlers = {};
-
         this.root = this.quill.addContainer('ql-table-tooltip');
         this.root.style.height = TIP_HEIGHT + 'px';
 
@@ -100,30 +98,10 @@ export default class TableTooltip {
 
     disableFromTable() {
         this.toggleDisableToolbarTools('add');
-
-        const toolbar = this.quill.getModule('toolbar');
-        // 防止重复触发覆盖保存事件
-        if (toolbar.disableByTable) return;
-        toolbar.disableByTable = true;
-
-        // 去除 toolbar 对应 module 的 handler 事件, 保存在 tableDisableToolHandlers
-        for (const toolName of TableTooltip.disableToolNames) {
-            this.tableDisableToolHandlers[toolName] = toolbar.handlers[toolName];
-            // 不要使用 delete 删除属性
-            toolbar.handlers[toolName] = () => {};
-        }
     }
 
     enableFromTable() {
         this.toggleDisableToolbarTools('remove');
-
-        const toolbar = this.quill.getModule('toolbar');
-        // 根据 tableDisableToolHandlers 恢复 handler
-        for (const toolName in this.tableDisableToolHandlers) {
-            toolbar.handlers[toolName] = this.tableDisableToolHandlers[toolName];
-        }
-        this.tableDisableToolHandlers = {};
-        toolbar.disableByTable = false;
     }
 
     /**
@@ -132,10 +110,13 @@ export default class TableTooltip {
      * @param {'add' | 'remove'} type - The type of toggle action to perform.
      */
     toggleDisableToolbarTools(type) {
-        this.quill.getModule('toolbar').controls.map(([name, btn]) => {
+        const toolbar = this.quill.getModule('toolbar');
+        toolbar.controls.map(([name, btn]) => {
             if (TableTooltip.disableToolNames.includes(name)) {
                 if (btn.tagName.toLowerCase() === 'select') {
-                    document.querySelector(`.ql-select.${btn.className}`)?.classList[type]('ql-disabled-table');
+                    toolbar.container
+                        .querySelector(`.ql-picker.${btn.className}`)
+                        ?.classList[type]('ql-disabled-table');
                 } else {
                     btn.classList[type]('ql-disabled-table');
                 }
