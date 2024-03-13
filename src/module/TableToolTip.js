@@ -142,12 +142,12 @@ export default class TableTooltip {
     }
 
     position = () => {
-        const rootLRelativeLeft = getComputedStyle(this.quill.root).paddingLeft;
+        const rect = getRelativeRect(this.table.domNode.getBoundingClientRect(), this.quill.root);
         const tableTop = this.table.domNode.offsetTop;
         const rootScrollTop = this.quill.root.scrollTop;
         css(this.root, {
             top: `${tableTop - rootScrollTop - TIP_HEIGHT}px`,
-            left: rootLRelativeLeft, // editor 的 padding left
+            left: rect.x + 'px', // table 距离 editor 的 padding
         });
     };
 
