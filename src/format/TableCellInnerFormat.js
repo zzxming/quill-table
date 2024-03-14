@@ -1,6 +1,6 @@
 import Quill from 'quill';
 import ContainBlot from '../blot/contain';
-import { blotName } from '../assets/const/name';
+import { blotName } from '../assets/const';
 const Parchment = Quill.import('parchment');
 
 class TableCellInnerFormat extends ContainBlot {

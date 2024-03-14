@@ -1,5 +1,5 @@
 import { css, isFunction, isString } from '../utils';
-import { moduleName } from '../assets/const/name';
+import { moduleName } from '../assets/const';
 
 const MENU_ITEMS_DEFAULT = {
     insertColumnLeft: {

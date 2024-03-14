@@ -1,5 +1,5 @@
 import Quill from 'quill';
-import { blotName } from '../assets/const/name';
+import { blotName } from '../assets/const';
 const Parchment = Quill.import('parchment');
 const Block = Quill.import('blots/block');
 

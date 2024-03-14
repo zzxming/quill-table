@@ -1,4 +1,4 @@
-import { CREATE_TABLE } from '../assets/const/event';
+import { CREATE_TABLE } from '../assets/const';
 
 export const randomId = () => Math.random().toString(36).slice(2);
 
