@@ -264,8 +264,10 @@ export default class TableTooltip {
                     const last = oldWidthPre - pre;
                     if (this.tableCols[curColIndex + 1]) {
                         this.tableCols[curColIndex + 1].width = `${this.tableCols[curColIndex + 1].width + last}%`;
-                    } else {
+                    } else if (this.tableCols[curColIndex - 1]) {
                         this.tableCols[curColIndex - 1].width = `${this.tableCols[curColIndex - 1].width + last}%`;
+                    } else {
+                        pre = 100;
                     }
                     this.tableCols[curColIndex].width = `${pre}%`;
                 } else {
