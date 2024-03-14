@@ -1,11 +1,8 @@
 import Quill from 'quill';
 import TableWrapperFormat from '../format/TableWrapperFormat';
 import { css, getRelativeRect } from '../utils';
-import { blotName, toolName } from '../assets/const/name';
-
+import { blotName, toolName, CELL_MIN_WIDTH, CELL_MIN_PRE } from '../assets/const';
 let TIP_HEIGHT = 12;
-const CELL_MIN_WIDTH = 26;
-const MIN_PRE = 3;
 /*
 	options = {
 		tipHeight: 12,	// tooltip height
@@ -213,7 +210,7 @@ export default class TableTooltip {
 
             if (this.table.full) {
                 // 拖拽的最大宽度是当前 col 宽度 + next col 宽度, 最后一个 col 最大宽度是当前宽度
-                const minWidth = (MIN_PRE / 100) * tableWidth;
+                const minWidth = (CELL_MIN_PRE / 100) * tableWidth;
                 const maxRange =
                     resX > rect.right
                         ? tableColHeads[curColIndex + 1]
@@ -242,7 +239,7 @@ export default class TableTooltip {
                 if (pre < oldWidthPre) {
                     // 缩小时若不是最后一个, 则把减少的量加在后面一个
                     // 若是最后一个则把减少的量加在前面一个
-                    pre = Math.max(MIN_PRE, pre);
+                    pre = Math.max(CELL_MIN_PRE, pre);
                     const last = oldWidthPre - pre;
                     if (this.tableCols[curColIndex + 1]) {
                         this.tableCols[curColIndex + 1].width = `${this.tableCols[curColIndex + 1].width + last}%`;
@@ -255,9 +252,9 @@ export default class TableTooltip {
                     // 若是最后一个则不处理
                     if (this.tableCols[curColIndex + 1]) {
                         const totalWidthNextPre = oldWidthPre + this.tableCols[curColIndex + 1].width;
-                        pre = Math.min(totalWidthNextPre - MIN_PRE, pre);
+                        pre = Math.min(totalWidthNextPre - CELL_MIN_PRE, pre);
                         this.tableCols[curColIndex].width = `${pre}%`;
-                        this.tableCols[curColIndex + 1].width = totalWidthNextPre - pre + '%';
+                        this.tableCols[curColIndex + 1].width = `${totalWidthNextPre - pre}%`;
                     }
                 }
             } else {
@@ -266,8 +263,8 @@ export default class TableTooltip {
                     parseFloat(tableColHeads[curColIndex].style.width) +
                     w +
                     'px';
-                tableColHeads[curColIndex].style.width = w + 'px';
-                this.tableCols[curColIndex].width = w;
+                tableColHeads[curColIndex].style.width = `${w}px`;
+                this.tableCols[curColIndex].width = `${w}px`;
             }
 
             appendTo.removeChild(tipColBreak);

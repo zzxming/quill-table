@@ -60,7 +60,7 @@ Quill.register(
 );
 
 import { isFunction, randomId, showTableSelector } from './utils';
-import { CREATE_TABLE } from './assets/const/event';
+import { CREATE_TABLE, CELL_MIN_PRE, blotName, moduleName, toolName } from './assets/const';
 import TableSvg from './assets/icons/table.svg';
 
 class TableModule {
@@ -312,7 +312,7 @@ class TableModule {
             delta = new Array(columns).fill('\n').reduce((memo, text, i) => {
                 memo.insert(text, {
                     [blotName.tableCol]: {
-                        width: !this.options.fullWidth ? Math.floor(width / columns) : (1 / columns) * 100 + '%',
+                        width: !this.options.fullWidth ? `${Math.floor(width / columns)}px` : `${(1 / columns) * 100}%`,
                         tableId,
                         colId: colId[i],
                         full: this.options.fullWidth,
@@ -564,11 +564,19 @@ class TableModule {
         const baseColIndex = cols.findIndex((col) => {
             if (col.colId === baseColId) {
                 const newCol = Parchment.create(blotName.tableCol, {
-                    width: !this.options.fullWidth ? 160 : null,
+                    width: !this.options.fullWidth ? '160px' : '6%',
+                    full: this.options.fullWidth,
                     tableId: table.tableId,
                     colId: newColId,
                 });
-                col.parent.insertBefore(newCol, isRight ? col.next : col);
+                let beforeTarget = isRight ? col.next : col;
+                col.parent.insertBefore(newCol, beforeTarget);
+                if (this.options.fullWidth) {
+                    if (!beforeTarget) {
+                        beforeTarget = isRight ? col : col.prev;
+                    }
+                    beforeTarget.width = Math.max(beforeTarget.width - 6, CELL_MIN_PRE) + '%';
+                }
             }
             return col.colId === baseColId;
         });
@@ -782,7 +790,6 @@ export const isForbidInTable = (current) => {
         : false;
 };
 
-import { blotName, moduleName, toolName } from './assets/const/name';
 TableModule.moduleName = moduleName.table;
 TableModule.toolName = toolName.table;
 

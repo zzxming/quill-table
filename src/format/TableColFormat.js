@@ -8,7 +8,7 @@ class TableColFormat extends Block {
         const { width, tableId, colId, full } = value;
         const node = super.create();
         node.setAttribute('width', width);
-        node.setAttribute('data-full', full);
+        full && node.setAttribute('data-full', full);
         node.dataset.tableId = tableId;
         node.dataset.colId = colId;
 
@@ -63,7 +63,6 @@ class TableColFormat extends Block {
             table.appendChild(tableColgroup);
             tableWrapper.appendChild(table);
 
-            // 最终显示 tableWrapper
             tableWrapper.replace(mark);
         }
         const next = this.next;
