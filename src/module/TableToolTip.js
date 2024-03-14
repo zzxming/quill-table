@@ -50,45 +50,43 @@ export default class TableTooltip {
     }
 
     listen() {
-        this.quill.on(Quill.events.SELECTION_CHANGE, (range, oldRange, source) => {
+        this.quill.on(Quill.events.SELECTION_CHANGE, (range) => {
             if (range == null) return;
-            if (range.length === 0) {
-                const [tableWrapper, offset] = this.quill.scroll.descendant(TableWrapperFormat, range.index);
-                if (tableWrapper !== null) {
-                    // 此时在 table 内, 禁用部分功能
-                    this.disableFromTable();
+            const [tableWrapper] = this.quill.scroll.descendant(TableWrapperFormat, range.index);
+            if (tableWrapper !== null) {
+                // 此时在 table 内, 禁用部分功能
+                this.disableFromTable();
 
-                    this.tableWrapper = tableWrapper;
-                    this.table = tableWrapper.children.head;
-                    // 找到 tbody
-                    let tbody = tableWrapper.children.tail;
-                    while (tbody && tbody.statics.blotName !== blotName.tableBody) {
-                        tbody = tbody.children?.tail;
-                    }
-
-                    const tableCols = tableWrapper.children.head?.children?.head;
-                    if (tableCols.statics.blotName === blotName.tableColGroup && tableCols.children.length) {
-                        this.tableCols = tableCols.children.map((col) => col);
-                    } else {
-                        this.tableCols = [];
-                    }
-
-                    let curTableId = tableWrapper.children.head.tableId;
-                    if (this.curTableId !== curTableId) {
-                        this.clearScrollEvent();
-                        this.focusTableChange = true;
-                        // 表格滚动同步事件
-                        this.addScrollEvent(
-                            this.tableWrapper.domNode,
-                            this.scrollSync.bind(this, this.tableWrapper.domNode)
-                        );
-                    }
-                    this.curTableId = curTableId;
-
-                    this.show();
-                    this.position();
-                    return;
+                this.tableWrapper = tableWrapper;
+                this.table = tableWrapper.children.head;
+                // 找到 tbody
+                let tbody = tableWrapper.children.tail;
+                while (tbody && tbody.statics.blotName !== blotName.tableBody) {
+                    tbody = tbody.children?.tail;
                 }
+
+                const tableCols = tableWrapper.children.head?.children?.head;
+                if (tableCols.statics.blotName === blotName.tableColGroup && tableCols.children.length) {
+                    this.tableCols = tableCols.children.map((col) => col);
+                } else {
+                    this.tableCols = [];
+                }
+
+                let curTableId = tableWrapper.children.head.tableId;
+                if (this.curTableId !== curTableId) {
+                    this.clearScrollEvent();
+                    this.focusTableChange = true;
+                    // 表格滚动同步事件
+                    this.addScrollEvent(
+                        this.tableWrapper.domNode,
+                        this.scrollSync.bind(this, this.tableWrapper.domNode)
+                    );
+                }
+                this.curTableId = curTableId;
+
+                this.show();
+                this.position();
+                return;
             }
             this.hide();
         });
