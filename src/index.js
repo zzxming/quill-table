@@ -768,11 +768,9 @@ class TableModule {
         }
     }
 
-    setBackgroundColor(color) {
-        if (!this.tableSelection.selectedTds.length) return;
-        const selectTds = this.tableSelection.selectedTds;
-
-        selectTds.map((cellInner) => (cellInner.style = `background-color: ${color};`));
+    setBackgroundColor(color, cells) {
+        if (!cells.length) return;
+        cells.map((cellInner) => (cellInner.style = `background-color: ${color};`));
     }
 }
 
