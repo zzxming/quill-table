@@ -15,6 +15,7 @@ export default class TableTooltip {
         this.options = options;
         this.optionsMerge();
 
+        this.tableDisableToolHandlers = {};
         this.tableWrapper = null;
         this.table = null;
         this.curTableId = '';
@@ -95,10 +96,30 @@ export default class TableTooltip {
 
     disableFromTable() {
         this.toggleDisableToolbarTools('add');
+
+        const toolbar = this.quill.getModule('toolbar');
+        // 防止重复触发覆盖保存事件
+        if (toolbar.disableByTable) return;
+        toolbar.disableByTable = true;
+
+        // 去除 toolbar 对应 module 的 handler 事件, 保存在 tableDisableToolHandlers
+        for (const toolName of TableTooltip.disableToolNames) {
+            this.tableDisableToolHandlers[toolName] = toolbar.handlers[toolName];
+            // 不要设置为 null
+            toolbar.handlers[toolName] = () => {};
+        }
     }
 
     enableFromTable() {
         this.toggleDisableToolbarTools('remove');
+
+        const toolbar = this.quill.getModule('toolbar');
+        // 根据 tableDisableToolHandlers 恢复 handler
+        for (const toolName in this.tableDisableToolHandlers) {
+            toolbar.handlers[toolName] = this.tableDisableToolHandlers[toolName];
+        }
+        this.tableDisableToolHandlers = {};
+        toolbar.disableByTable = false;
     }
 
     /**
