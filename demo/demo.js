@@ -391,9 +391,6 @@
     function isFunction(val) {
         return typeof val === 'function';
     }
-    function isUndefined(val) {
-        return val === undefined;
-    }
 
     let TIP_HEIGHT = 12;
     /*
@@ -1727,14 +1724,6 @@
 
             this.controlItem = null;
             this.tableInsertSelectCloseHandler = null;
-            if (isUndefined(this.options.rewrite) || this.options.rewrite) {
-                Quill.register(
-                    {
-                        [`formats/list/item`]: ListRewrite,
-                    },
-                    true
-                );
-            }
 
             const toolbar = this.quill.getModule('toolbar');
             if (toolbar) {
@@ -2484,12 +2473,22 @@
     TableModule.createEventName = CREATE_TABLE;
     icons[TableModule.toolName] = TableSvg;
 
+    const rewirteFormats = () =>
+        Quill.register(
+            {
+                [`formats/list/item`]: ListRewrite,
+            },
+            true
+        );
+
     Quill.register(
         {
             [`modules/${TableModule.moduleName}`]: TableModule,
         },
         true
     );
+    rewirteFormats();
+
     const quill = new Quill('#editor', {
         theme: 'snow',
         modules: {
@@ -2512,7 +2511,6 @@
             ],
             [`${TableModule.moduleName}`]: {
                 fullWidth: true,
-                // rewrite: false,
                 tableToolTip: {
                     tipHeight: 12,
                     disableToolNames: ['bold', 'color'],
