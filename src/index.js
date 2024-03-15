@@ -40,7 +40,6 @@ TableRowFormat.requiredContainer = TableBodyFormat;
 TableCellFormat.allowedChildren = [TableCellInnerFormat];
 
 TableCellInnerFormat.defaultChild = 'block';
-TableCellInnerFormat.allowedChildren = [Block, BlockEmbed, Container];
 
 Quill.register(
     {
@@ -60,7 +59,7 @@ Quill.register(
 );
 
 import { isFunction, randomId, showTableSelector } from './utils';
-import { CREATE_TABLE, CELL_MIN_PRE, blotName, moduleName, toolName } from './assets/const';
+import { CREATE_TABLE, CELL_MIN_PRE, blotName, moduleName, toolName, CELL_MIN_WIDTH } from './assets/const';
 import TableSvg from './assets/icons/table.svg';
 
 class TableModule {
@@ -174,49 +173,74 @@ class TableModule {
     pasteTableHandler() {
         let tableId = randomId();
         let rowId = randomId();
-        let colId = [];
-        let countColOver = false;
+        let colIds = [];
         let cellCount = 0;
 
         // 重新生成 table 里的所有 id, cellFormat 和 colFormat 进行 table 的添加
         // addMatcher 匹配的是标签字符串, 不是 blotName, 只是这些 blotName 设置的是标签字符串
         this.quill.clipboard.addMatcher(blotName.table, (node, delta) => {
-            // 添加 col
-            const tdWidth = Array.from(node.getElementsByTagName('tr')).reduce((pre, cur) => {
-                const w = Array.from(cur.getElementsByTagName('td')).map((td) => td.getBoundingClientRect().width);
-                if (w.length < pre.length) return pre;
-                return w.map((width, i) => Math.max(width, pre[i] ?? 0)).concat(pre.slice(w.length));
-            }, []);
+            const hasCol = !!delta.ops[0].insert?.col;
+            let colDelta;
+            // 粘贴表格若原本存在 col, 仅改变 id, 否则重新生成
+            const { width: originTableWidth } = node.getBoundingClientRect();
+            let isFull = this.options.fullWidth;
+            if (hasCol) isFull = !!delta.ops[0].insert?.col?.full;
+            const defaultColWidth = isFull
+                ? Math.max(100 / colIds.length, CELL_MIN_PRE) + '%'
+                : Math.max(originTableWidth / colIds.length, CELL_MIN_WIDTH) + 'px';
 
-            const colDelta = new Delta();
-            colId.map((id, i) => {
-                colDelta.insert('\n', {
-                    [blotName.tableCol]: {
-                        colId: id,
-                        tableId,
-                        width: this.options.fullWidth ? (1 / tdWidth.length) * 100 + '%' : tdWidth[i] ?? 150,
-                        full: this.options.fullWidth,
-                    },
-                });
-            });
+            if (!hasCol) {
+                colDelta = colIds.reduce((colDelta, id) => {
+                    colDelta.insert({
+                        [blotName.tableCol]: {
+                            colId: id,
+                            tableId,
+                            width: defaultColWidth,
+                            full: isFull,
+                        },
+                    });
+                    return colDelta;
+                }, new Delta());
+            } else {
+                for (let i = 0; i < delta.ops.length; i++) {
+                    if (!delta.ops[i].insert[blotName.tableCol]) {
+                        break;
+                    }
+                    delta.ops[i].insert[blotName.tableCol].tableId = tableId;
+                    delta.ops[i].insert[blotName.tableCol].colId = colIds[i];
+                    delta.ops[i].insert[blotName.tableCol].full = isFull;
+                    if (!delta.ops[i].insert[blotName.tableCol].width) {
+                        delta.ops[i].insert[blotName.tableCol].width = defaultColWidth;
+                    } else {
+                        delta.ops[i].insert[blotName.tableCol].width =
+                            parseFloat(delta.ops[i].insert[blotName.tableCol].width) + (isFull ? '%' : 'px');
+                    }
+                }
+            }
             tableId = randomId();
-            colId = [];
-            countColOver = false;
+            colIds = [];
             cellCount = 0;
-            return colDelta.concat(delta);
+            return colDelta ? colDelta.concat(delta) : delta;
         });
 
         this.quill.clipboard.addMatcher(blotName.tableRow, (node, delta) => {
             rowId = randomId();
-            countColOver = true;
+            cellCount = 0;
             return delta;
         });
 
         this.quill.clipboard.addMatcher(blotName.tableCell, (node, delta) => {
-            if (!countColOver) {
-                colId.push(randomId());
+            const rowspan = node.getAttribute('rowspan') || 1;
+            const colspan = node.getAttribute('colspan') || 1;
+            const colIndex = +cellCount + +colspan - 1;
+            if (!colIds[colIndex]) {
+                for (let i = colIndex; i >= 0; i--) {
+                    if (!colIds[i]) colIds[i] = randomId();
+                }
             }
+            const colId = colIds[colIndex];
             cellCount += 1;
+
             if (delta.slice(delta.length() - 1).ops[0]?.insert !== '\n') {
                 delta.insert('\n');
             }
@@ -226,9 +250,9 @@ class TableModule {
                     [blotName.tableCellInner]: {
                         tableId,
                         rowId,
-                        colId: colId[(cellCount - 1) % colId.length],
-                        rowspan: node.getAttribute('rowspan'),
-                        colspan: node.getAttribute('colspan'),
+                        colId,
+                        rowspan,
+                        colspan,
                         style: node.getAttribute('style'),
                     },
                 })

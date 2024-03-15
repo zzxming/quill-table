@@ -50,7 +50,11 @@ export default class TableTooltip {
     }
 
     listen() {
-        this.quill.on(Quill.events.SELECTION_CHANGE, (range) => {
+        this.quill.on(Quill.events.EDITOR_CHANGE, (eventName) => {
+            if (eventName === Quill.events.TEXT_CHANGE) {
+                return this.hide();
+            }
+            const range = this.quill.getSelection();
             if (range == null) return;
             const [tableWrapper] = this.quill.scroll.descendant(TableWrapperFormat, range.index);
             if (tableWrapper !== null) {
@@ -287,6 +291,7 @@ export default class TableTooltip {
                 tableColHeads[curColIndex].style.width = `${w}px`;
                 this.tableCols[curColIndex].width = `${w}px`;
             }
+            this.table.formatTableWidth();
 
             appendTo.removeChild(tipColBreak);
             tipColBreak = null;

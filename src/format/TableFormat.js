@@ -24,6 +24,7 @@ class TableFormat extends Container {
     }
 
     colWidthFillTable() {
+        if (this.full) return;
         const colgroup = this.children.head;
         if (!colgroup || colgroup.statics.blotName !== blotName.tableColGroup) return;
 

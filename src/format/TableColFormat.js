@@ -1,9 +1,9 @@
 import Quill from 'quill';
 import { blotName } from '../assets/const';
 const Parchment = Quill.import('parchment');
-const Block = Quill.import('blots/block');
+const BlockEmbed = Quill.import('blots/block/embed');
 
-class TableColFormat extends Block {
+class TableColFormat extends BlockEmbed {
     static create(value) {
         const { width, tableId, colId, full } = value;
         const node = super.create();
@@ -13,6 +13,16 @@ class TableColFormat extends Block {
         node.dataset.colId = colId;
 
         return node;
+    }
+
+    static value(domNode) {
+        const { tableId, colId } = domNode.dataset;
+        return {
+            tableId,
+            colId,
+            width: domNode.getAttribute('width'),
+            full: domNode.hasAttribute('data-full'),
+        };
     }
 
     get width() {
@@ -30,18 +40,6 @@ class TableColFormat extends Block {
 
     get full() {
         return this.domNode.hasAttribute('data-full');
-    }
-
-    formats() {
-        const { tableId, colId } = this.domNode.dataset;
-        return {
-            [this.statics.blotName]: {
-                tableId,
-                colId,
-                width: this.domNode.getAttribute('width'),
-                full: this.domNode.getAttribute('data-full'),
-            },
-        };
     }
 
     optimize() {
@@ -77,10 +75,6 @@ class TableColFormat extends Block {
             next.moveChildren(this);
             next.remove();
         }
-    }
-
-    html() {
-        return this.domNode.outerHTML;
     }
 }
 TableColFormat.blotName = blotName.tableCol;

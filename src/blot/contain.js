@@ -4,9 +4,8 @@ const Container = Quill.import('blots/container');
 const Parchment = Quill.import('parchment');
 
 class ContainBlot extends Container {
-    static create(value) {
-        const tagName = 'contain';
-        const node = super.create(tagName);
+    static create() {
+        const node = super.create();
         return node;
     }
 
@@ -19,11 +18,7 @@ class ContainBlot extends Container {
     }
 
     format(name, value) {
-        this.domNode.lastChild.setAttribute(name, value);
-    }
-
-    formats() {
-        return { [this.statics.blotName]: this.statics.formats(this.domNode) };
+        this.children.tail.format(name, value);
     }
 
     replace(target) {
