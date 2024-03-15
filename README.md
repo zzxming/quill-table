@@ -14,30 +14,37 @@ npm install quill1.3.7-table-module
 
 ```javascript
 import Quill from 'quill';
-import TableHandler from 'quill1.3.7-table-module';
+import TableHandler, { rewirteFormats } from 'quill1.3.7-table-module';
 import 'quill1.3.7-table-module/dist/index.css';
-
 Quill.register({ [`modules/${TableHandler.moduleName}`]: TableHandler }, true);
+rewirteFormats();
+
 new Quill('#editor', {
     theme: 'snow',
     modules: {
-        fullWidth: true,
         toolbar: [TableHandler.toolName],
         [`${TableHandler.moduleName}`]: {
-            tableToolTip: {},
-            operationMenu: {},
-            selection: {},
+            fullWidth: true,
         },
     },
 });
 ```
+
+# rewirteFormats
+
+To handle exceptions, it is necessary to rewrite some native formats. you can skip this function. but the relevant format may be displayed incorrectly in the table
+
+## rewrite formats
+
+| format   | description                                                                |
+| -------- | -------------------------------------------------------------------------- |
+| ListItem | Rewrite method `replaceWith`. Make ul/ol to display correctly within cells |
 
 # Options
 
 | attribute     | description                                                                             | type               | default |
 | ------------- | --------------------------------------------------------------------------------------- | ------------------ | ------- |
 | fullWidth     | Always 100% width                                                                       | boolean            | false   |
-| rewrite       | To handle exceptions, it is necessary to rewrite some native formats                    | boolean            | true    |
 | customSelect  | Custom picker element. The returned element needs to trigger an event to create a table | () => HTMLElement  |         |
 | tableToolTip  | Table tool tip configuration                                                            | ToolTip            |         |
 | operationMenu | OTable contextmenu configuration                                                        | perationMenu       |         |
@@ -46,16 +53,6 @@ new Quill('#editor', {
 ## fullWidth
 
 If the value is true. the width of the table is always 100%
-
-## rewrite
-
-If the value is true, Will rewrite some methods of the format. If there is an exception, you can turn off this option. but the relevant format may be displayed incorrectly in the table
-
-### rewrite formats
-
-| format   | description                                                                |
-| -------- | -------------------------------------------------------------------------- |
-| ListItem | Rewrite method `replaceWith`. Make ul/ol to display correctly within cells |
 
 ## customSelect
 
