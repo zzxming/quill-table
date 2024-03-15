@@ -289,3 +289,6 @@ export function isString(val) {
 export function isFunction(val) {
     return typeof val === 'function';
 }
+export function isUndefined(val) {
+    return val === undefined;
+}

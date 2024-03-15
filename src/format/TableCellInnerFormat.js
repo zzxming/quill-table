@@ -16,21 +16,8 @@ class TableCellInnerFormat extends ContainBlot {
         return node;
     }
 
-    formats() {
-        const { tableId, rowId, colId, rowspan, colspan } = this.domNode.dataset;
-        return {
-            [this.statics.blotName]: {
-                tableId,
-                rowId,
-                colId,
-                rowspan,
-                colspan,
-                style: this.domNode._style,
-            },
-        };
-    }
-
-    updateDelta() {
+    // 仅 Block 存在 cache, 存在 cache 时不会获取最新 delta, cache 还会保存父级 format(bubbleFormats 函数), 需要清除以获取最新 delta
+    clearDeltaCache() {
         this.children.forEach((child) => {
             child.cache = {};
         });
@@ -48,7 +35,7 @@ class TableCellInnerFormat extends ContainBlot {
     set rowspan(value) {
         this.parent && (this.parent.rowspan = value);
         this.domNode.dataset.rowspan = value;
-        this.updateDelta();
+        this.clearDeltaCache();
     }
     get colspan() {
         return Number(this.domNode.dataset.colspan);
@@ -56,12 +43,43 @@ class TableCellInnerFormat extends ContainBlot {
     set colspan(value) {
         this.parent && (this.parent.colspan = value);
         this.domNode.dataset.colspan = value;
-        this.updateDelta();
+        this.clearDeltaCache();
     }
     set style(value) {
         this.domNode._style = value;
         this.parent.style = value;
-        this.updateDelta();
+        this.clearDeltaCache();
+    }
+
+    replace(target) {
+        if (target.statics.blotName !== this.statics.blotName) {
+            const cloneTarget = target.clone();
+            target.moveChildren(cloneTarget);
+            this.appendChild(cloneTarget);
+            target.parent.insertBefore(this, target.next);
+            target.remove();
+        } else {
+            super.replace(target);
+        }
+    }
+
+    format(name, value) {
+        super.format(name, value);
+        this.clearDeltaCache();
+    }
+
+    formats() {
+        const { tableId, rowId, colId, rowspan, colspan } = this.domNode.dataset;
+        return {
+            [this.statics.blotName]: {
+                tableId,
+                rowId,
+                colId,
+                rowspan,
+                colspan,
+                style: this.domNode._style,
+            },
+        };
     }
 
     optimize() {
@@ -108,6 +126,5 @@ class TableCellInnerFormat extends ContainBlot {
 TableCellInnerFormat.blotName = blotName.tableCellInner;
 TableCellInnerFormat.tagName = 'p';
 TableCellInnerFormat.className = 'ql-table-cell-inner';
-TableCellInnerFormat.scope = Parchment.Scope.BLOCK_BLOT;
 
 export default TableCellInnerFormat;

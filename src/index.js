@@ -41,6 +41,8 @@ TableCellFormat.allowedChildren = [TableCellInnerFormat];
 
 TableCellInnerFormat.defaultChild = 'block';
 
+import ListRewrite from './format/rewrite/List';
+
 Quill.register(
     {
         [`formats/${ContainBlot.blotName}`]: ContainBlot,
@@ -58,7 +60,7 @@ Quill.register(
     true
 );
 
-import { isFunction, randomId, showTableSelector } from './utils';
+import { isFunction, isUndefined, randomId, showTableSelector } from './utils';
 import { CREATE_TABLE, CELL_MIN_PRE, blotName, moduleName, toolName, CELL_MIN_WIDTH } from './assets/const';
 import TableSvg from './assets/icons/table.svg';
 
@@ -69,6 +71,14 @@ class TableModule {
 
         this.controlItem = null;
         this.tableInsertSelectCloseHandler = null;
+        if (isUndefined(this.options.rewrite) || this.options.rewrite) {
+            Quill.register(
+                {
+                    [`formats/list/item`]: ListRewrite,
+                },
+                true
+            );
+        }
 
         const toolbar = this.quill.getModule('toolbar');
         if (toolbar) {
