@@ -103,7 +103,7 @@ const MENU_WIDTH = 200;
         }
     }
 */
-export default class TableOperationMenu {
+export class TableOperationMenu {
     constructor(params, quill, options = {}) {
         this.table = params.table;
         this.quill = quill;

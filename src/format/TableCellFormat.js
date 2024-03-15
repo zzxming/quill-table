@@ -1,6 +1,6 @@
 import Quill from 'quill';
 import { blotName } from '../assets/const';
-import TableCellInnerFormat from './TableCellInnerFormat';
+import { TableCellInnerFormat } from './TableCellInnerFormat';
 const Parchment = Quill.import('parchment');
 const Container = Quill.import('blots/container');
 
@@ -78,4 +78,4 @@ TableCellFormat.tagName = 'td';
 TableCellFormat.className = 'ql-table-cell';
 TableCellFormat.scope = Parchment.Scope.BLOCK_BLOT;
 
-export default TableCellFormat;
+export { TableCellFormat };

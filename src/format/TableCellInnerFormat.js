@@ -1,5 +1,5 @@
 import Quill from 'quill';
-import ContainBlot from '../blot/contain';
+import { ContainBlot } from '../blot/contain';
 import { blotName } from '../assets/const';
 const Parchment = Quill.import('parchment');
 
@@ -127,4 +127,4 @@ TableCellInnerFormat.blotName = blotName.tableCellInner;
 TableCellInnerFormat.tagName = 'p';
 TableCellInnerFormat.className = 'ql-table-cell-inner';
 
-export default TableCellInnerFormat;
+export { TableCellInnerFormat };

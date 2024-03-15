@@ -81,4 +81,4 @@ TableColFormat.blotName = blotName.tableCol;
 TableColFormat.tagName = 'col';
 TableColFormat.scope = Parchment.Scope.BLOCK_BLOT;
 
-export default TableColFormat;
+export { TableColFormat };

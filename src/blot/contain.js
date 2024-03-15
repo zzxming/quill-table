@@ -37,4 +37,4 @@ ContainBlot.tagName = 'contain';
 ContainBlot.scope = Parchment.Scope.BLOCK_BLOT;
 ContainBlot.defaultChild = 'block';
 
-export default ContainBlot;
+export { ContainBlot };

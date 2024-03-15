@@ -31,4 +31,4 @@ TableBodyFormat.blotName = blotName.tableBody;
 TableBodyFormat.tagName = 'tbody';
 TableBodyFormat.scope = Parchment.Scope.BLOCK_BLOT;
 
-export default TableBodyFormat;
+export { TableBodyFormat };

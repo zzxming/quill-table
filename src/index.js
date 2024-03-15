@@ -6,27 +6,26 @@ const Block = Quill.import('blots/block');
 const Container = Quill.import('blots/container');
 const icons = Quill.import('ui/icons');
 
-import TableToolTip from './module/TableToolTip';
-import TableSelection from './module/TableSelection';
-import TableOperationMenu from './module/TableOperationMenu';
-
-import ContainBlot from './blot/contain';
-
-import TableCellFormat from './format/TableCellFormat';
-import TableRowFormat from './format/TableRowFormat';
-import TableFormat from './format/TableFormat';
-import TableWrapper from './format/TableWrapperFormat';
-import TableBodyFormat from './format/TableBodyFormat';
-import TableColgroupFormat from './format/TableColgroupFormat';
-import TableColFormat from './format/TableColFormat';
-import TableCellInnerFormat from './format/TableCellInnerFormat';
+import { TableTooltip, TableSelection, TableOperationMenu } from './module';
+import { ContainBlot } from './blot/contain';
+import {
+    TableCellFormat,
+    TableRowFormat,
+    TableFormat,
+    TableWrapperFormat,
+    TableBodyFormat,
+    TableColgroupFormat,
+    TableColFormat,
+    TableCellInnerFormat,
+    ListItemRewrite,
+} from './format';
 
 ContainBlot.allowedChildren = [Block, BlockEmbed, Container];
 
-TableWrapper.allowedChildren = [TableFormat];
+TableWrapperFormat.allowedChildren = [TableFormat];
 
 TableFormat.allowedChildren = [TableBodyFormat, TableColgroupFormat];
-TableFormat.requiredContainer = TableWrapper;
+TableFormat.requiredContainer = TableWrapperFormat;
 
 TableBodyFormat.allowedChildren = [TableRowFormat];
 TableBodyFormat.requiredContainer = TableFormat;
@@ -41,8 +40,7 @@ TableCellFormat.allowedChildren = [TableCellInnerFormat];
 
 TableCellInnerFormat.defaultChild = 'block';
 
-import ListRewrite from './format/rewrite/List';
-export { ListRewrite };
+export { ListItemRewrite };
 
 Quill.register(
     {
@@ -53,7 +51,7 @@ Quill.register(
         [`formats/${TableRowFormat.blotName}`]: TableRowFormat,
         [`formats/${TableBodyFormat.blotName}`]: TableBodyFormat,
         [`formats/${TableFormat.blotName}`]: TableFormat,
-        [`formats/${TableWrapper.blotName}`]: TableWrapper,
+        [`formats/${TableWrapperFormat.blotName}`]: TableWrapperFormat,
 
         [`formats/${TableColgroupFormat.blotName}`]: TableColgroupFormat,
         [`formats/${TableColFormat.blotName}`]: TableColFormat,
@@ -151,7 +149,7 @@ class TableModule {
             }
         });
 
-        this.quill.theme.tableToolTip = new TableToolTip(this.quill, this.options.tableToolTip);
+        this.quill.theme.TableTooltip = new TableTooltip(this.quill, this.options.TableTooltip);
     }
 
     showTableTools(table, quill, options) {
@@ -162,9 +160,9 @@ class TableModule {
     hideTableTools() {
         this.tableSelection && this.tableSelection.destroy();
         this.tableOperationMenu && this.tableOperationMenu.destroy();
-        if (this.quill.theme.tableToolTip) {
-            this.quill.theme.tableToolTip.curTableId = null;
-            this.quill.theme.tableToolTip.hide();
+        if (this.quill.theme.TableTooltip) {
+            this.quill.theme.TableTooltip.curTableId = null;
+            this.quill.theme.TableTooltip.hide();
         }
         this.tableSelection = null;
         this.tableOperationMenu = null;
@@ -824,7 +822,7 @@ icons[TableModule.toolName] = TableSvg;
 export const rewirteFormats = () =>
     Quill.register(
         {
-            [`formats/list/item`]: ListRewrite,
+            [`formats/list/item`]: ListItemRewrite,
         },
         true
     );

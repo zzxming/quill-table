@@ -3,7 +3,7 @@ import { blotName } from '../../assets/const';
 const Parchment = Quill.import('parchment');
 const ListItem = Quill.import('formats/list/item');
 
-class ListRewrite extends ListItem {
+class ListItemRewrite extends ListItem {
     replaceWith(name, value) {
         this.parent.isolate(this.offset(this.parent), this.length());
         if (name === this.parent.statics.blotName) {
@@ -20,4 +20,4 @@ class ListRewrite extends ListItem {
         }
     }
 }
-export default ListRewrite;
+export { ListItemRewrite };

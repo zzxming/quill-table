@@ -1,6 +1,6 @@
 import Quill from 'quill';
 import { blotName } from '../assets/const';
-import TableCellInnerFormat from './TableCellInnerFormat';
+import { TableCellInnerFormat } from './TableCellInnerFormat';
 const Container = Quill.import('blots/container');
 const Parchment = Quill.import('parchment');
 
@@ -45,4 +45,4 @@ TableRowFormat.tagName = 'tr';
 TableRowFormat.className = 'ql-table-row';
 TableRowFormat.scope = Parchment.Scope.BLOCK_BLOT;
 
-export default TableRowFormat;
+export { TableRowFormat };
