@@ -40,7 +40,8 @@ TableRowFormat.requiredContainer = TableBodyFormat;
 TableCellFormat.allowedChildren = [TableCellInnerFormat];
 
 TableCellInnerFormat.defaultChild = 'block';
-TableCellInnerFormat.allowedChildren = [Block, BlockEmbed, Container];
+
+import ListRewrite from './format/rewrite/List';
 
 Quill.register(
     {
@@ -59,8 +60,8 @@ Quill.register(
     true
 );
 
-import { isFunction, randomId, showTableSelector } from './utils';
-import { CREATE_TABLE } from './assets/const/event';
+import { isFunction, isUndefined, randomId, showTableSelector } from './utils';
+import { CREATE_TABLE, CELL_MIN_PRE, blotName, moduleName, toolName, CELL_MIN_WIDTH } from './assets/const';
 import TableSvg from './assets/icons/table.svg';
 
 class TableModule {
@@ -70,6 +71,14 @@ class TableModule {
 
         this.controlItem = null;
         this.tableInsertSelectCloseHandler = null;
+        if (isUndefined(this.options.rewrite) || this.options.rewrite) {
+            Quill.register(
+                {
+                    [`formats/list/item`]: ListRewrite,
+                },
+                true
+            );
+        }
 
         const toolbar = this.quill.getModule('toolbar');
         if (toolbar) {
@@ -83,9 +92,9 @@ class TableModule {
                 } else {
                     this.controlItem = control[1];
                 }
+                this.buildCustomSelect(this.options.customSelect, control[1].tagName.toLowerCase());
+                toolbar.addHandler(TableModule.toolName, this.handleSelectDisplay.bind(this));
             }
-            this.buildCustomSelect(this.options.customSelect);
-            toolbar.addHandler(TableModule.toolName, this.handleSelectDisplay.bind(this));
         }
         this.pasteTableHandler();
 
@@ -174,49 +183,74 @@ class TableModule {
     pasteTableHandler() {
         let tableId = randomId();
         let rowId = randomId();
-        let colId = [];
-        let countColOver = false;
+        let colIds = [];
         let cellCount = 0;
 
         // 重新生成 table 里的所有 id, cellFormat 和 colFormat 进行 table 的添加
         // addMatcher 匹配的是标签字符串, 不是 blotName, 只是这些 blotName 设置的是标签字符串
         this.quill.clipboard.addMatcher(blotName.table, (node, delta) => {
-            // 添加 col
-            const tdWidth = Array.from(node.getElementsByTagName('tr')).reduce((pre, cur) => {
-                const w = Array.from(cur.getElementsByTagName('td')).map((td) => td.getBoundingClientRect().width);
-                if (w.length < pre.length) return pre;
-                return w.map((width, i) => Math.max(width, pre[i] ?? 0)).concat(pre.slice(w.length));
-            }, []);
+            const hasCol = !!delta.ops[0].insert?.col;
+            let colDelta;
+            // 粘贴表格若原本存在 col, 仅改变 id, 否则重新生成
+            const { width: originTableWidth } = node.getBoundingClientRect();
+            let isFull = this.options.fullWidth;
+            if (hasCol) isFull = !!delta.ops[0].insert?.col?.full;
+            const defaultColWidth = isFull
+                ? Math.max(100 / colIds.length, CELL_MIN_PRE) + '%'
+                : Math.max(originTableWidth / colIds.length, CELL_MIN_WIDTH) + 'px';
 
-            const colDelta = new Delta();
-            colId.map((id, i) => {
-                colDelta.insert('\n', {
-                    [blotName.tableCol]: {
-                        colId: id,
-                        tableId,
-                        width: this.options.fullWidth ? (1 / tdWidth.length) * 100 + '%' : tdWidth[i] ?? 150,
-                        full: this.options.fullWidth,
-                    },
-                });
-            });
+            if (!hasCol) {
+                colDelta = colIds.reduce((colDelta, id) => {
+                    colDelta.insert({
+                        [blotName.tableCol]: {
+                            colId: id,
+                            tableId,
+                            width: defaultColWidth,
+                            full: isFull,
+                        },
+                    });
+                    return colDelta;
+                }, new Delta());
+            } else {
+                for (let i = 0; i < delta.ops.length; i++) {
+                    if (!delta.ops[i].insert[blotName.tableCol]) {
+                        break;
+                    }
+                    delta.ops[i].insert[blotName.tableCol].tableId = tableId;
+                    delta.ops[i].insert[blotName.tableCol].colId = colIds[i];
+                    delta.ops[i].insert[blotName.tableCol].full = isFull;
+                    if (!delta.ops[i].insert[blotName.tableCol].width) {
+                        delta.ops[i].insert[blotName.tableCol].width = defaultColWidth;
+                    } else {
+                        delta.ops[i].insert[blotName.tableCol].width =
+                            parseFloat(delta.ops[i].insert[blotName.tableCol].width) + (isFull ? '%' : 'px');
+                    }
+                }
+            }
             tableId = randomId();
-            colId = [];
-            countColOver = false;
+            colIds = [];
             cellCount = 0;
-            return colDelta.concat(delta);
+            return colDelta ? colDelta.concat(delta) : delta;
         });
 
         this.quill.clipboard.addMatcher(blotName.tableRow, (node, delta) => {
             rowId = randomId();
-            countColOver = true;
+            cellCount = 0;
             return delta;
         });
 
         this.quill.clipboard.addMatcher(blotName.tableCell, (node, delta) => {
-            if (!countColOver) {
-                colId.push(randomId());
+            const rowspan = node.getAttribute('rowspan') || 1;
+            const colspan = node.getAttribute('colspan') || 1;
+            const colIndex = +cellCount + +colspan - 1;
+            if (!colIds[colIndex]) {
+                for (let i = colIndex; i >= 0; i--) {
+                    if (!colIds[i]) colIds[i] = randomId();
+                }
             }
+            const colId = colIds[colIndex];
             cellCount += 1;
+
             if (delta.slice(delta.length() - 1).ops[0]?.insert !== '\n') {
                 delta.insert('\n');
             }
@@ -226,9 +260,9 @@ class TableModule {
                     [blotName.tableCellInner]: {
                         tableId,
                         rowId,
-                        colId: colId[(cellCount - 1) % colId.length],
-                        rowspan: node.getAttribute('rowspan'),
-                        colspan: node.getAttribute('colspan'),
+                        colId,
+                        rowspan,
+                        colspan,
                         style: node.getAttribute('style'),
                     },
                 })
@@ -236,20 +270,23 @@ class TableModule {
         });
     }
 
-    async buildCustomSelect(customSelect) {
-        if (!this.controlItem) return;
-
+    async buildCustomSelect(customSelect, tagName) {
         const dom = document.createElement('div');
         dom.classList.add('ql-custom-select');
         const selector = customSelect && isFunction(customSelect) ? await customSelect() : this.createSelect();
         dom.appendChild(selector);
+
+        let appendTo = this.controlItem;
+        if (tagName === 'select') {
+            appendTo = this.controlItem.querySelector('.ql-picker-options');
+        }
+        if (!appendTo) return;
         selector.addEventListener(CREATE_TABLE, (e) => {
             const { row, col } = e.detail;
             if (!row || !col) return;
             this.insertTable(row, col);
         });
-        this.controlItem.appendChild(dom);
-        this.controlItem.style.position = 'relative';
+        appendTo.appendChild(dom);
     }
 
     async handleSelectDisplay() {
@@ -309,7 +346,7 @@ class TableModule {
             delta = new Array(columns).fill('\n').reduce((memo, text, i) => {
                 memo.insert(text, {
                     [blotName.tableCol]: {
-                        width: !this.options.fullWidth ? Math.floor(width / columns) : (1 / columns) * 100 + '%',
+                        width: !this.options.fullWidth ? `${Math.floor(width / columns)}px` : `${(1 / columns) * 100}%`,
                         tableId,
                         colId: colId[i],
                         full: this.options.fullWidth,
@@ -561,11 +598,19 @@ class TableModule {
         const baseColIndex = cols.findIndex((col) => {
             if (col.colId === baseColId) {
                 const newCol = Parchment.create(blotName.tableCol, {
-                    width: !this.options.fullWidth ? 160 : null,
+                    width: !this.options.fullWidth ? '160px' : '6%',
+                    full: this.options.fullWidth,
                     tableId: table.tableId,
                     colId: newColId,
                 });
-                col.parent.insertBefore(newCol, isRight ? col.next : col);
+                let beforeTarget = isRight ? col.next : col;
+                col.parent.insertBefore(newCol, beforeTarget);
+                if (this.options.fullWidth) {
+                    if (!beforeTarget) {
+                        beforeTarget = isRight ? col : col.prev;
+                    }
+                    beforeTarget.width = Math.max(beforeTarget.width - 6, CELL_MIN_PRE) + '%';
+                }
             }
             return col.colId === baseColId;
         });
@@ -757,11 +802,9 @@ class TableModule {
         }
     }
 
-    setBackgroundColor(color) {
-        if (!this.tableSelection.selectedTds.length) return;
-        const selectTds = this.tableSelection.selectedTds;
-
-        selectTds.map((cellInner) => (cellInner.style = `background-color: ${color};`));
+    setBackgroundColor(color, cells) {
+        if (!cells.length) return;
+        cells.map((cellInner) => (cellInner.style = `background-color: ${color};`));
     }
 }
 
@@ -779,7 +822,6 @@ export const isForbidInTable = (current) => {
         : false;
 };
 
-import { blotName, moduleName, toolName } from './assets/const/name';
 TableModule.moduleName = moduleName.table;
 TableModule.toolName = toolName.table;
 

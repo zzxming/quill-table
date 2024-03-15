@@ -1,6 +1,8 @@
 (function (Quill) {
     'use strict';
 
+    const CREATE_TABLE = 'createTable';
+
     const blotName = {
         contain: 'contain',
         tableWrapper: 'tableWrapper',
@@ -19,8 +21,13 @@
         table: 'table',
     };
 
+    // col 最小百分比宽度
+    const CELL_MIN_PRE = 3;
+    // col 最小 px 宽度
+    const CELL_MIN_WIDTH = 26;
+
     const Container$7 = Quill.import('blots/container');
-    const Parchment$9 = Quill.import('parchment');
+    const Parchment$a = Quill.import('parchment');
 
     class TableWrapperFormat extends Container$7 {
         static create(value) {
@@ -93,9 +100,7 @@
     TableWrapperFormat.blotName = blotName.tableWrapper;
     TableWrapperFormat.tagName = 'p';
     TableWrapperFormat.className = 'ql-table-wrapper';
-    TableWrapperFormat.scope = Parchment$9.Scope.BLOCK_BLOT;
-
-    const CREATE_TABLE = 'createTable';
+    TableWrapperFormat.scope = Parchment$a.Scope.BLOCK_BLOT;
 
     const randomId = () => Math.random().toString(36).slice(2);
 
@@ -386,10 +391,11 @@
     function isFunction(val) {
         return typeof val === 'function';
     }
+    function isUndefined(val) {
+        return val === undefined;
+    }
 
     let TIP_HEIGHT = 12;
-    const CELL_MIN_WIDTH = 26;
-    const MIN_PRE = 3;
     /*
     	options = {
     		tipHeight: 12,	// tooltip height
@@ -402,14 +408,13 @@
             this.options = options;
             this.optionsMerge();
 
+            this.tableDisableToolHandlers = {};
             this.tableWrapper = null;
             this.table = null;
             this.curTableId = '';
             this.focusTableChange = false;
             this.tableCols = [];
             this.scrollHandler = [];
-
-            this.tableDisableToolHandlers = {};
 
             this.root = this.quill.addContainer('ql-table-tooltip');
             this.root.style.height = TIP_HEIGHT + 'px';
@@ -438,45 +443,47 @@
         }
 
         listen() {
-            this.quill.on(Quill.events.SELECTION_CHANGE, (range, oldRange, source) => {
+            this.quill.on(Quill.events.EDITOR_CHANGE, (eventName) => {
+                if (eventName === Quill.events.TEXT_CHANGE) {
+                    return this.hide();
+                }
+                const range = this.quill.getSelection();
                 if (range == null) return;
-                if (range.length === 0) {
-                    const [tableWrapper, offset] = this.quill.scroll.descendant(TableWrapperFormat, range.index);
-                    if (tableWrapper !== null) {
-                        // 此时在 table 内, 禁用部分功能
-                        this.disableFromTable();
+                const [tableWrapper] = this.quill.scroll.descendant(TableWrapperFormat, range.index);
+                if (tableWrapper !== null) {
+                    // 此时在 table 内, 禁用部分功能
+                    this.disableFromTable();
 
-                        this.tableWrapper = tableWrapper;
-                        this.table = tableWrapper.children.head;
-                        // 找到 tbody
-                        let tbody = tableWrapper.children.tail;
-                        while (tbody && tbody.statics.blotName !== blotName.tableBody) {
-                            tbody = tbody.children?.tail;
-                        }
-
-                        const tableCols = tableWrapper.children.head?.children?.head;
-                        if (tableCols.statics.blotName === blotName.tableColGroup && tableCols.children.length) {
-                            this.tableCols = tableCols.children.map((col) => col);
-                        } else {
-                            this.tableCols = [];
-                        }
-
-                        let curTableId = tableWrapper.children.head.tableId;
-                        if (this.curTableId !== curTableId) {
-                            this.clearScrollEvent();
-                            this.focusTableChange = true;
-                            // 表格滚动同步事件
-                            this.addScrollEvent(
-                                this.tableWrapper.domNode,
-                                this.scrollSync.bind(this, this.tableWrapper.domNode)
-                            );
-                        }
-                        this.curTableId = curTableId;
-
-                        this.show();
-                        this.position();
-                        return;
+                    this.tableWrapper = tableWrapper;
+                    this.table = tableWrapper.children.head;
+                    // 找到 tbody
+                    let tbody = tableWrapper.children.tail;
+                    while (tbody && tbody.statics.blotName !== blotName.tableBody) {
+                        tbody = tbody.children?.tail;
                     }
+
+                    const tableCols = tableWrapper.children.head?.children?.head;
+                    if (tableCols.statics.blotName === blotName.tableColGroup && tableCols.children.length) {
+                        this.tableCols = tableCols.children.map((col) => col);
+                    } else {
+                        this.tableCols = [];
+                    }
+
+                    let curTableId = tableWrapper.children.head.tableId;
+                    if (this.curTableId !== curTableId) {
+                        this.clearScrollEvent();
+                        this.focusTableChange = true;
+                        // 表格滚动同步事件
+                        this.addScrollEvent(
+                            this.tableWrapper.domNode,
+                            this.scrollSync.bind(this, this.tableWrapper.domNode)
+                        );
+                    }
+                    this.curTableId = curTableId;
+
+                    this.show();
+                    this.position();
+                    return;
                 }
                 this.hide();
             });
@@ -493,7 +500,7 @@
             // 去除 toolbar 对应 module 的 handler 事件, 保存在 tableDisableToolHandlers
             for (const toolName of TableTooltip.disableToolNames) {
                 this.tableDisableToolHandlers[toolName] = toolbar.handlers[toolName];
-                // 不要使用 delete 删除属性
+                // 不要设置为 null
                 toolbar.handlers[toolName] = () => {};
             }
         }
@@ -516,10 +523,13 @@
          * @param {'add' | 'remove'} type - The type of toggle action to perform.
          */
         toggleDisableToolbarTools(type) {
-            this.quill.getModule('toolbar').controls.map(([name, btn]) => {
+            const toolbar = this.quill.getModule('toolbar');
+            toolbar.controls.map(([name, btn]) => {
                 if (TableTooltip.disableToolNames.includes(name)) {
                     if (btn.tagName.toLowerCase() === 'select') {
-                        document.querySelector(`.ql-select.${btn.className}`)?.classList[type]('ql-disabled-table');
+                        toolbar.container
+                            .querySelector(`.ql-picker.${btn.className}`)
+                            ?.classList[type]('ql-disabled-table');
                     } else {
                         btn.classList[type]('ql-disabled-table');
                     }
@@ -545,12 +555,12 @@
         }
 
         position = () => {
-            const rootLRelativeLeft = getComputedStyle(this.quill.root).paddingLeft;
+            const rect = getRelativeRect(this.table.domNode.getBoundingClientRect(), this.quill.root);
             const tableTop = this.table.domNode.offsetTop;
             const rootScrollTop = this.quill.root.scrollTop;
             css(this.root, {
                 top: `${tableTop - rootScrollTop - TIP_HEIGHT}px`,
-                left: rootLRelativeLeft, // editor 的 padding left
+                left: rect.x + 'px', // table 距离 editor 的 padding
             });
         };
 
@@ -616,7 +626,7 @@
 
                 if (this.table.full) {
                     // 拖拽的最大宽度是当前 col 宽度 + next col 宽度, 最后一个 col 最大宽度是当前宽度
-                    const minWidth = (MIN_PRE / 100) * tableWidth;
+                    const minWidth = (CELL_MIN_PRE / 100) * tableWidth;
                     const maxRange =
                         resX > rect.right
                             ? tableColHeads[curColIndex + 1]
@@ -645,12 +655,14 @@
                     if (pre < oldWidthPre) {
                         // 缩小时若不是最后一个, 则把减少的量加在后面一个
                         // 若是最后一个则把减少的量加在前面一个
-                        pre = Math.max(MIN_PRE, pre);
+                        pre = Math.max(CELL_MIN_PRE, pre);
                         const last = oldWidthPre - pre;
                         if (this.tableCols[curColIndex + 1]) {
                             this.tableCols[curColIndex + 1].width = `${this.tableCols[curColIndex + 1].width + last}%`;
-                        } else {
+                        } else if (this.tableCols[curColIndex - 1]) {
                             this.tableCols[curColIndex - 1].width = `${this.tableCols[curColIndex - 1].width + last}%`;
+                        } else {
+                            pre = 100;
                         }
                         this.tableCols[curColIndex].width = `${pre}%`;
                     } else {
@@ -658,9 +670,9 @@
                         // 若是最后一个则不处理
                         if (this.tableCols[curColIndex + 1]) {
                             const totalWidthNextPre = oldWidthPre + this.tableCols[curColIndex + 1].width;
-                            pre = Math.min(totalWidthNextPre - MIN_PRE, pre);
+                            pre = Math.min(totalWidthNextPre - CELL_MIN_PRE, pre);
                             this.tableCols[curColIndex].width = `${pre}%`;
-                            this.tableCols[curColIndex + 1].width = totalWidthNextPre - pre + '%';
+                            this.tableCols[curColIndex + 1].width = `${totalWidthNextPre - pre}%`;
                         }
                     }
                 } else {
@@ -669,9 +681,10 @@
                         parseFloat(tableColHeads[curColIndex].style.width) +
                         w +
                         'px';
-                    tableColHeads[curColIndex].style.width = w + 'px';
-                    this.tableCols[curColIndex].width = w;
+                    tableColHeads[curColIndex].style.width = `${w}px`;
+                    this.tableCols[curColIndex].width = `${w}px`;
                 }
+                this.table.formatTableWidth();
 
                 appendTo.removeChild(tipColBreak);
                 tipColBreak = null;
@@ -715,12 +728,11 @@
     TableTooltip.disableToolNames = [toolName.table];
 
     const Container$6 = Quill.import('blots/container');
-    const Parchment$8 = Quill.import('parchment');
+    const Parchment$9 = Quill.import('parchment');
 
     class ContainBlot extends Container$6 {
-        static create(value) {
-            const tagName = 'contain';
-            const node = super.create(tagName);
+        static create() {
+            const node = super.create();
             return node;
         }
 
@@ -733,16 +745,12 @@
         }
 
         format(name, value) {
-            this.domNode.lastChild.setAttribute(name, value);
-        }
-
-        formats() {
-            return { [this.statics.blotName]: this.statics.formats(this.domNode) };
+            this.children.tail.format(name, value);
         }
 
         replace(target) {
             if (target.statics.blotName !== this.statics.blotName) {
-                const item = Parchment$8.create(this.statics.defaultChild);
+                const item = Parchment$9.create(this.statics.defaultChild);
                 target.moveChildren(item);
                 this.appendChild(item);
             }
@@ -753,10 +761,10 @@
 
     ContainBlot.blotName = blotName.contain;
     ContainBlot.tagName = 'contain';
-    ContainBlot.scope = Parchment$8.Scope.BLOCK_BLOT;
+    ContainBlot.scope = Parchment$9.Scope.BLOCK_BLOT;
     ContainBlot.defaultChild = 'block';
 
-    const Parchment$7 = Quill.import('parchment');
+    const Parchment$8 = Quill.import('parchment');
 
     class TableCellInnerFormat extends ContainBlot {
         static create(value) {
@@ -771,21 +779,8 @@
             return node;
         }
 
-        formats() {
-            const { tableId, rowId, colId, rowspan, colspan } = this.domNode.dataset;
-            return {
-                [this.statics.blotName]: {
-                    tableId,
-                    rowId,
-                    colId,
-                    rowspan,
-                    colspan,
-                    style: this.domNode._style,
-                },
-            };
-        }
-
-        updateDelta() {
+        // 仅 Block 存在 cache, 存在 cache 时不会获取最新 delta, cache 还会保存父级 format(bubbleFormats 函数), 需要清除以获取最新 delta
+        clearDeltaCache() {
             this.children.forEach((child) => {
                 child.cache = {};
             });
@@ -803,7 +798,7 @@
         set rowspan(value) {
             this.parent && (this.parent.rowspan = value);
             this.domNode.dataset.rowspan = value;
-            this.updateDelta();
+            this.clearDeltaCache();
         }
         get colspan() {
             return Number(this.domNode.dataset.colspan);
@@ -811,12 +806,43 @@
         set colspan(value) {
             this.parent && (this.parent.colspan = value);
             this.domNode.dataset.colspan = value;
-            this.updateDelta();
+            this.clearDeltaCache();
         }
         set style(value) {
             this.domNode._style = value;
             this.parent.style = value;
-            this.updateDelta();
+            this.clearDeltaCache();
+        }
+
+        replace(target) {
+            if (target.statics.blotName !== this.statics.blotName) {
+                const cloneTarget = target.clone();
+                target.moveChildren(cloneTarget);
+                this.appendChild(cloneTarget);
+                target.parent.insertBefore(this, target.next);
+                target.remove();
+            } else {
+                super.replace(target);
+            }
+        }
+
+        format(name, value) {
+            super.format(name, value);
+            this.clearDeltaCache();
+        }
+
+        formats() {
+            const { tableId, rowId, colId, rowspan, colspan } = this.domNode.dataset;
+            return {
+                [this.statics.blotName]: {
+                    tableId,
+                    rowId,
+                    colId,
+                    rowspan,
+                    colspan,
+                    style: this.domNode._style,
+                },
+            };
         }
 
         optimize() {
@@ -826,14 +852,14 @@
             // 父级非表格，则将当前 blot 放入表格中
             const { tableId, colId, rowId, rowspan, colspan } = this.domNode.dataset;
             if (parent != null && parent.statics.blotName != blotName.tableCell) {
-                const mark = Parchment$7.create('block');
+                const mark = Parchment$8.create('block');
 
                 this.parent.insertBefore(mark, this.next);
-                const tableWrapper = Parchment$7.create(blotName.tableWrapper, tableId);
-                const table = Parchment$7.create(blotName.table, tableId);
-                const tableBody = Parchment$7.create(blotName.tableBody);
-                const tr = Parchment$7.create(blotName.tableRow, rowId);
-                const td = Parchment$7.create(blotName.tableCell, {
+                const tableWrapper = Parchment$8.create(blotName.tableWrapper, tableId);
+                const table = Parchment$8.create(blotName.table, tableId);
+                const tableBody = Parchment$8.create(blotName.tableBody);
+                const tr = Parchment$8.create(blotName.tableRow, rowId);
+                const td = Parchment$8.create(blotName.tableCell, {
                     tableId,
                     rowId,
                     colId,
@@ -863,9 +889,8 @@
     TableCellInnerFormat.blotName = blotName.tableCellInner;
     TableCellInnerFormat.tagName = 'p';
     TableCellInnerFormat.className = 'ql-table-cell-inner';
-    TableCellInnerFormat.scope = Parchment$7.Scope.BLOCK_BLOT;
 
-    const Parchment$6 = Quill.import('parchment');
+    const Parchment$7 = Quill.import('parchment');
     const Container$5 = Quill.import('blots/container');
 
     class TableCellFormat extends Container$5 {
@@ -940,7 +965,7 @@
     TableCellFormat.blotName = blotName.tableCell;
     TableCellFormat.tagName = 'td';
     TableCellFormat.className = 'ql-table-cell';
-    TableCellFormat.scope = Parchment$6.Scope.BLOCK_BLOT;
+    TableCellFormat.scope = Parchment$7.Scope.BLOCK_BLOT;
 
     // 以 ql-better-table 的 table-selection.js 为修改基础
 
@@ -1221,8 +1246,9 @@
                 input.addEventListener('click', (e) => {
                     e.stopPropagation();
                 });
+                const tempCells = tableModule.tableSelection.selectedTds;
                 input.addEventListener('input', () => {
-                    tableModule.setBackgroundColor(input.value);
+                    tableModule.setBackgroundColor(input.value, tempCells);
                 });
                 input.style.width = '100%';
                 return input;
@@ -1355,7 +1381,7 @@
     }
 
     const Container$4 = Quill.import('blots/container');
-    const Parchment$5 = Quill.import('parchment');
+    const Parchment$6 = Quill.import('parchment');
 
     class TableRowFormat extends Container$4 {
         static create(value) {
@@ -1396,21 +1422,31 @@
     TableRowFormat.blotName = blotName.tableRow;
     TableRowFormat.tagName = 'tr';
     TableRowFormat.className = 'ql-table-row';
-    TableRowFormat.scope = Parchment$5.Scope.BLOCK_BLOT;
+    TableRowFormat.scope = Parchment$6.Scope.BLOCK_BLOT;
 
-    const Parchment$4 = Quill.import('parchment');
-    const Block$1 = Quill.import('blots/block');
+    const Parchment$5 = Quill.import('parchment');
+    const BlockEmbed$1 = Quill.import('blots/block/embed');
 
-    class TableColFormat extends Block$1 {
+    class TableColFormat extends BlockEmbed$1 {
         static create(value) {
             const { width, tableId, colId, full } = value;
             const node = super.create();
             node.setAttribute('width', width);
-            node.setAttribute('data-full', full);
+            full && node.setAttribute('data-full', full);
             node.dataset.tableId = tableId;
             node.dataset.colId = colId;
 
             return node;
+        }
+
+        static value(domNode) {
+            const { tableId, colId } = domNode.dataset;
+            return {
+                tableId,
+                colId,
+                width: domNode.getAttribute('width'),
+                full: domNode.hasAttribute('data-full'),
+            };
         }
 
         get width() {
@@ -1430,38 +1466,25 @@
             return this.domNode.hasAttribute('data-full');
         }
 
-        formats() {
-            const { tableId, colId } = this.domNode.dataset;
-            return {
-                [this.statics.blotName]: {
-                    tableId,
-                    colId,
-                    width: this.domNode.getAttribute('width'),
-                    full: this.domNode.getAttribute('data-full'),
-                },
-            };
-        }
-
         optimize() {
             super.optimize();
 
             const parent = this.parent;
             if (parent != null && parent.statics.blotName != blotName.tableColGroup) {
-                const mark = Parchment$4.create('block');
+                const mark = Parchment$5.create('block');
                 this.parent.insertBefore(mark, this.next);
 
-                const tableWrapper = Parchment$4.create(blotName.tableWrapper, this.domNode.dataset.tableId);
-                const table = Parchment$4.create(blotName.table, this.domNode.dataset.tableId);
+                const tableWrapper = Parchment$5.create(blotName.tableWrapper, this.domNode.dataset.tableId);
+                const table = Parchment$5.create(blotName.table, this.domNode.dataset.tableId);
 
                 this.full && (table.full = true);
 
-                const tableColgroup = Parchment$4.create(blotName.tableColGroup);
+                const tableColgroup = Parchment$5.create(blotName.tableColGroup);
 
                 tableColgroup.appendChild(this);
                 table.appendChild(tableColgroup);
                 tableWrapper.appendChild(table);
 
-                // 最终显示 tableWrapper
                 tableWrapper.replace(mark);
             }
             const next = this.next;
@@ -1477,17 +1500,13 @@
                 next.remove();
             }
         }
-
-        html() {
-            return this.domNode.outerHTML;
-        }
     }
     TableColFormat.blotName = blotName.tableCol;
     TableColFormat.tagName = 'col';
-    TableColFormat.scope = Parchment$4.Scope.BLOCK_BLOT;
+    TableColFormat.scope = Parchment$5.Scope.BLOCK_BLOT;
 
     const Container$3 = Quill.import('blots/container');
-    const Parchment$3 = Quill.import('parchment');
+    const Parchment$4 = Quill.import('parchment');
 
     class TableFormat extends Container$3 {
         constructor(domNode, value) {
@@ -1508,6 +1527,7 @@
         }
 
         colWidthFillTable() {
+            if (this.full) return;
             const colgroup = this.children.head;
             if (!colgroup || colgroup.statics.blotName !== blotName.tableColGroup) return;
 
@@ -1565,10 +1585,10 @@
 
     TableFormat.blotName = blotName.table;
     TableFormat.tagName = 'table';
-    TableFormat.scope = Parchment$3.Scope.BLOCK_BLOT;
+    TableFormat.scope = Parchment$4.Scope.BLOCK_BLOT;
 
     const Container$2 = Quill.import('blots/container');
-    const Parchment$2 = Quill.import('parchment');
+    const Parchment$3 = Quill.import('parchment');
 
     class TableBodyFormat extends Container$2 {
         optimize() {
@@ -1596,10 +1616,10 @@
     }
     TableBodyFormat.blotName = blotName.tableBody;
     TableBodyFormat.tagName = 'tbody';
-    TableBodyFormat.scope = Parchment$2.Scope.BLOCK_BLOT;
+    TableBodyFormat.scope = Parchment$3.Scope.BLOCK_BLOT;
 
     const Container$1 = Quill.import('blots/container');
-    const Parchment$1 = Quill.import('parchment');
+    const Parchment$2 = Quill.import('parchment');
 
     class TableColgroupFormat extends Container$1 {
         optimize() {
@@ -1631,7 +1651,28 @@
     }
     TableColgroupFormat.blotName = blotName.tableColGroup;
     TableColgroupFormat.tagName = 'colgroup';
-    TableColgroupFormat.scope = Parchment$1.Scope.BLOCK_BLOT;
+    TableColgroupFormat.scope = Parchment$2.Scope.BLOCK_BLOT;
+
+    const Parchment$1 = Quill.import('parchment');
+    const ListItem = Quill.import('formats/list/item');
+
+    class ListRewrite extends ListItem {
+        replaceWith(name, value) {
+            this.parent.isolate(this.offset(this.parent), this.length());
+            if (name === this.parent.statics.blotName) {
+                this.parent.replaceWith(name, value);
+                return this;
+            } else {
+                if (name === blotName.tableCellInner) {
+                    let replacement = typeof name === 'string' ? Parchment$1.create(name, value) : name;
+                    replacement.replace(this.parent);
+                    this.attributes.copy(replacement);
+                    return replacement;
+                }
+                return super.replaceWith(name, value);
+            }
+        }
+    }
 
     var TableSvg = "<svg viewBox=\"0 0 24 24\"><path class=\"ql-stroke\" fill=\"none\" stroke=\"currentColor\" stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M3 5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5zm0 5h18M10 3v18\"/></svg>";
 
@@ -1661,7 +1702,6 @@
     TableCellFormat.allowedChildren = [TableCellInnerFormat];
 
     TableCellInnerFormat.defaultChild = 'block';
-    TableCellInnerFormat.allowedChildren = [Block, BlockEmbed, Container];
 
     Quill.register(
         {
@@ -1687,6 +1727,14 @@
 
             this.controlItem = null;
             this.tableInsertSelectCloseHandler = null;
+            if (isUndefined(this.options.rewrite) || this.options.rewrite) {
+                Quill.register(
+                    {
+                        [`formats/list/item`]: ListRewrite,
+                    },
+                    true
+                );
+            }
 
             const toolbar = this.quill.getModule('toolbar');
             if (toolbar) {
@@ -1700,9 +1748,9 @@
                     } else {
                         this.controlItem = control[1];
                     }
+                    this.buildCustomSelect(this.options.customSelect, control[1].tagName.toLowerCase());
+                    toolbar.addHandler(TableModule.toolName, this.handleSelectDisplay.bind(this));
                 }
-                this.buildCustomSelect(this.options.customSelect);
-                toolbar.addHandler(TableModule.toolName, this.handleSelectDisplay.bind(this));
             }
             this.pasteTableHandler();
 
@@ -1791,49 +1839,74 @@
         pasteTableHandler() {
             let tableId = randomId();
             let rowId = randomId();
-            let colId = [];
-            let countColOver = false;
+            let colIds = [];
             let cellCount = 0;
 
             // 重新生成 table 里的所有 id, cellFormat 和 colFormat 进行 table 的添加
             // addMatcher 匹配的是标签字符串, 不是 blotName, 只是这些 blotName 设置的是标签字符串
             this.quill.clipboard.addMatcher(blotName.table, (node, delta) => {
-                // 添加 col
-                const tdWidth = Array.from(node.getElementsByTagName('tr')).reduce((pre, cur) => {
-                    const w = Array.from(cur.getElementsByTagName('td')).map((td) => td.getBoundingClientRect().width);
-                    if (w.length < pre.length) return pre;
-                    return w.map((width, i) => Math.max(width, pre[i] ?? 0)).concat(pre.slice(w.length));
-                }, []);
+                const hasCol = !!delta.ops[0].insert?.col;
+                let colDelta;
+                // 粘贴表格若原本存在 col, 仅改变 id, 否则重新生成
+                const { width: originTableWidth } = node.getBoundingClientRect();
+                let isFull = this.options.fullWidth;
+                if (hasCol) isFull = !!delta.ops[0].insert?.col?.full;
+                const defaultColWidth = isFull
+                    ? Math.max(100 / colIds.length, CELL_MIN_PRE) + '%'
+                    : Math.max(originTableWidth / colIds.length, CELL_MIN_WIDTH) + 'px';
 
-                const colDelta = new Delta();
-                colId.map((id, i) => {
-                    colDelta.insert('\n', {
-                        [blotName.tableCol]: {
-                            colId: id,
-                            tableId,
-                            width: this.options.fullWidth ? (1 / tdWidth.length) * 100 + '%' : tdWidth[i] ?? 150,
-                            full: this.options.fullWidth,
-                        },
-                    });
-                });
+                if (!hasCol) {
+                    colDelta = colIds.reduce((colDelta, id) => {
+                        colDelta.insert({
+                            [blotName.tableCol]: {
+                                colId: id,
+                                tableId,
+                                width: defaultColWidth,
+                                full: isFull,
+                            },
+                        });
+                        return colDelta;
+                    }, new Delta());
+                } else {
+                    for (let i = 0; i < delta.ops.length; i++) {
+                        if (!delta.ops[i].insert[blotName.tableCol]) {
+                            break;
+                        }
+                        delta.ops[i].insert[blotName.tableCol].tableId = tableId;
+                        delta.ops[i].insert[blotName.tableCol].colId = colIds[i];
+                        delta.ops[i].insert[blotName.tableCol].full = isFull;
+                        if (!delta.ops[i].insert[blotName.tableCol].width) {
+                            delta.ops[i].insert[blotName.tableCol].width = defaultColWidth;
+                        } else {
+                            delta.ops[i].insert[blotName.tableCol].width =
+                                parseFloat(delta.ops[i].insert[blotName.tableCol].width) + (isFull ? '%' : 'px');
+                        }
+                    }
+                }
                 tableId = randomId();
-                colId = [];
-                countColOver = false;
+                colIds = [];
                 cellCount = 0;
-                return colDelta.concat(delta);
+                return colDelta ? colDelta.concat(delta) : delta;
             });
 
             this.quill.clipboard.addMatcher(blotName.tableRow, (node, delta) => {
                 rowId = randomId();
-                countColOver = true;
+                cellCount = 0;
                 return delta;
             });
 
             this.quill.clipboard.addMatcher(blotName.tableCell, (node, delta) => {
-                if (!countColOver) {
-                    colId.push(randomId());
+                const rowspan = node.getAttribute('rowspan') || 1;
+                const colspan = node.getAttribute('colspan') || 1;
+                const colIndex = +cellCount + +colspan - 1;
+                if (!colIds[colIndex]) {
+                    for (let i = colIndex; i >= 0; i--) {
+                        if (!colIds[i]) colIds[i] = randomId();
+                    }
                 }
+                const colId = colIds[colIndex];
                 cellCount += 1;
+
                 if (delta.slice(delta.length() - 1).ops[0]?.insert !== '\n') {
                     delta.insert('\n');
                 }
@@ -1843,9 +1916,9 @@
                         [blotName.tableCellInner]: {
                             tableId,
                             rowId,
-                            colId: colId[(cellCount - 1) % colId.length],
-                            rowspan: node.getAttribute('rowspan'),
-                            colspan: node.getAttribute('colspan'),
+                            colId,
+                            rowspan,
+                            colspan,
                             style: node.getAttribute('style'),
                         },
                     })
@@ -1853,20 +1926,23 @@
             });
         }
 
-        async buildCustomSelect(customSelect) {
-            if (!this.controlItem) return;
-
+        async buildCustomSelect(customSelect, tagName) {
             const dom = document.createElement('div');
             dom.classList.add('ql-custom-select');
             const selector = customSelect && isFunction(customSelect) ? await customSelect() : this.createSelect();
             dom.appendChild(selector);
+
+            let appendTo = this.controlItem;
+            if (tagName === 'select') {
+                appendTo = this.controlItem.querySelector('.ql-picker-options');
+            }
+            if (!appendTo) return;
             selector.addEventListener(CREATE_TABLE, (e) => {
                 const { row, col } = e.detail;
                 if (!row || !col) return;
                 this.insertTable(row, col);
             });
-            this.controlItem.appendChild(dom);
-            this.controlItem.style.position = 'relative';
+            appendTo.appendChild(dom);
         }
 
         async handleSelectDisplay() {
@@ -1926,7 +2002,7 @@
                 delta = new Array(columns).fill('\n').reduce((memo, text, i) => {
                     memo.insert(text, {
                         [blotName.tableCol]: {
-                            width: !this.options.fullWidth ? Math.floor(width / columns) : (1 / columns) * 100 + '%',
+                            width: !this.options.fullWidth ? `${Math.floor(width / columns)}px` : `${(1 / columns) * 100}%`,
                             tableId,
                             colId: colId[i],
                             full: this.options.fullWidth,
@@ -2178,11 +2254,19 @@
             const baseColIndex = cols.findIndex((col) => {
                 if (col.colId === baseColId) {
                     const newCol = Parchment.create(blotName.tableCol, {
-                        width: !this.options.fullWidth ? 160 : null,
+                        width: !this.options.fullWidth ? '160px' : '6%',
+                        full: this.options.fullWidth,
                         tableId: table.tableId,
                         colId: newColId,
                     });
-                    col.parent.insertBefore(newCol, isRight ? col.next : col);
+                    let beforeTarget = isRight ? col.next : col;
+                    col.parent.insertBefore(newCol, beforeTarget);
+                    if (this.options.fullWidth) {
+                        if (!beforeTarget) {
+                            beforeTarget = isRight ? col : col.prev;
+                        }
+                        beforeTarget.width = Math.max(beforeTarget.width - 6, CELL_MIN_PRE) + '%';
+                    }
                 }
                 return col.colId === baseColId;
             });
@@ -2374,11 +2458,9 @@
             }
         }
 
-        setBackgroundColor(color) {
-            if (!this.tableSelection.selectedTds.length) return;
-            const selectTds = this.tableSelection.selectedTds;
-
-            selectTds.map((cellInner) => (cellInner.style = `background-color: ${color};`));
+        setBackgroundColor(color, cells) {
+            if (!cells.length) return;
+            cells.map((cellInner) => (cellInner.style = `background-color: ${color};`));
         }
     }
 
@@ -2395,13 +2477,12 @@
                 : isForbidInTable(current.parent)
             : false;
     };
+
     TableModule.moduleName = moduleName.table;
     TableModule.toolName = toolName.table;
 
     TableModule.createEventName = CREATE_TABLE;
     icons[TableModule.toolName] = TableSvg;
-
-    Quill.import('delta');
 
     Quill.register(
         {
@@ -2413,31 +2494,28 @@
         theme: 'snow',
         modules: {
             toolbar: [
-                ['bold', 'italic', 'underline', 'strike'], // toggled buttons
+                ['bold', 'italic', 'underline', 'strike'],
                 ['blockquote', 'code-block'],
-
-                [{ header: 1 }, { header: 2 }], // custom button values
-                [{ list: 'ordered' }, { list: 'bullet' }],
-                [{ script: 'sub' }, { script: 'super' }], // superscript/subscript
-                [{ indent: '-1' }, { indent: '+1' }], // outdent/indent
-                [{ direction: 'rtl' }], // text direction
-
-                [{ size: ['small', false, 'large', 'huge'] }], // custom dropdown
+                [{ list: 'ordered' }, { list: 'bullet' }, { list: 'check' }],
+                [{ script: 'sub' }, { script: 'super' }],
+                [{ indent: '-1' }, { indent: '+1' }],
+                [{ direction: 'rtl' }],
+                [{ size: ['small', false, 'large', 'huge'] }],
                 [{ header: [1, 2, 3, 4, 5, 6, false] }],
-
-                [{ color: [] }, { background: [] }], // dropdown with defaults from theme
+                [{ color: [] }, { background: [] }],
                 [{ font: [] }],
-                [{ align: [] }],
-
+                [{ align: ['', 'center', 'right', 'justify'] }],
                 ['clean'],
                 ['image', 'video'],
+
                 [{ table: [] }],
             ],
             [`${TableModule.moduleName}`]: {
                 fullWidth: true,
+                // rewrite: false,
                 tableToolTip: {
                     tipHeight: 12,
-                    disableToolNames: [],
+                    disableToolNames: ['bold', 'color'],
                 },
                 operationMenu: {},
                 selection: {
@@ -2447,133 +2525,139 @@
         },
     });
 
-    quill
-        .setContents
-        // new Delta([
-        //     { insert: '\n' },
-        //     { attributes: { col: { tableId: 'w9tilwkgm1e', colId: '7arx3sf4z5v', width: '33.333333%' } }, insert: '\n' },
-        //     { attributes: { col: { tableId: 'w9tilwkgm1e', colId: 'klrrpz1qhhr', width: '33.333333%' } }, insert: '\n' },
-        //     { attributes: { col: { tableId: 'w9tilwkgm1e', colId: 'k9yw1zl8lyg', width: '33.333333%' } }, insert: '\n' },
-        //     { insert: '1' },
-        //     {
-        //         attributes: {
-        //             tableCellInner: {
-        //                 tableId: 'w9tilwkgm1e',
-        //                 rowId: '44kczjr1q8v',
-        //                 colId: '7arx3sf4z5v',
-        //                 rowspan: '1',
-        //                 colspan: '1',
-        //             },
+    quill.setContents([
+        // { insert: '\n' },
+        // {
+        //     attributes: { col: { tableId: 'w9tilwkgm1e', colId: '7arx3sf4z5v', width: '33.333333%', full: true } },
+        //     insert: '\n',
+        // },
+        // {
+        //     attributes: { col: { tableId: 'w9tilwkgm1e', colId: 'klrrpz1qhhr', width: '33.333333%', full: true } },
+        //     insert: '\n',
+        // },
+        // {
+        //     attributes: { col: { tableId: 'w9tilwkgm1e', colId: 'k9yw1zl8lyg', width: '33.333333%', full: true } },
+        //     insert: '\n',
+        // },
+        // { insert: '1' },
+        // {
+        //     attributes: {
+        //         tableCellInner: {
+        //             tableId: 'w9tilwkgm1e',
+        //             rowId: '44kczjr1q8v',
+        //             colId: '7arx3sf4z5v',
+        //             rowspan: '1',
+        //             colspan: '1',
         //         },
-        //         insert: '\n',
         //     },
-        //     { insert: '2' },
-        //     {
-        //         attributes: {
-        //             tableCellInner: {
-        //                 tableId: 'w9tilwkgm1e',
-        //                 rowId: '44kczjr1q8v',
-        //                 colId: 'klrrpz1qhhr',
-        //                 rowspan: '1',
-        //                 colspan: '1',
-        //             },
+        //     insert: '\n',
+        // },
+        // { insert: '2' },
+        // {
+        //     attributes: {
+        //         tableCellInner: {
+        //             tableId: 'w9tilwkgm1e',
+        //             rowId: '44kczjr1q8v',
+        //             colId: 'klrrpz1qhhr',
+        //             rowspan: '1',
+        //             colspan: '1',
         //         },
-        //         insert: '\n',
         //     },
-        //     { insert: '3' },
-        //     {
-        //         attributes: {
-        //             tableCellInner: {
-        //                 tableId: 'w9tilwkgm1e',
-        //                 rowId: '44kczjr1q8v',
-        //                 colId: 'k9yw1zl8lyg',
-        //                 rowspan: '1',
-        //                 colspan: '1',
-        //             },
+        //     insert: '\n',
+        // },
+        // { insert: '3' },
+        // {
+        //     attributes: {
+        //         tableCellInner: {
+        //             tableId: 'w9tilwkgm1e',
+        //             rowId: '44kczjr1q8v',
+        //             colId: 'k9yw1zl8lyg',
+        //             rowspan: '1',
+        //             colspan: '1',
         //         },
-        //         insert: '\n',
         //     },
-        //     { insert: '4' },
-        //     {
-        //         attributes: {
-        //             tableCellInner: {
-        //                 tableId: 'w9tilwkgm1e',
-        //                 rowId: 'c74r2a835vl',
-        //                 colId: '7arx3sf4z5v',
-        //                 rowspan: '1',
-        //                 colspan: '1',
-        //             },
+        //     insert: '\n',
+        // },
+        // { insert: '4' },
+        // {
+        //     attributes: {
+        //         tableCellInner: {
+        //             tableId: 'w9tilwkgm1e',
+        //             rowId: 'c74r2a835vl',
+        //             colId: '7arx3sf4z5v',
+        //             rowspan: '1',
+        //             colspan: '1',
         //         },
-        //         insert: '\n',
         //     },
-        //     { insert: '5' },
-        //     {
-        //         attributes: {
-        //             tableCellInner: {
-        //                 tableId: 'w9tilwkgm1e',
-        //                 rowId: 'c74r2a835vl',
-        //                 colId: 'klrrpz1qhhr',
-        //                 rowspan: '1',
-        //                 colspan: '1',
-        //             },
+        //     insert: '\n',
+        // },
+        // { insert: '5' },
+        // {
+        //     attributes: {
+        //         tableCellInner: {
+        //             tableId: 'w9tilwkgm1e',
+        //             rowId: 'c74r2a835vl',
+        //             colId: 'klrrpz1qhhr',
+        //             rowspan: '1',
+        //             colspan: '1',
         //         },
-        //         insert: '\n',
         //     },
-        //     { insert: '6' },
-        //     {
-        //         attributes: {
-        //             tableCellInner: {
-        //                 tableId: 'w9tilwkgm1e',
-        //                 rowId: 'c74r2a835vl',
-        //                 colId: 'k9yw1zl8lyg',
-        //                 rowspan: '1',
-        //                 colspan: '1',
-        //             },
+        //     insert: '\n',
+        // },
+        // { insert: '6' },
+        // {
+        //     attributes: {
+        //         tableCellInner: {
+        //             tableId: 'w9tilwkgm1e',
+        //             rowId: 'c74r2a835vl',
+        //             colId: 'k9yw1zl8lyg',
+        //             rowspan: '1',
+        //             colspan: '1',
         //         },
-        //         insert: '\n',
         //     },
-        //     { insert: '7' },
-        //     {
-        //         attributes: {
-        //             tableCellInner: {
-        //                 tableId: 'w9tilwkgm1e',
-        //                 rowId: 'bljhr2ww5ac',
-        //                 colId: '7arx3sf4z5v',
-        //                 rowspan: '1',
-        //                 colspan: '1',
-        //             },
+        //     insert: '\n',
+        // },
+        // { insert: '7' },
+        // {
+        //     attributes: {
+        //         tableCellInner: {
+        //             tableId: 'w9tilwkgm1e',
+        //             rowId: 'bljhr2ww5ac',
+        //             colId: '7arx3sf4z5v',
+        //             rowspan: '1',
+        //             colspan: '1',
         //         },
-        //         insert: '\n',
         //     },
-        //     { insert: '8' },
-        //     {
-        //         attributes: {
-        //             tableCellInner: {
-        //                 tableId: 'w9tilwkgm1e',
-        //                 rowId: 'bljhr2ww5ac',
-        //                 colId: 'klrrpz1qhhr',
-        //                 rowspan: '1',
-        //                 colspan: '1',
-        //             },
+        //     insert: '\n',
+        // },
+        // { insert: '8' },
+        // {
+        //     attributes: {
+        //         tableCellInner: {
+        //             tableId: 'w9tilwkgm1e',
+        //             rowId: 'bljhr2ww5ac',
+        //             colId: 'klrrpz1qhhr',
+        //             rowspan: '1',
+        //             colspan: '1',
         //         },
-        //         insert: '\n',
         //     },
-        //     { insert: '9' },
-        //     {
-        //         attributes: {
-        //             tableCellInner: {
-        //                 tableId: 'w9tilwkgm1e',
-        //                 rowId: 'bljhr2ww5ac',
-        //                 colId: 'k9yw1zl8lyg',
-        //                 rowspan: '1',
-        //                 colspan: '1',
-        //             },
+        //     insert: '\n',
+        // },
+        // { insert: '9' },
+        // {
+        //     attributes: {
+        //         tableCellInner: {
+        //             tableId: 'w9tilwkgm1e',
+        //             rowId: 'bljhr2ww5ac',
+        //             colId: 'k9yw1zl8lyg',
+        //             rowspan: '1',
+        //             colspan: '1',
         //         },
-        //         insert: '\n',
         //     },
-        //     { insert: '\n' },
-        // ])
-        ();
+        //     insert: '\n',
+        // },
+        // { insert: '\n' },
+    ]);
 
     const contentDisplay = document.getElementsByClassName('contentDisplay')[0];
     document.getElementsByClassName('getContent')[0].onclick = () => {

@@ -1,11 +1,8 @@
 import Quill from 'quill';
 import TableWrapperFormat from '../format/TableWrapperFormat';
 import { css, getRelativeRect } from '../utils';
-import { blotName, toolName } from '../assets/const/name';
-
+import { blotName, toolName, CELL_MIN_WIDTH, CELL_MIN_PRE } from '../assets/const';
 let TIP_HEIGHT = 12;
-const CELL_MIN_WIDTH = 26;
-const MIN_PRE = 3;
 /*
 	options = {
 		tipHeight: 12,	// tooltip height
@@ -18,14 +15,13 @@ export default class TableTooltip {
         this.options = options;
         this.optionsMerge();
 
+        this.tableDisableToolHandlers = {};
         this.tableWrapper = null;
         this.table = null;
         this.curTableId = '';
         this.focusTableChange = false;
         this.tableCols = [];
         this.scrollHandler = [];
-
-        this.tableDisableToolHandlers = {};
 
         this.root = this.quill.addContainer('ql-table-tooltip');
         this.root.style.height = TIP_HEIGHT + 'px';
@@ -54,45 +50,47 @@ export default class TableTooltip {
     }
 
     listen() {
-        this.quill.on(Quill.events.SELECTION_CHANGE, (range, oldRange, source) => {
+        this.quill.on(Quill.events.EDITOR_CHANGE, (eventName) => {
+            if (eventName === Quill.events.TEXT_CHANGE) {
+                return this.hide();
+            }
+            const range = this.quill.getSelection();
             if (range == null) return;
-            if (range.length === 0) {
-                const [tableWrapper, offset] = this.quill.scroll.descendant(TableWrapperFormat, range.index);
-                if (tableWrapper !== null) {
-                    // 此时在 table 内, 禁用部分功能
-                    this.disableFromTable();
+            const [tableWrapper] = this.quill.scroll.descendant(TableWrapperFormat, range.index);
+            if (tableWrapper !== null) {
+                // 此时在 table 内, 禁用部分功能
+                this.disableFromTable();
 
-                    this.tableWrapper = tableWrapper;
-                    this.table = tableWrapper.children.head;
-                    // 找到 tbody
-                    let tbody = tableWrapper.children.tail;
-                    while (tbody && tbody.statics.blotName !== blotName.tableBody) {
-                        tbody = tbody.children?.tail;
-                    }
-
-                    const tableCols = tableWrapper.children.head?.children?.head;
-                    if (tableCols.statics.blotName === blotName.tableColGroup && tableCols.children.length) {
-                        this.tableCols = tableCols.children.map((col) => col);
-                    } else {
-                        this.tableCols = [];
-                    }
-
-                    let curTableId = tableWrapper.children.head.tableId;
-                    if (this.curTableId !== curTableId) {
-                        this.clearScrollEvent();
-                        this.focusTableChange = true;
-                        // 表格滚动同步事件
-                        this.addScrollEvent(
-                            this.tableWrapper.domNode,
-                            this.scrollSync.bind(this, this.tableWrapper.domNode)
-                        );
-                    }
-                    this.curTableId = curTableId;
-
-                    this.show();
-                    this.position();
-                    return;
+                this.tableWrapper = tableWrapper;
+                this.table = tableWrapper.children.head;
+                // 找到 tbody
+                let tbody = tableWrapper.children.tail;
+                while (tbody && tbody.statics.blotName !== blotName.tableBody) {
+                    tbody = tbody.children?.tail;
                 }
+
+                const tableCols = tableWrapper.children.head?.children?.head;
+                if (tableCols.statics.blotName === blotName.tableColGroup && tableCols.children.length) {
+                    this.tableCols = tableCols.children.map((col) => col);
+                } else {
+                    this.tableCols = [];
+                }
+
+                let curTableId = tableWrapper.children.head.tableId;
+                if (this.curTableId !== curTableId) {
+                    this.clearScrollEvent();
+                    this.focusTableChange = true;
+                    // 表格滚动同步事件
+                    this.addScrollEvent(
+                        this.tableWrapper.domNode,
+                        this.scrollSync.bind(this, this.tableWrapper.domNode)
+                    );
+                }
+                this.curTableId = curTableId;
+
+                this.show();
+                this.position();
+                return;
             }
             this.hide();
         });
@@ -109,7 +107,7 @@ export default class TableTooltip {
         // 去除 toolbar 对应 module 的 handler 事件, 保存在 tableDisableToolHandlers
         for (const toolName of TableTooltip.disableToolNames) {
             this.tableDisableToolHandlers[toolName] = toolbar.handlers[toolName];
-            // 不要使用 delete 删除属性
+            // 不要设置为 null
             toolbar.handlers[toolName] = () => {};
         }
     }
@@ -132,10 +130,13 @@ export default class TableTooltip {
      * @param {'add' | 'remove'} type - The type of toggle action to perform.
      */
     toggleDisableToolbarTools(type) {
-        this.quill.getModule('toolbar').controls.map(([name, btn]) => {
+        const toolbar = this.quill.getModule('toolbar');
+        toolbar.controls.map(([name, btn]) => {
             if (TableTooltip.disableToolNames.includes(name)) {
                 if (btn.tagName.toLowerCase() === 'select') {
-                    document.querySelector(`.ql-select.${btn.className}`)?.classList[type]('ql-disabled-table');
+                    toolbar.container
+                        .querySelector(`.ql-picker.${btn.className}`)
+                        ?.classList[type]('ql-disabled-table');
                 } else {
                     btn.classList[type]('ql-disabled-table');
                 }
@@ -161,12 +162,12 @@ export default class TableTooltip {
     }
 
     position = () => {
-        const rootLRelativeLeft = getComputedStyle(this.quill.root).paddingLeft;
+        const rect = getRelativeRect(this.table.domNode.getBoundingClientRect(), this.quill.root);
         const tableTop = this.table.domNode.offsetTop;
         const rootScrollTop = this.quill.root.scrollTop;
         css(this.root, {
             top: `${tableTop - rootScrollTop - TIP_HEIGHT}px`,
-            left: rootLRelativeLeft, // editor 的 padding left
+            left: rect.x + 'px', // table 距离 editor 的 padding
         });
     };
 
@@ -232,7 +233,7 @@ export default class TableTooltip {
 
             if (this.table.full) {
                 // 拖拽的最大宽度是当前 col 宽度 + next col 宽度, 最后一个 col 最大宽度是当前宽度
-                const minWidth = (MIN_PRE / 100) * tableWidth;
+                const minWidth = (CELL_MIN_PRE / 100) * tableWidth;
                 const maxRange =
                     resX > rect.right
                         ? tableColHeads[curColIndex + 1]
@@ -261,12 +262,14 @@ export default class TableTooltip {
                 if (pre < oldWidthPre) {
                     // 缩小时若不是最后一个, 则把减少的量加在后面一个
                     // 若是最后一个则把减少的量加在前面一个
-                    pre = Math.max(MIN_PRE, pre);
+                    pre = Math.max(CELL_MIN_PRE, pre);
                     const last = oldWidthPre - pre;
                     if (this.tableCols[curColIndex + 1]) {
                         this.tableCols[curColIndex + 1].width = `${this.tableCols[curColIndex + 1].width + last}%`;
-                    } else {
+                    } else if (this.tableCols[curColIndex - 1]) {
                         this.tableCols[curColIndex - 1].width = `${this.tableCols[curColIndex - 1].width + last}%`;
+                    } else {
+                        pre = 100;
                     }
                     this.tableCols[curColIndex].width = `${pre}%`;
                 } else {
@@ -274,9 +277,9 @@ export default class TableTooltip {
                     // 若是最后一个则不处理
                     if (this.tableCols[curColIndex + 1]) {
                         const totalWidthNextPre = oldWidthPre + this.tableCols[curColIndex + 1].width;
-                        pre = Math.min(totalWidthNextPre - MIN_PRE, pre);
+                        pre = Math.min(totalWidthNextPre - CELL_MIN_PRE, pre);
                         this.tableCols[curColIndex].width = `${pre}%`;
-                        this.tableCols[curColIndex + 1].width = totalWidthNextPre - pre + '%';
+                        this.tableCols[curColIndex + 1].width = `${totalWidthNextPre - pre}%`;
                     }
                 }
             } else {
@@ -285,9 +288,10 @@ export default class TableTooltip {
                     parseFloat(tableColHeads[curColIndex].style.width) +
                     w +
                     'px';
-                tableColHeads[curColIndex].style.width = w + 'px';
-                this.tableCols[curColIndex].width = w;
+                tableColHeads[curColIndex].style.width = `${w}px`;
+                this.tableCols[curColIndex].width = `${w}px`;
             }
+            this.table.formatTableWidth();
 
             appendTo.removeChild(tipColBreak);
             tipColBreak = null;

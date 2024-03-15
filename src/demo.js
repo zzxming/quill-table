@@ -1,6 +1,5 @@
 import Quill from 'quill';
 import TableModule from './index';
-const Delta = Quill.import('delta');
 
 Quill.register(
     {
@@ -12,31 +11,28 @@ const quill = new Quill('#editor', {
     theme: 'snow',
     modules: {
         toolbar: [
-            ['bold', 'italic', 'underline', 'strike'], // toggled buttons
+            ['bold', 'italic', 'underline', 'strike'],
             ['blockquote', 'code-block'],
-
-            [{ header: 1 }, { header: 2 }], // custom button values
-            [{ list: 'ordered' }, { list: 'bullet' }],
-            [{ script: 'sub' }, { script: 'super' }], // superscript/subscript
-            [{ indent: '-1' }, { indent: '+1' }], // outdent/indent
-            [{ direction: 'rtl' }], // text direction
-
-            [{ size: ['small', false, 'large', 'huge'] }], // custom dropdown
+            [{ list: 'ordered' }, { list: 'bullet' }, { list: 'check' }],
+            [{ script: 'sub' }, { script: 'super' }],
+            [{ indent: '-1' }, { indent: '+1' }],
+            [{ direction: 'rtl' }],
+            [{ size: ['small', false, 'large', 'huge'] }],
             [{ header: [1, 2, 3, 4, 5, 6, false] }],
-
-            [{ color: [] }, { background: [] }], // dropdown with defaults from theme
+            [{ color: [] }, { background: [] }],
             [{ font: [] }],
-            [{ align: [] }],
-
+            [{ align: ['', 'center', 'right', 'justify'] }],
             ['clean'],
             ['image', 'video'],
+
             [{ table: [] }],
         ],
         [`${TableModule.moduleName}`]: {
             fullWidth: true,
+            // rewrite: false,
             tableToolTip: {
                 tipHeight: 12,
-                disableToolNames: [],
+                disableToolNames: ['bold', 'color'],
             },
             operationMenu: {},
             selection: {
@@ -46,133 +42,139 @@ const quill = new Quill('#editor', {
     },
 });
 
-quill
-    .setContents
-    // new Delta([
-    //     { insert: '\n' },
-    //     { attributes: { col: { tableId: 'w9tilwkgm1e', colId: '7arx3sf4z5v', width: '33.333333%' } }, insert: '\n' },
-    //     { attributes: { col: { tableId: 'w9tilwkgm1e', colId: 'klrrpz1qhhr', width: '33.333333%' } }, insert: '\n' },
-    //     { attributes: { col: { tableId: 'w9tilwkgm1e', colId: 'k9yw1zl8lyg', width: '33.333333%' } }, insert: '\n' },
-    //     { insert: '1' },
-    //     {
-    //         attributes: {
-    //             tableCellInner: {
-    //                 tableId: 'w9tilwkgm1e',
-    //                 rowId: '44kczjr1q8v',
-    //                 colId: '7arx3sf4z5v',
-    //                 rowspan: '1',
-    //                 colspan: '1',
-    //             },
+quill.setContents([
+    // { insert: '\n' },
+    // {
+    //     attributes: { col: { tableId: 'w9tilwkgm1e', colId: '7arx3sf4z5v', width: '33.333333%', full: true } },
+    //     insert: '\n',
+    // },
+    // {
+    //     attributes: { col: { tableId: 'w9tilwkgm1e', colId: 'klrrpz1qhhr', width: '33.333333%', full: true } },
+    //     insert: '\n',
+    // },
+    // {
+    //     attributes: { col: { tableId: 'w9tilwkgm1e', colId: 'k9yw1zl8lyg', width: '33.333333%', full: true } },
+    //     insert: '\n',
+    // },
+    // { insert: '1' },
+    // {
+    //     attributes: {
+    //         tableCellInner: {
+    //             tableId: 'w9tilwkgm1e',
+    //             rowId: '44kczjr1q8v',
+    //             colId: '7arx3sf4z5v',
+    //             rowspan: '1',
+    //             colspan: '1',
     //         },
-    //         insert: '\n',
     //     },
-    //     { insert: '2' },
-    //     {
-    //         attributes: {
-    //             tableCellInner: {
-    //                 tableId: 'w9tilwkgm1e',
-    //                 rowId: '44kczjr1q8v',
-    //                 colId: 'klrrpz1qhhr',
-    //                 rowspan: '1',
-    //                 colspan: '1',
-    //             },
+    //     insert: '\n',
+    // },
+    // { insert: '2' },
+    // {
+    //     attributes: {
+    //         tableCellInner: {
+    //             tableId: 'w9tilwkgm1e',
+    //             rowId: '44kczjr1q8v',
+    //             colId: 'klrrpz1qhhr',
+    //             rowspan: '1',
+    //             colspan: '1',
     //         },
-    //         insert: '\n',
     //     },
-    //     { insert: '3' },
-    //     {
-    //         attributes: {
-    //             tableCellInner: {
-    //                 tableId: 'w9tilwkgm1e',
-    //                 rowId: '44kczjr1q8v',
-    //                 colId: 'k9yw1zl8lyg',
-    //                 rowspan: '1',
-    //                 colspan: '1',
-    //             },
+    //     insert: '\n',
+    // },
+    // { insert: '3' },
+    // {
+    //     attributes: {
+    //         tableCellInner: {
+    //             tableId: 'w9tilwkgm1e',
+    //             rowId: '44kczjr1q8v',
+    //             colId: 'k9yw1zl8lyg',
+    //             rowspan: '1',
+    //             colspan: '1',
     //         },
-    //         insert: '\n',
     //     },
-    //     { insert: '4' },
-    //     {
-    //         attributes: {
-    //             tableCellInner: {
-    //                 tableId: 'w9tilwkgm1e',
-    //                 rowId: 'c74r2a835vl',
-    //                 colId: '7arx3sf4z5v',
-    //                 rowspan: '1',
-    //                 colspan: '1',
-    //             },
+    //     insert: '\n',
+    // },
+    // { insert: '4' },
+    // {
+    //     attributes: {
+    //         tableCellInner: {
+    //             tableId: 'w9tilwkgm1e',
+    //             rowId: 'c74r2a835vl',
+    //             colId: '7arx3sf4z5v',
+    //             rowspan: '1',
+    //             colspan: '1',
     //         },
-    //         insert: '\n',
     //     },
-    //     { insert: '5' },
-    //     {
-    //         attributes: {
-    //             tableCellInner: {
-    //                 tableId: 'w9tilwkgm1e',
-    //                 rowId: 'c74r2a835vl',
-    //                 colId: 'klrrpz1qhhr',
-    //                 rowspan: '1',
-    //                 colspan: '1',
-    //             },
+    //     insert: '\n',
+    // },
+    // { insert: '5' },
+    // {
+    //     attributes: {
+    //         tableCellInner: {
+    //             tableId: 'w9tilwkgm1e',
+    //             rowId: 'c74r2a835vl',
+    //             colId: 'klrrpz1qhhr',
+    //             rowspan: '1',
+    //             colspan: '1',
     //         },
-    //         insert: '\n',
     //     },
-    //     { insert: '6' },
-    //     {
-    //         attributes: {
-    //             tableCellInner: {
-    //                 tableId: 'w9tilwkgm1e',
-    //                 rowId: 'c74r2a835vl',
-    //                 colId: 'k9yw1zl8lyg',
-    //                 rowspan: '1',
-    //                 colspan: '1',
-    //             },
+    //     insert: '\n',
+    // },
+    // { insert: '6' },
+    // {
+    //     attributes: {
+    //         tableCellInner: {
+    //             tableId: 'w9tilwkgm1e',
+    //             rowId: 'c74r2a835vl',
+    //             colId: 'k9yw1zl8lyg',
+    //             rowspan: '1',
+    //             colspan: '1',
     //         },
-    //         insert: '\n',
     //     },
-    //     { insert: '7' },
-    //     {
-    //         attributes: {
-    //             tableCellInner: {
-    //                 tableId: 'w9tilwkgm1e',
-    //                 rowId: 'bljhr2ww5ac',
-    //                 colId: '7arx3sf4z5v',
-    //                 rowspan: '1',
-    //                 colspan: '1',
-    //             },
+    //     insert: '\n',
+    // },
+    // { insert: '7' },
+    // {
+    //     attributes: {
+    //         tableCellInner: {
+    //             tableId: 'w9tilwkgm1e',
+    //             rowId: 'bljhr2ww5ac',
+    //             colId: '7arx3sf4z5v',
+    //             rowspan: '1',
+    //             colspan: '1',
     //         },
-    //         insert: '\n',
     //     },
-    //     { insert: '8' },
-    //     {
-    //         attributes: {
-    //             tableCellInner: {
-    //                 tableId: 'w9tilwkgm1e',
-    //                 rowId: 'bljhr2ww5ac',
-    //                 colId: 'klrrpz1qhhr',
-    //                 rowspan: '1',
-    //                 colspan: '1',
-    //             },
+    //     insert: '\n',
+    // },
+    // { insert: '8' },
+    // {
+    //     attributes: {
+    //         tableCellInner: {
+    //             tableId: 'w9tilwkgm1e',
+    //             rowId: 'bljhr2ww5ac',
+    //             colId: 'klrrpz1qhhr',
+    //             rowspan: '1',
+    //             colspan: '1',
     //         },
-    //         insert: '\n',
     //     },
-    //     { insert: '9' },
-    //     {
-    //         attributes: {
-    //             tableCellInner: {
-    //                 tableId: 'w9tilwkgm1e',
-    //                 rowId: 'bljhr2ww5ac',
-    //                 colId: 'k9yw1zl8lyg',
-    //                 rowspan: '1',
-    //                 colspan: '1',
-    //             },
+    //     insert: '\n',
+    // },
+    // { insert: '9' },
+    // {
+    //     attributes: {
+    //         tableCellInner: {
+    //             tableId: 'w9tilwkgm1e',
+    //             rowId: 'bljhr2ww5ac',
+    //             colId: 'k9yw1zl8lyg',
+    //             rowspan: '1',
+    //             colspan: '1',
     //         },
-    //         insert: '\n',
     //     },
-    //     { insert: '\n' },
-    // ])
-    ();
+    //     insert: '\n',
+    // },
+    // { insert: '\n' },
+]);
 
 const contentDisplay = document.getElementsByClassName('contentDisplay')[0];
 document.getElementsByClassName('getContent')[0].onclick = () => {

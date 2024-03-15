@@ -1,4 +1,4 @@
-import { CREATE_TABLE } from '../assets/const/event';
+import { CREATE_TABLE } from '../assets/const';
 
 export const randomId = () => Math.random().toString(36).slice(2);
 
@@ -288,4 +288,7 @@ export function isString(val) {
 }
 export function isFunction(val) {
     return typeof val === 'function';
+}
+export function isUndefined(val) {
+    return val === undefined;
 }

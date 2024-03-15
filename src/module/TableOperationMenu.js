@@ -1,5 +1,5 @@
 import { css, isFunction, isString } from '../utils';
-import { moduleName } from '../assets/const/name';
+import { moduleName } from '../assets/const';
 
 const MENU_ITEMS_DEFAULT = {
     insertColumnLeft: {
@@ -78,8 +78,9 @@ const MENU_ITEMS_DEFAULT = {
             input.addEventListener('click', (e) => {
                 e.stopPropagation();
             });
+            const tempCells = tableModule.tableSelection.selectedTds;
             input.addEventListener('input', () => {
-                tableModule.setBackgroundColor(input.value);
+                tableModule.setBackgroundColor(input.value, tempCells);
             });
             input.style.width = '100%';
             return input;

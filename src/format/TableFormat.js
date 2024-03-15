@@ -1,5 +1,5 @@
 import Quill from 'quill';
-import { blotName } from '../assets/const/name';
+import { blotName } from '../assets/const';
 import TableRowFormat from './TableRowFormat';
 import TableColFormat from './TableColFormat';
 const Container = Quill.import('blots/container');
@@ -24,6 +24,7 @@ class TableFormat extends Container {
     }
 
     colWidthFillTable() {
+        if (this.full) return;
         const colgroup = this.children.head;
         if (!colgroup || colgroup.statics.blotName !== blotName.tableColGroup) return;
 
