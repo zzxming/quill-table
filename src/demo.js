@@ -1,5 +1,5 @@
 import Quill from 'quill';
-import TableModule from './index';
+import TableModule, { rewirteFormats } from './index';
 
 Quill.register(
     {
@@ -7,6 +7,8 @@ Quill.register(
     },
     true
 );
+rewirteFormats();
+
 const quill = new Quill('#editor', {
     theme: 'snow',
     modules: {
@@ -29,7 +31,6 @@ const quill = new Quill('#editor', {
         ],
         [`${TableModule.moduleName}`]: {
             fullWidth: true,
-            // rewrite: false,
             tableToolTip: {
                 tipHeight: 12,
                 disableToolNames: ['bold', 'color'],
