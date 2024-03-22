@@ -35,4 +35,4 @@ TableColgroupFormat.blotName = blotName.tableColGroup;
 TableColgroupFormat.tagName = 'colgroup';
 TableColgroupFormat.scope = Parchment.Scope.BLOCK_BLOT;
 
-export default TableColgroupFormat;
+export { TableColgroupFormat };

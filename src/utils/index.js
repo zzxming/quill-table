@@ -292,3 +292,6 @@ export function isFunction(val) {
 export function isUndefined(val) {
     return val === undefined;
 }
+export function isArray(val) {
+    return Array.isArray(val);
+}

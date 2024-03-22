@@ -1,9 +1,9 @@
 import Quill from 'quill';
 import { blotName } from '../assets/const';
 const Parchment = Quill.import('parchment');
-const BlockEmbed = Quill.import('blots/block/embed');
+import { ContainBlot } from '../blot/contain';
 
-class TableColFormat extends BlockEmbed {
+class TableColFormat extends ContainBlot {
     static create(value) {
         const { width, tableId, colId, full } = value;
         const node = super.create();
@@ -11,18 +11,8 @@ class TableColFormat extends BlockEmbed {
         full && node.setAttribute('data-full', full);
         node.dataset.tableId = tableId;
         node.dataset.colId = colId;
-
+        node.setAttribute('contenteditable', false);
         return node;
-    }
-
-    static value(domNode) {
-        const { tableId, colId } = domNode.dataset;
-        return {
-            tableId,
-            colId,
-            width: domNode.getAttribute('width'),
-            full: domNode.hasAttribute('data-full'),
-        };
     }
 
     get width() {
@@ -40,6 +30,22 @@ class TableColFormat extends BlockEmbed {
 
     get full() {
         return this.domNode.hasAttribute('data-full');
+    }
+
+    format() {
+        return;
+    }
+
+    formats() {
+        const { tableId, colId } = this.domNode.dataset;
+        return {
+            [this.statics.blotName]: {
+                tableId,
+                colId,
+                width: this.domNode.getAttribute('width'),
+                full: this.domNode.hasAttribute('data-full'),
+            },
+        };
     }
 
     optimize() {
@@ -81,4 +87,4 @@ TableColFormat.blotName = blotName.tableCol;
 TableColFormat.tagName = 'col';
 TableColFormat.scope = Parchment.Scope.BLOCK_BLOT;
 
-export default TableColFormat;
+export { TableColFormat };

@@ -1,4 +1,4 @@
-import { css, isFunction, isString } from '../utils';
+import { css, isFunction, isString, isArray } from '../utils';
 import { moduleName } from '../assets/const';
 
 const MENU_ITEMS_DEFAULT = {
@@ -70,8 +70,10 @@ const MENU_ITEMS_DEFAULT = {
         },
     },
     setBackgroundColor: {
-        subTitle: '设置背景颜色',
         text() {
+            const subTitle = document.createElement('span');
+            subTitle.innerText = '设置背景颜色';
+
             const tableModule = this.quill.getModule(moduleName.table);
             const input = document.createElement('input');
             input.type = 'color';
@@ -80,15 +82,47 @@ const MENU_ITEMS_DEFAULT = {
             });
             const tempCells = tableModule.tableSelection.selectedTds;
             input.addEventListener('input', () => {
-                tableModule.setBackgroundColor(input.value, tempCells);
+                tableModule.setStyle({ backgroundColor: input.value }, tempCells);
             });
-            input.style.width = '100%';
-            return input;
+            input.style.marginLeft = 'auto';
+            return [subTitle, input];
+        },
+    },
+    clearBackgroundColor: {
+        text: '清除背景颜色',
+        handler() {
+            const tableModule = this.quill.getModule(moduleName.table);
+            tableModule.setStyle({ backgroundColor: null }, tableModule.tableSelection.selectedTds);
+        },
+    },
+    setBorderColor: {
+        text() {
+            const subTitle = document.createElement('span');
+            subTitle.innerText = '设置边框颜色';
+
+            const tableModule = this.quill.getModule(moduleName.table);
+            const input = document.createElement('input');
+            input.type = 'color';
+            input.addEventListener('click', (e) => {
+                e.stopPropagation();
+            });
+            const tempCells = tableModule.tableSelection.selectedTds;
+            input.addEventListener('input', () => {
+                tableModule.setStyle({ borderColor: input.value }, tempCells);
+            });
+            input.style.marginLeft = 'auto';
+            return [subTitle, input];
+        },
+    },
+    clearBorderColor: {
+        text: '清除边框颜色',
+        handler() {
+            const tableModule = this.quill.getModule(moduleName.table);
+            tableModule.setStyle({ borderColor: null }, tableModule.tableSelection.selectedTds);
         },
     },
 };
 const MENU_MIN_HEIHGT = 150;
-const MENU_WIDTH = 200;
 
 /*
     options = {
@@ -103,7 +137,7 @@ const MENU_WIDTH = 200;
         }
     }
 */
-export default class TableOperationMenu {
+export class TableOperationMenu {
     constructor(params, quill, options = {}) {
         this.table = params.table;
         this.quill = quill;
@@ -118,7 +152,6 @@ export default class TableOperationMenu {
 
         this.destroyHandler = this.destroy.bind(this);
         this.menuInitial(params);
-        this.mount();
 
         document.addEventListener('click', this.destroyHandler, false);
     }
@@ -131,23 +164,31 @@ export default class TableOperationMenu {
         }
     }
 
-    mount() {
-        document.body.appendChild(this.domNode);
+    setMenuPosition({ left, top }) {
+        const containerRect = this.quill.container.getBoundingClientRect();
+        const menuRect = this.domNode.getBoundingClientRect();
+        let resLeft = left - containerRect.left;
+        let resTop = top - containerRect.top;
+        if (resLeft + menuRect.width > containerRect.width) {
+            resLeft = containerRect.width - menuRect.width;
+        }
+        if (resTop + menuRect.height > containerRect.height) {
+            resTop = containerRect.height - menuRect.height;
+        }
+        Object.assign(this.domNode.style, {
+            left: `${resLeft}px`,
+            top: `${resTop}px`,
+        });
     }
 
     menuInitial({ table, row, cell, left, top }) {
         this.domNode = document.createElement('div');
         this.domNode.classList.add('ql-table-operation-menu');
 
-        const style = {
+        css(this.domNode, {
             position: 'absolute',
             'min-height': `${MENU_MIN_HEIHGT}px`,
-            width: `${MENU_WIDTH}px`,
-        };
-        const { innerWidth: width, innerHeight: height } = window;
-        left > width - MENU_WIDTH ? (style.right = `${width - left}px`) : (style.left = `${left}px`);
-        top > height - MENU_MIN_HEIHGT ? (style.bottom = `${height - top}px`) : (style.top = `${top}px`);
-        css(this.domNode, style);
+        });
 
         for (const name in this.menuItems) {
             if (this.menuItems[name]) {
@@ -165,6 +206,8 @@ export default class TableOperationMenu {
             }
         }
 
+        this.quill.container.appendChild(this.domNode);
+        this.setMenuPosition({ left, top });
         // create dividing line
         function dividingCreator() {
             const dividing = document.createElement('div');
@@ -204,7 +247,11 @@ export default class TableOperationMenu {
             textSpan.innerText = text;
             node.appendChild(textSpan);
         } else if (isFunction(text)) {
-            node.appendChild(text.call(this));
+            let nodes = text.call(this);
+            if (!isArray(nodes)) {
+                nodes = [nodes];
+            }
+            nodes.map((sub) => node.appendChild(sub));
         }
 
         isFunction(handler) && node.addEventListener('click', handler.bind(this), false);

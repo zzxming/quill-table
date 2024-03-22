@@ -1,7 +1,7 @@
 import Quill from 'quill';
 import { blotName } from '../assets/const';
-import TableRowFormat from './TableRowFormat';
-import TableColFormat from './TableColFormat';
+import { TableRowFormat } from './TableRowFormat';
+import { TableColFormat } from './TableColFormat';
 const Container = Quill.import('blots/container');
 const Parchment = Quill.import('parchment');
 
@@ -84,4 +84,4 @@ TableFormat.blotName = blotName.table;
 TableFormat.tagName = 'table';
 TableFormat.scope = Parchment.Scope.BLOCK_BLOT;
 
-export default TableFormat;
+export { TableFormat };

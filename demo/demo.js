@@ -26,82 +26,6 @@
     // col 最小 px 宽度
     const CELL_MIN_WIDTH = 26;
 
-    const Container$7 = Quill.import('blots/container');
-    const Parchment$a = Quill.import('parchment');
-
-    class TableWrapperFormat extends Container$7 {
-        static create(value) {
-            const node = super.create();
-
-            node.dataset.tableId = value;
-
-            node.addEventListener(
-                'dragstart',
-                (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                },
-                true
-            );
-            // 不允许拖拽进 table
-            node.ondrop = (e) => {
-                e.preventDefault();
-            };
-            // 修改拖拽进入时的鼠标样式
-            node.ondragover = (e) => {
-                e.preventDefault();
-                e.dataTransfer.dropEffect = 'none';
-            };
-            return node;
-        }
-
-        get tableId() {
-            return this.domNode.dataset.tableId;
-        }
-
-        insertBefore(blot, ref) {
-            if (blot.statics.blotName == this.statics.blotName) {
-                // 合并
-                super.insertBefore(blot.children.head, ref);
-            } else if (this.statics.allowedChildren.find((child) => child.blotName === blot.statics.blotName)) {
-                // 允许子 blot
-                super.insertBefore(blot, ref);
-            } else {
-                // 非允许子 blot, ref 为 null 是插入头, 否则插入尾
-                if (ref) {
-                    this.prev ? this.prev.insertBefore(blot, null) : this.parent.insertBefore(blot, this);
-                } else {
-                    this.next ? this.next.insertBefore(blot, ref) : this.parent.appendChild(blot);
-                }
-            }
-        }
-
-        optimize() {
-            super.optimize();
-            let next = this.next;
-            if (
-                next != null &&
-                next.prev === this &&
-                next.statics.blotName === this.statics.blotName &&
-                next.domNode.tagName === this.domNode.tagName &&
-                next.domNode.dataset.tableId === this.domNode.dataset.tableId
-            ) {
-                next.moveChildren(this);
-                next.remove();
-            }
-        }
-
-        deleteAt(index, length) {
-            super.deleteAt(index, length);
-            // 删除 table 时隐藏当前 table 的 tooltip
-            document.querySelector(`.ql-table-tooltip[data-table-id="${this.tableId}"]`)?.classList?.add('ql-hidden');
-        }
-    }
-    TableWrapperFormat.blotName = blotName.tableWrapper;
-    TableWrapperFormat.tagName = 'p';
-    TableWrapperFormat.className = 'ql-table-wrapper';
-    TableWrapperFormat.scope = Parchment$a.Scope.BLOCK_BLOT;
-
     const randomId = () => Math.random().toString(36).slice(2);
 
     let zindex = 8000;
@@ -390,6 +314,1087 @@
     }
     function isFunction(val) {
         return typeof val === 'function';
+    }
+    function isArray(val) {
+        return Array.isArray(val);
+    }
+
+    const MENU_ITEMS_DEFAULT = {
+        insertColumnLeft: {
+            text: '在左侧插入一列',
+            handler() {
+                const tableModule = this.quill.getModule(moduleName.table);
+                tableModule.appendCol();
+                tableModule.hideTableTools();
+            },
+        },
+        insertColumnRight: {
+            text: '在右侧插入一列',
+            handler() {
+                const tableModule = this.quill.getModule(moduleName.table);
+                tableModule.appendCol(true);
+                tableModule.hideTableTools();
+            },
+        },
+        insertRowTop: {
+            text: '在上方插入一行',
+            handler() {
+                const tableModule = this.quill.getModule(moduleName.table);
+                tableModule.appendRow();
+                tableModule.hideTableTools();
+            },
+        },
+        insertRowBottom: {
+            text: '在下方插入一行',
+            groupEnd: true,
+            handler() {
+                const tableModule = this.quill.getModule(moduleName.table);
+                tableModule.appendRow(true);
+                tableModule.hideTableTools();
+            },
+        },
+        removeCol: {
+            text: '删除所在列',
+            handler() {
+                const tableModule = this.quill.getModule(moduleName.table);
+                tableModule.removeCol();
+                tableModule.hideTableTools();
+            },
+        },
+        removeRow: {
+            text: '删除所在行',
+            handler() {
+                const tableModule = this.quill.getModule(moduleName.table);
+                tableModule.removeRow();
+                tableModule.hideTableTools();
+            },
+        },
+        removeTable: {
+            text: '删除表格',
+            groupEnd: true,
+            handler() {
+                const tableModule = this.quill.getModule(moduleName.table);
+                tableModule.removeTable();
+                tableModule.hideTableTools();
+            },
+        },
+        mergeCell: {
+            text: '合并单元格',
+            groupEnd: true,
+            handler() {
+                const tableModule = this.quill.getModule(moduleName.table);
+                tableModule.mergeCells();
+                tableModule.hideTableTools();
+            },
+        },
+        setBackgroundColor: {
+            text() {
+                const subTitle = document.createElement('span');
+                subTitle.innerText = '设置背景颜色';
+
+                const tableModule = this.quill.getModule(moduleName.table);
+                const input = document.createElement('input');
+                input.type = 'color';
+                input.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                });
+                const tempCells = tableModule.tableSelection.selectedTds;
+                input.addEventListener('input', () => {
+                    tableModule.setStyle({ backgroundColor: input.value }, tempCells);
+                });
+                input.style.marginLeft = 'auto';
+                return [subTitle, input];
+            },
+        },
+        clearBackgroundColor: {
+            text: '清除背景颜色',
+            handler() {
+                const tableModule = this.quill.getModule(moduleName.table);
+                tableModule.setStyle({ backgroundColor: null }, tableModule.tableSelection.selectedTds);
+            },
+        },
+        setBorderColor: {
+            text() {
+                const subTitle = document.createElement('span');
+                subTitle.innerText = '设置边框颜色';
+
+                const tableModule = this.quill.getModule(moduleName.table);
+                const input = document.createElement('input');
+                input.type = 'color';
+                input.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                });
+                const tempCells = tableModule.tableSelection.selectedTds;
+                input.addEventListener('input', () => {
+                    tableModule.setStyle({ borderColor: input.value }, tempCells);
+                });
+                input.style.marginLeft = 'auto';
+                return [subTitle, input];
+            },
+        },
+        clearBorderColor: {
+            text: '清除边框颜色',
+            handler() {
+                const tableModule = this.quill.getModule(moduleName.table);
+                tableModule.setStyle({ borderColor: null }, tableModule.tableSelection.selectedTds);
+            },
+        },
+    };
+    const MENU_MIN_HEIHGT = 150;
+
+    /*
+        options = {
+            items: {
+               functionName: {
+                    text: '显示文字',
+                    handle() {},    // 触发事件
+                    iconSrc: string,    // icon url
+                    groupEnd: boolean, // 是否显示分隔线
+                    subTitle: '显示子标题',
+                }
+            }
+        }
+    */
+    class TableOperationMenu {
+        constructor(params, quill, options = {}) {
+            this.table = params.table;
+            this.quill = quill;
+            this.options = options;
+            const tableModule = this.quill.getModule(moduleName.table);
+            this.tableSelection = tableModule.tableSelection;
+            this.menuItems = {};
+            this.optionsMerge();
+
+            this.boundary = this.tableSelection.boundary;
+            this.selectedTds = this.tableSelection.selectedTds;
+
+            this.destroyHandler = this.destroy.bind(this);
+            this.menuInitial(params);
+
+            document.addEventListener('click', this.destroyHandler, false);
+        }
+
+        optionsMerge() {
+            if (this.options?.replaceItems) {
+                this.menuItems = this.options?.items ?? {};
+            } else {
+                this.menuItems = Object.assign({}, MENU_ITEMS_DEFAULT, this.options?.items ?? {});
+            }
+        }
+
+        setMenuPosition({ left, top }) {
+            const containerRect = this.quill.container.getBoundingClientRect();
+            const menuRect = this.domNode.getBoundingClientRect();
+            let resLeft = left - containerRect.left;
+            let resTop = top - containerRect.top;
+            if (resLeft + menuRect.width > containerRect.width) {
+                resLeft = containerRect.width - menuRect.width;
+            }
+            if (resTop + menuRect.height > containerRect.height) {
+                resTop = containerRect.height - menuRect.height;
+            }
+            Object.assign(this.domNode.style, {
+                left: `${resLeft}px`,
+                top: `${resTop}px`,
+            });
+        }
+
+        menuInitial({ table, row, cell, left, top }) {
+            this.domNode = document.createElement('div');
+            this.domNode.classList.add('ql-table-operation-menu');
+
+            css(this.domNode, {
+                position: 'absolute',
+                'min-height': `${MENU_MIN_HEIHGT}px`,
+            });
+
+            for (const name in this.menuItems) {
+                if (this.menuItems[name]) {
+                    if (this.menuItems[name].subTitle) {
+                        this.domNode.appendChild(subTitleCreator(this.menuItems[name].subTitle));
+                    }
+
+                    this.domNode.appendChild(
+                        this.menuItemCreator(Object.assign({}, MENU_ITEMS_DEFAULT[name], this.menuItems[name]))
+                    );
+
+                    if (this.menuItems[name].groupEnd) {
+                        this.domNode.appendChild(dividingCreator());
+                    }
+                }
+            }
+
+            this.quill.container.appendChild(this.domNode);
+            this.setMenuPosition({ left, top });
+            // create dividing line
+            function dividingCreator() {
+                const dividing = document.createElement('div');
+                dividing.classList.add('ql-table-operation-menu-dividing');
+                return dividing;
+            }
+
+            // create subtitle for menu
+            function subTitleCreator(title) {
+                const subTitle = document.createElement('div');
+                subTitle.classList.add('ql-table-operation-menu-subtitle');
+                subTitle.innerText = title;
+                return subTitle;
+            }
+        }
+
+        destroy() {
+            this.domNode.remove();
+            document.removeEventListener('click', this.destroyHandler, false);
+            return null;
+        }
+
+        menuItemCreator({ text, iconSrc, handler }) {
+            const node = document.createElement('div');
+            node.classList.add('ql-table-operation-menu-item');
+
+            if (iconSrc) {
+                const iconSpan = document.createElement('span');
+                iconSpan.classList.add('ql-table-operation-menu-icon');
+                iconSpan.innerHTML = iconSrc;
+                node.appendChild(iconSpan);
+            }
+
+            if (isString(text)) {
+                const textSpan = document.createElement('span');
+                textSpan.classList.add('ql-table-operation-menu-text');
+                textSpan.innerText = text;
+                node.appendChild(textSpan);
+            } else if (isFunction(text)) {
+                let nodes = text.call(this);
+                if (!isArray(nodes)) {
+                    nodes = [nodes];
+                }
+                nodes.map((sub) => node.appendChild(sub));
+            }
+
+            isFunction(handler) && node.addEventListener('click', handler.bind(this), false);
+            return node;
+        }
+    }
+
+    const Container$7 = Quill.import('blots/container');
+    const Parchment$a = Quill.import('parchment');
+
+    class TableBodyFormat extends Container$7 {
+        optimize() {
+            super.optimize();
+            const next = this.next;
+            if (
+                next != null &&
+                next.prev === this &&
+                next.statics.blotName === this.statics.blotName &&
+                next.domNode.tagName === this.domNode.tagName
+            ) {
+                next.moveChildren(this);
+                next.remove();
+            }
+        }
+
+        deleteAt(index, length) {
+            if (index === 0 && length === this.length()) {
+                this.parent.remove();
+            }
+            this.children.forEachAt(index, length, function (child, offset, length) {
+                child.deleteAt(offset, length);
+            });
+        }
+    }
+    TableBodyFormat.blotName = blotName.tableBody;
+    TableBodyFormat.tagName = 'tbody';
+    TableBodyFormat.scope = Parchment$a.Scope.BLOCK_BLOT;
+
+    const Container$6 = Quill.import('blots/container');
+    const Parchment$9 = Quill.import('parchment');
+
+    class ContainBlot extends Container$6 {
+        static create() {
+            const node = super.create();
+            return node;
+        }
+
+        insertBefore(blot, ref) {
+            if (blot.statics.blotName == this.statics.blotName) {
+                super.insertBefore(blot.children.head, ref);
+            } else {
+                super.insertBefore(blot, ref);
+            }
+        }
+
+        format(name, value) {
+            this.children.tail.format(name, value);
+        }
+
+        replace(target) {
+            if (target.statics.blotName !== this.statics.blotName) {
+                const item = Parchment$9.create(this.statics.defaultChild);
+                target.moveChildren(item);
+                this.appendChild(item);
+            }
+            if (target.parent == null) return;
+            super.replace(target);
+        }
+    }
+
+    ContainBlot.blotName = blotName.contain;
+    ContainBlot.tagName = 'contain';
+    ContainBlot.scope = Parchment$9.Scope.BLOCK_BLOT;
+    ContainBlot.defaultChild = 'block';
+
+    const Parchment$8 = Quill.import('parchment');
+
+    class TableCellInnerFormat extends ContainBlot {
+        static create(value) {
+            const { tableId, rowId, colId, rowspan, colspan, style } = value;
+            const node = super.create();
+            node.dataset.tableId = tableId;
+            node.dataset.rowId = rowId;
+            node.dataset.colId = colId;
+            node.dataset.rowspan = rowspan || 1;
+            node.dataset.colspan = colspan || 1;
+            node._style = style;
+            return node;
+        }
+
+        // 仅 Block 存在 cache, 存在 cache 时不会获取最新 delta, cache 还会保存父级 format(bubbleFormats 函数), 需要清除以获取最新 delta
+        clearDeltaCache() {
+            this.children.forEach((child) => {
+                child.cache = {};
+            });
+        }
+
+        get rowId() {
+            return this.domNode.dataset.rowId;
+        }
+        get colId() {
+            return this.domNode.dataset.colId;
+        }
+        get rowspan() {
+            return Number(this.domNode.dataset.rowspan);
+        }
+        set rowspan(value) {
+            this.parent && (this.parent.rowspan = value);
+            this.domNode.dataset.rowspan = value;
+            this.clearDeltaCache();
+        }
+        get colspan() {
+            return Number(this.domNode.dataset.colspan);
+        }
+        set colspan(value) {
+            this.parent && (this.parent.colspan = value);
+            this.domNode.dataset.colspan = value;
+            this.clearDeltaCache();
+        }
+        set style(value) {
+            this.parent.style = value;
+            this.domNode._style = this.parent.style;
+            this.clearDeltaCache();
+        }
+
+        replace(target) {
+            if (target.statics.blotName !== this.statics.blotName) {
+                const cloneTarget = target.clone();
+                target.moveChildren(cloneTarget);
+                this.appendChild(cloneTarget);
+                target.parent.insertBefore(this, target.next);
+                target.remove();
+            } else {
+                super.replace(target);
+            }
+        }
+
+        format(name, value) {
+            super.format(name, value);
+            this.clearDeltaCache();
+        }
+
+        formats() {
+            const { tableId, rowId, colId, rowspan, colspan } = this.domNode.dataset;
+            return {
+                [this.statics.blotName]: {
+                    tableId,
+                    rowId,
+                    colId,
+                    rowspan,
+                    colspan,
+                    style: this.domNode._style,
+                },
+            };
+        }
+
+        optimize() {
+            super.optimize();
+
+            const parent = this.parent;
+            // 父级非表格，则将当前 blot 放入表格中
+            const { tableId, colId, rowId, rowspan, colspan } = this.domNode.dataset;
+            if (parent != null && parent.statics.blotName != blotName.tableCell) {
+                const mark = Parchment$8.create('block');
+
+                this.parent.insertBefore(mark, this.next);
+                const tableWrapper = Parchment$8.create(blotName.tableWrapper, tableId);
+                const table = Parchment$8.create(blotName.table, tableId);
+                const tableBody = Parchment$8.create(blotName.tableBody);
+                const tr = Parchment$8.create(blotName.tableRow, rowId);
+                const td = Parchment$8.create(blotName.tableCell, {
+                    tableId,
+                    rowId,
+                    colId,
+                    rowspan,
+                    colspan,
+                    style: this.domNode._style,
+                });
+
+                td.appendChild(this);
+                tr.appendChild(td);
+                tableBody.appendChild(tr);
+                table.appendChild(tableBody);
+                tableWrapper.appendChild(table);
+
+                tableWrapper.replace(mark);
+            }
+
+            const next = this.next;
+            // cell 下有多个 cellInner 全部合并
+            if (next != null && next.prev === this && next.statics.blotName === this.statics.blotName) {
+                next.moveChildren(this);
+                next.remove();
+            }
+        }
+    }
+
+    TableCellInnerFormat.blotName = blotName.tableCellInner;
+    TableCellInnerFormat.tagName = 'p';
+    TableCellInnerFormat.className = 'ql-table-cell-inner';
+
+    const Parchment$7 = Quill.import('parchment');
+    const Container$5 = Quill.import('blots/container');
+
+    class TableCellFormat extends Container$5 {
+        static create(value) {
+            const { rowId, colId, rowspan, colspan, style } = value;
+            const node = super.create();
+            node.dataset.rowId = rowId;
+            node.dataset.colId = colId;
+            node.setAttribute('rowspan', rowspan || 1);
+            node.setAttribute('colspan', colspan || 1);
+            node.style.cssText = style;
+            return node;
+        }
+
+        get rowId() {
+            return this.domNode.dataset.rowId;
+        }
+        get colId() {
+            return this.domNode.dataset.colId;
+        }
+        get rowspan() {
+            return Number(this.domNode.getAttribute('rowspan'));
+        }
+        set rowspan(value) {
+            this.domNode.setAttribute('rowspan', value);
+        }
+        get colspan() {
+            return Number(this.domNode.getAttribute('colspan'));
+        }
+        set colspan(value) {
+            this.domNode.setAttribute('colspan', value);
+        }
+        get style() {
+            return this.domNode.style.cssText;
+        }
+        set style(value) {
+            Object.assign(this.domNode.style, value);
+        }
+
+        getCellInner() {
+            return this.descendants(TableCellInnerFormat)[0];
+        }
+
+        optimize() {
+            super.optimize();
+            const { colId, rowId } = this.domNode.dataset;
+            const next = this.next;
+            if (
+                next != null &&
+                next.prev === this &&
+                next.statics.blotName === this.statics.blotName &&
+                next.domNode.dataset.rowId === rowId &&
+                next.domNode.dataset.colId === colId
+            ) {
+                next.moveChildren(this);
+                next.remove();
+            }
+        }
+
+        deleteAt(index, length) {
+            if (index === 0 && length === this.length()) {
+                const cell = this.next || this.prev;
+                const cellInner = cell && cell.getCellInner();
+                if (cellInner) {
+                    cellInner.colspan += this.colspan;
+                }
+                return this.remove();
+            }
+            this.children.forEachAt(index, length, function (child, offset, length) {
+                child.deleteAt(offset, length);
+            });
+        }
+    }
+
+    TableCellFormat.blotName = blotName.tableCell;
+    TableCellFormat.tagName = 'td';
+    TableCellFormat.className = 'ql-table-cell';
+    TableCellFormat.scope = Parchment$7.Scope.BLOCK_BLOT;
+
+    const Parchment$6 = Quill.import('parchment');
+
+    class TableColFormat extends ContainBlot {
+        static create(value) {
+            const { width, tableId, colId, full } = value;
+            const node = super.create();
+            node.setAttribute('width', width);
+            full && node.setAttribute('data-full', full);
+            node.dataset.tableId = tableId;
+            node.dataset.colId = colId;
+            node.setAttribute('contenteditable', false);
+            return node;
+        }
+
+        get width() {
+            const width = this.domNode.getAttribute('width');
+            if (isNaN(width) && !width.endsWith('%')) return null;
+            return parseFloat(width);
+        }
+        set width(value) {
+            return this.domNode.setAttribute('width', value);
+        }
+
+        get colId() {
+            return this.domNode.dataset.colId;
+        }
+
+        get full() {
+            return this.domNode.hasAttribute('data-full');
+        }
+
+        format() {
+            return;
+        }
+
+        formats() {
+            const { tableId, colId } = this.domNode.dataset;
+            return {
+                [this.statics.blotName]: {
+                    tableId,
+                    colId,
+                    width: this.domNode.getAttribute('width'),
+                    full: this.domNode.hasAttribute('data-full'),
+                },
+            };
+        }
+
+        optimize() {
+            super.optimize();
+
+            const parent = this.parent;
+            if (parent != null && parent.statics.blotName != blotName.tableColGroup) {
+                const mark = Parchment$6.create('block');
+                this.parent.insertBefore(mark, this.next);
+
+                const tableWrapper = Parchment$6.create(blotName.tableWrapper, this.domNode.dataset.tableId);
+                const table = Parchment$6.create(blotName.table, this.domNode.dataset.tableId);
+
+                this.full && (table.full = true);
+
+                const tableColgroup = Parchment$6.create(blotName.tableColGroup);
+
+                tableColgroup.appendChild(this);
+                table.appendChild(tableColgroup);
+                tableWrapper.appendChild(table);
+
+                tableWrapper.replace(mark);
+            }
+            const next = this.next;
+            const { tableId: ttableId, colId: tcolId } = this.domNode.dataset;
+            if (
+                next != null &&
+                next.statics.blotName === this.statics.blotName &&
+                next.domNode.tagName === this.domNode.tagName &&
+                next.domNode.dataset.tableId === ttableId &&
+                next.domNode.dataset.colId === tcolId
+            ) {
+                next.moveChildren(this);
+                next.remove();
+            }
+        }
+    }
+    TableColFormat.blotName = blotName.tableCol;
+    TableColFormat.tagName = 'col';
+    TableColFormat.scope = Parchment$6.Scope.BLOCK_BLOT;
+
+    const Container$4 = Quill.import('blots/container');
+    const Parchment$5 = Quill.import('parchment');
+
+    class TableColgroupFormat extends Container$4 {
+        optimize() {
+            super.optimize();
+            const next = this.next;
+            if (
+                next != null &&
+                next.prev === this &&
+                next.statics.blotName === this.statics.blotName &&
+                next.domNode.tagName === this.domNode.tagName
+            ) {
+                next.moveChildren(this);
+                next.remove();
+            }
+        }
+
+        findCol(index) {
+            const next = this.children.iterator();
+            let i = 0;
+            let cur;
+            while ((cur = next())) {
+                if (i === index) {
+                    break;
+                }
+                i++;
+            }
+            return cur;
+        }
+    }
+    TableColgroupFormat.blotName = blotName.tableColGroup;
+    TableColgroupFormat.tagName = 'colgroup';
+    TableColgroupFormat.scope = Parchment$5.Scope.BLOCK_BLOT;
+
+    const Container$3 = Quill.import('blots/container');
+    const Parchment$4 = Quill.import('parchment');
+
+    class TableRowFormat extends Container$3 {
+        static create(value) {
+            const node = super.create();
+            node.dataset.rowId = value;
+            return node;
+        }
+
+        optimize() {
+            super.optimize();
+            const next = this.next;
+            if (
+                next != null &&
+                next.prev === this &&
+                next.statics.blotName === this.statics.blotName &&
+                next.domNode.dataset.rowId === this.domNode.dataset.rowId
+            ) {
+                next.moveChildren(this);
+                next.remove();
+            }
+        }
+
+        get rowId() {
+            return this.domNode.dataset.rowId;
+        }
+
+        foreachCellInner(func) {
+            const next = this.children.iterator();
+            let i = 0;
+            let cur;
+            while ((cur = next())) {
+                const [tableCell] = cur.descendants(TableCellInnerFormat);
+                if (func(tableCell, i++)) break;
+            }
+        }
+    }
+
+    TableRowFormat.blotName = blotName.tableRow;
+    TableRowFormat.tagName = 'tr';
+    TableRowFormat.className = 'ql-table-row';
+    TableRowFormat.scope = Parchment$4.Scope.BLOCK_BLOT;
+
+    const Container$2 = Quill.import('blots/container');
+    const Parchment$3 = Quill.import('parchment');
+
+    class TableFormat extends Container$2 {
+        constructor(domNode, value) {
+            super(domNode, value);
+
+            this.formatTableWidth();
+        }
+
+        static create(value) {
+            const node = super.create();
+
+            node.dataset.tableId = value;
+            node.classList.add('ql-table');
+            node.setAttribute('cellpadding', 0);
+            node.setAttribute('cellspacing', 0);
+
+            return node;
+        }
+
+        colWidthFillTable() {
+            if (this.full) return;
+            const colgroup = this.children.head;
+            if (!colgroup || colgroup.statics.blotName !== blotName.tableColGroup) return;
+
+            const colsWidth = colgroup.children.reduce((sum, col) => col.width + sum, 0);
+            if (colsWidth === 0 || isNaN(colsWidth) || this.full) return null;
+            this.domNode.style.width = colsWidth + 'px';
+            return colsWidth;
+        }
+
+        formatTableWidth() {
+            setTimeout(() => {
+                this.colWidthFillTable();
+            }, 0);
+        }
+
+        get tableId() {
+            return this.domNode.dataset.tableId;
+        }
+        get full() {
+            return this.domNode.hasAttribute('data-full');
+        }
+        set full(value) {
+            this.domNode[value ? 'setAttribute' : 'removeAttribute']('data-full', '');
+        }
+
+        getRows() {
+            return this.descendants(TableRowFormat);
+        }
+        getRowIds() {
+            return this.getRows().map((d) => d.rowId);
+        }
+
+        getCols() {
+            return this.descendants(TableColFormat);
+        }
+        getColIds() {
+            return this.getCols().map((d) => d.colId);
+        }
+
+        optimize() {
+            super.optimize();
+            let next = this.next;
+            if (
+                next != null &&
+                next.prev === this &&
+                next.statics.blotName === this.statics.blotName &&
+                next.domNode.tagName === this.domNode.tagName &&
+                next.domNode.dataset.tableId === this.domNode.dataset.tableId
+            ) {
+                next.moveChildren(this);
+                next.remove();
+            }
+        }
+    }
+
+    TableFormat.blotName = blotName.table;
+    TableFormat.tagName = 'table';
+    TableFormat.scope = Parchment$3.Scope.BLOCK_BLOT;
+
+    const Container$1 = Quill.import('blots/container');
+    const Parchment$2 = Quill.import('parchment');
+
+    class TableWrapperFormat extends Container$1 {
+        static create(value) {
+            const node = super.create();
+
+            node.dataset.tableId = value;
+
+            node.addEventListener(
+                'dragstart',
+                (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                },
+                true
+            );
+            // 不允许拖拽进 table
+            node.ondrop = (e) => {
+                e.preventDefault();
+            };
+            // 修改拖拽进入时的鼠标样式
+            node.ondragover = (e) => {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'none';
+            };
+            return node;
+        }
+
+        get tableId() {
+            return this.domNode.dataset.tableId;
+        }
+
+        insertBefore(blot, ref) {
+            if (blot.statics.blotName == this.statics.blotName) {
+                // 合并
+                super.insertBefore(blot.children.head, ref);
+            } else if (this.statics.allowedChildren.find((child) => child.blotName === blot.statics.blotName)) {
+                // 允许子 blot
+                super.insertBefore(blot, ref);
+            } else {
+                // 非允许子 blot, ref 为 null 是插入头, 否则插入尾
+                if (ref) {
+                    this.prev ? this.prev.insertBefore(blot, null) : this.parent.insertBefore(blot, this);
+                } else {
+                    this.next ? this.next.insertBefore(blot, ref) : this.parent.appendChild(blot);
+                }
+            }
+        }
+
+        optimize() {
+            super.optimize();
+            let next = this.next;
+            if (
+                next != null &&
+                next.prev === this &&
+                next.statics.blotName === this.statics.blotName &&
+                next.domNode.tagName === this.domNode.tagName &&
+                next.domNode.dataset.tableId === this.domNode.dataset.tableId
+            ) {
+                next.moveChildren(this);
+                next.remove();
+            }
+        }
+
+        deleteAt(index, length) {
+            super.deleteAt(index, length);
+            // 删除 table 时隐藏当前 table 的 tooltip
+            document.querySelector(`.ql-table-tooltip[data-table-id="${this.tableId}"]`)?.classList?.add('ql-hidden');
+        }
+    }
+    TableWrapperFormat.blotName = blotName.tableWrapper;
+    TableWrapperFormat.tagName = 'p';
+    TableWrapperFormat.className = 'ql-table-wrapper';
+    TableWrapperFormat.scope = Parchment$2.Scope.BLOCK_BLOT;
+
+    const Parchment$1 = Quill.import('parchment');
+    const ListItem = Quill.import('formats/list/item');
+
+    class ListItemRewrite extends ListItem {
+        replaceWith(name, value) {
+            this.parent.isolate(this.offset(this.parent), this.length());
+            if (name === this.parent.statics.blotName) {
+                this.parent.replaceWith(name, value);
+                return this;
+            } else {
+                if (name === blotName.tableCellInner) {
+                    let replacement = typeof name === 'string' ? Parchment$1.create(name, value) : name;
+                    replacement.replace(this.parent);
+                    this.attributes.copy(replacement);
+                    return replacement;
+                }
+                return super.replaceWith(name, value);
+            }
+        }
+    }
+
+    // 以 ql-better-table 的 table-selection.js 为修改基础
+
+
+    let PRIMARY_COLOR = '#0589f3';
+    const ERROR_LIMIT = 2;
+
+    /*
+    	options = {
+    		primaryColor: Hex color code
+    	}
+    */
+    class TableSelection {
+        constructor(table, quill, options = {}) {
+            if (!table) return null;
+            this.table = table;
+            this.quill = quill;
+            this.options = options;
+            this.optionsMerge();
+
+            this.boundary = {};
+            // 选中的 cell
+            this.selectedTds = [];
+            this.dragging = false;
+            this.selectingHandler = this.mouseDownHandler.bind(this);
+            this.cellSelect = null; // selection 显示边框
+            this.scrollHandler = [];
+            this.helpLinesInitial();
+
+            const resizeObserver = new ResizeObserver((entries) => {
+                this.clearSelection();
+            });
+            resizeObserver.observe(this.quill.root);
+
+            this.quill.root.addEventListener('mousedown', this.selectingHandler, false);
+            this.closeHandler = this.clearSelection.bind(this);
+            this.quill.on(Quill.events.TEXT_CHANGE, this.closeHandler);
+        }
+
+        optionsMerge() {
+            this.options?.primaryColor && (PRIMARY_COLOR = this.options.primaryColor);
+        }
+
+        addScrollEvent(dom, handle) {
+            dom.addEventListener('scroll', handle);
+            this.scrollHandler.push([dom, handle]);
+        }
+
+        clearScrollEvent() {
+            for (let i = 0; i < this.scrollHandler.length; i++) {
+                let [dom, handle] = this.scrollHandler[i];
+                dom.removeEventListener('scroll', handle);
+            }
+            this.scrollHandler = [];
+        }
+
+        // 初始化边框 dom
+        helpLinesInitial() {
+            this.cellSelect = this.quill.addContainer('ql-table-selection_line');
+            css(this.cellSelect, {
+                'border-color': PRIMARY_COLOR,
+            });
+        }
+
+        mouseDownHandler(e) {
+            if (e.button !== 0 || !e.target.closest('.ql-table')) return;
+            const startTableId = e.target.closest('.ql-table').dataset.tableId;
+
+            const mouseMoveHandler = (e) => {
+                // 根据 tableId 判断是否跨表格，跨表格不计算
+                if (
+                    e.button !== 0 ||
+                    !e.target.closest('.ql-table') ||
+                    e.target.closest('.ql-table').dataset.tableId !== startTableId
+                )
+                    return;
+
+                const endTd = e.target.closest('td[data-row-id]');
+                const endTdRect = getRelativeRect(endTd.getBoundingClientRect(), this.quill.root.parentNode);
+                this.boundary = computeBoundaryFromRects(startTdRect, endTdRect);
+                this.correctBoundary();
+                this.selectedTds = this.computeSelectedTds();
+                this.repositionHelpLines();
+
+                if (startTd !== endTd) {
+                    this.quill.blur();
+                }
+            };
+
+            const mouseUpHandler = (e) => {
+                document.body.removeEventListener('mousemove', mouseMoveHandler, false);
+                document.body.removeEventListener('mouseup', mouseUpHandler, false);
+                this.dragging = false;
+            };
+
+            document.body.addEventListener('mousemove', mouseMoveHandler, false);
+            document.body.addEventListener('mouseup', mouseUpHandler, false);
+
+            const startTd = e.target.closest('td[data-row-id]');
+            const startTdRect = getRelativeRect(startTd.getBoundingClientRect(), this.quill.root.parentNode);
+            this.dragging = true;
+            this.boundary = computeBoundaryFromRects(startTdRect, startTdRect);
+            this.correctBoundary();
+            this.selectedTds = this.computeSelectedTds();
+            this.repositionHelpLines();
+
+            this.addScrollEvent(this.table.parentNode, () => {
+                // 处理 boundary, 使滚动时 left 等跟随滚动
+                this.repositionHelpLines();
+            });
+
+            const srcollHide = () => {
+                this.clearSelection();
+                this.quill.root.removeEventListener('scroll', srcollHide);
+            };
+            this.quill.root.addEventListener('scroll', srcollHide);
+        }
+
+        computeSelectedTds() {
+            const tableContainer = Quill.find(this.table);
+            // 选中范围计算任然使用 tableCell, tableCellInner 可滚动, width 会影响
+            const tableCells = tableContainer.descendants(TableCellFormat);
+
+            return tableCells.reduce((selectedCells, tableCell) => {
+                let { x, y, width, height } = getRelativeRect(
+                    tableCell.domNode.getBoundingClientRect(),
+                    this.quill.root.parentNode
+                );
+                let isCellIncluded =
+                    x + ERROR_LIMIT >= this.boundary.x &&
+                    x - ERROR_LIMIT + width <= this.boundary.x1 &&
+                    y + ERROR_LIMIT >= this.boundary.y &&
+                    y - ERROR_LIMIT + height <= this.boundary.y1;
+
+                if (isCellIncluded) {
+                    selectedCells.push(tableCell.getCellInner());
+                }
+
+                return selectedCells;
+            }, []);
+        }
+
+        correctBoundary() {
+            // 边框计算任然使用 tableCell, 有 padding 会影响
+            const tableContainer = Quill.find(this.table);
+            const tableCells = tableContainer.descendants(TableCellFormat);
+
+            tableCells.forEach((tableCell) => {
+                const { x, y, width, height } = getRelativeRect(
+                    tableCell.domNode.getBoundingClientRect(),
+                    this.quill.root.parentNode
+                );
+
+                const isCellIntersected =
+                    ((x + ERROR_LIMIT >= this.boundary.x && x + ERROR_LIMIT <= this.boundary.x1) ||
+                        (x - ERROR_LIMIT + width >= this.boundary.x && x - ERROR_LIMIT + width <= this.boundary.x1)) &&
+                    ((y + ERROR_LIMIT >= this.boundary.y && y + ERROR_LIMIT <= this.boundary.y1) ||
+                        (y - ERROR_LIMIT + height >= this.boundary.y && y - ERROR_LIMIT + height <= this.boundary.y1));
+
+                if (isCellIntersected) {
+                    this.boundary = computeBoundaryFromRects(this.boundary, { x, y, width, height });
+                }
+            });
+            this.scrollX = this.table.parentNode.scrollLeft;
+        }
+        // 边框样式显示
+        repositionHelpLines() {
+            const tableViewScrollLeft = this.table.parentNode.scrollLeft;
+            const scrollTop = this.quill.root.parentNode.scrollTop;
+
+            css(this.cellSelect, {
+                display: 'block',
+                left: `${this.boundary.x + (this.scrollX - tableViewScrollLeft) - 1}px`,
+                top: `${scrollTop * 2 + this.boundary.y}px`,
+                width: `${this.boundary.width + 1}px`,
+                height: `${this.boundary.height + 1}px`,
+            });
+        }
+
+        clearSelection() {
+            this.boundary = {};
+            this.selectedTds = [];
+
+            this.cellSelect &&
+                css(this.cellSelect, {
+                    display: 'none',
+                });
+            this.clearScrollEvent();
+        }
+
+        destroy() {
+            this.clearSelection();
+            this.cellSelect.remove();
+            this.cellSelect = null;
+            this.clearScrollEvent();
+
+            this.quill.root.removeEventListener('mousedown', this.selectingHandler, false);
+            this.quill.off(Quill.events.TEXT_CHANGE, this.closeHandler);
+
+            return null;
+        }
     }
 
     let TIP_HEIGHT = 12;
@@ -724,953 +1729,6 @@
     // 在 table 内时禁用的 tool 的 name
     TableTooltip.disableToolNames = [toolName.table];
 
-    const Container$6 = Quill.import('blots/container');
-    const Parchment$9 = Quill.import('parchment');
-
-    class ContainBlot extends Container$6 {
-        static create() {
-            const node = super.create();
-            return node;
-        }
-
-        insertBefore(blot, ref) {
-            if (blot.statics.blotName == this.statics.blotName) {
-                super.insertBefore(blot.children.head, ref);
-            } else {
-                super.insertBefore(blot, ref);
-            }
-        }
-
-        format(name, value) {
-            this.children.tail.format(name, value);
-        }
-
-        replace(target) {
-            if (target.statics.blotName !== this.statics.blotName) {
-                const item = Parchment$9.create(this.statics.defaultChild);
-                target.moveChildren(item);
-                this.appendChild(item);
-            }
-            if (target.parent == null) return;
-            super.replace(target);
-        }
-    }
-
-    ContainBlot.blotName = blotName.contain;
-    ContainBlot.tagName = 'contain';
-    ContainBlot.scope = Parchment$9.Scope.BLOCK_BLOT;
-    ContainBlot.defaultChild = 'block';
-
-    const Parchment$8 = Quill.import('parchment');
-
-    class TableCellInnerFormat extends ContainBlot {
-        static create(value) {
-            const { tableId, rowId, colId, rowspan, colspan, style } = value;
-            const node = super.create();
-            node.dataset.tableId = tableId;
-            node.dataset.rowId = rowId;
-            node.dataset.colId = colId;
-            node.dataset.rowspan = rowspan || 1;
-            node.dataset.colspan = colspan || 1;
-            node._style = style;
-            return node;
-        }
-
-        // 仅 Block 存在 cache, 存在 cache 时不会获取最新 delta, cache 还会保存父级 format(bubbleFormats 函数), 需要清除以获取最新 delta
-        clearDeltaCache() {
-            this.children.forEach((child) => {
-                child.cache = {};
-            });
-        }
-
-        get rowId() {
-            return this.domNode.dataset.rowId;
-        }
-        get colId() {
-            return this.domNode.dataset.colId;
-        }
-        get rowspan() {
-            return Number(this.domNode.dataset.rowspan);
-        }
-        set rowspan(value) {
-            this.parent && (this.parent.rowspan = value);
-            this.domNode.dataset.rowspan = value;
-            this.clearDeltaCache();
-        }
-        get colspan() {
-            return Number(this.domNode.dataset.colspan);
-        }
-        set colspan(value) {
-            this.parent && (this.parent.colspan = value);
-            this.domNode.dataset.colspan = value;
-            this.clearDeltaCache();
-        }
-        set style(value) {
-            this.domNode._style = value;
-            this.parent.style = value;
-            this.clearDeltaCache();
-        }
-
-        replace(target) {
-            if (target.statics.blotName !== this.statics.blotName) {
-                const cloneTarget = target.clone();
-                target.moveChildren(cloneTarget);
-                this.appendChild(cloneTarget);
-                target.parent.insertBefore(this, target.next);
-                target.remove();
-            } else {
-                super.replace(target);
-            }
-        }
-
-        format(name, value) {
-            super.format(name, value);
-            this.clearDeltaCache();
-        }
-
-        formats() {
-            const { tableId, rowId, colId, rowspan, colspan } = this.domNode.dataset;
-            return {
-                [this.statics.blotName]: {
-                    tableId,
-                    rowId,
-                    colId,
-                    rowspan,
-                    colspan,
-                    style: this.domNode._style,
-                },
-            };
-        }
-
-        optimize() {
-            super.optimize();
-
-            const parent = this.parent;
-            // 父级非表格，则将当前 blot 放入表格中
-            const { tableId, colId, rowId, rowspan, colspan } = this.domNode.dataset;
-            if (parent != null && parent.statics.blotName != blotName.tableCell) {
-                const mark = Parchment$8.create('block');
-
-                this.parent.insertBefore(mark, this.next);
-                const tableWrapper = Parchment$8.create(blotName.tableWrapper, tableId);
-                const table = Parchment$8.create(blotName.table, tableId);
-                const tableBody = Parchment$8.create(blotName.tableBody);
-                const tr = Parchment$8.create(blotName.tableRow, rowId);
-                const td = Parchment$8.create(blotName.tableCell, {
-                    tableId,
-                    rowId,
-                    colId,
-                    rowspan,
-                    colspan,
-                    style: this.domNode._style,
-                });
-
-                td.appendChild(this);
-                tr.appendChild(td);
-                tableBody.appendChild(tr);
-                table.appendChild(tableBody);
-                tableWrapper.appendChild(table);
-
-                tableWrapper.replace(mark);
-            }
-
-            const next = this.next;
-            // cell 下有多个 cellInner 全部合并
-            if (next != null && next.prev === this && next.statics.blotName === this.statics.blotName) {
-                next.moveChildren(this);
-                next.remove();
-            }
-        }
-    }
-
-    TableCellInnerFormat.blotName = blotName.tableCellInner;
-    TableCellInnerFormat.tagName = 'p';
-    TableCellInnerFormat.className = 'ql-table-cell-inner';
-
-    const Parchment$7 = Quill.import('parchment');
-    const Container$5 = Quill.import('blots/container');
-
-    class TableCellFormat extends Container$5 {
-        static create(value) {
-            const { rowId, colId, rowspan, colspan, style } = value;
-            const node = super.create();
-            node.dataset.rowId = rowId;
-            node.dataset.colId = colId;
-            node.setAttribute('rowspan', rowspan || 1);
-            node.setAttribute('colspan', colspan || 1);
-            node.setAttribute('style', style || '');
-            return node;
-        }
-
-        get rowId() {
-            return this.domNode.dataset.rowId;
-        }
-        get colId() {
-            return this.domNode.dataset.colId;
-        }
-        get rowspan() {
-            return Number(this.domNode.getAttribute('rowspan'));
-        }
-        set rowspan(value) {
-            this.domNode.setAttribute('rowspan', value);
-        }
-        get colspan() {
-            return Number(this.domNode.getAttribute('colspan'));
-        }
-        set colspan(value) {
-            this.domNode.setAttribute('colspan', value);
-        }
-        set style(value) {
-            this.domNode.setAttribute('style', value);
-        }
-
-        getCellInner() {
-            return this.descendants(TableCellInnerFormat)[0];
-        }
-
-        optimize() {
-            super.optimize();
-            const { colId, rowId } = this.domNode.dataset;
-            const next = this.next;
-            if (
-                next != null &&
-                next.prev === this &&
-                next.statics.blotName === this.statics.blotName &&
-                next.domNode.dataset.rowId === rowId &&
-                next.domNode.dataset.colId === colId
-            ) {
-                next.moveChildren(this);
-                next.remove();
-            }
-        }
-
-        deleteAt(index, length) {
-            if (index === 0 && length === this.length()) {
-                const cell = this.next || this.prev;
-                const cellInner = cell && cell.getCellInner();
-                if (cellInner) {
-                    cellInner.colspan += this.colspan;
-                }
-                return this.remove();
-            }
-            this.children.forEachAt(index, length, function (child, offset, length) {
-                child.deleteAt(offset, length);
-            });
-        }
-    }
-
-    TableCellFormat.blotName = blotName.tableCell;
-    TableCellFormat.tagName = 'td';
-    TableCellFormat.className = 'ql-table-cell';
-    TableCellFormat.scope = Parchment$7.Scope.BLOCK_BLOT;
-
-    // 以 ql-better-table 的 table-selection.js 为修改基础
-
-
-    let PRIMARY_COLOR = '#0589f3';
-    const ERROR_LIMIT = 2;
-
-    /*
-    	options = {
-    		primaryColor: Hex color code
-    	}
-    */
-    class TableSelection {
-        constructor(table, quill, options = {}) {
-            if (!table) return null;
-            this.table = table;
-            this.quill = quill;
-            this.options = options;
-            this.optionsMerge();
-
-            this.boundary = {};
-            // 选中的 cell
-            this.selectedTds = [];
-            this.dragging = false;
-            this.selectingHandler = this.mouseDownHandler.bind(this);
-            this.cellSelect = null; // selection 显示边框
-            this.scrollHandler = [];
-            this.helpLinesInitial();
-
-            const resizeObserver = new ResizeObserver((entries) => {
-                this.clearSelection();
-            });
-            resizeObserver.observe(this.quill.root);
-
-            this.quill.root.addEventListener('mousedown', this.selectingHandler, false);
-            this.closeHandler = this.clearSelection.bind(this);
-            this.quill.on(Quill.events.TEXT_CHANGE, this.closeHandler);
-        }
-
-        optionsMerge() {
-            this.options?.primaryColor && (PRIMARY_COLOR = this.options.primaryColor);
-        }
-
-        addScrollEvent(dom, handle) {
-            dom.addEventListener('scroll', handle);
-            this.scrollHandler.push([dom, handle]);
-        }
-
-        clearScrollEvent() {
-            for (let i = 0; i < this.scrollHandler.length; i++) {
-                let [dom, handle] = this.scrollHandler[i];
-                dom.removeEventListener('scroll', handle);
-            }
-            this.scrollHandler = [];
-        }
-
-        // 初始化边框 dom
-        helpLinesInitial() {
-            this.cellSelect = this.quill.addContainer('ql-table-selection_line');
-            css(this.cellSelect, {
-                'border-color': PRIMARY_COLOR,
-            });
-        }
-
-        mouseDownHandler(e) {
-            if (e.button !== 0 || !e.target.closest('.ql-table')) return;
-            const startTableId = e.target.closest('.ql-table').dataset.tableId;
-
-            const mouseMoveHandler = (e) => {
-                // 根据 tableId 判断是否跨表格，跨表格不计算
-                if (
-                    e.button !== 0 ||
-                    !e.target.closest('.ql-table') ||
-                    e.target.closest('.ql-table').dataset.tableId !== startTableId
-                )
-                    return;
-
-                const endTd = e.target.closest('td[data-row-id]');
-                const endTdRect = getRelativeRect(endTd.getBoundingClientRect(), this.quill.root.parentNode);
-                this.boundary = computeBoundaryFromRects(startTdRect, endTdRect);
-                this.correctBoundary();
-                this.selectedTds = this.computeSelectedTds();
-                this.repositionHelpLines();
-
-                if (startTd !== endTd) {
-                    this.quill.blur();
-                }
-            };
-
-            const mouseUpHandler = (e) => {
-                document.body.removeEventListener('mousemove', mouseMoveHandler, false);
-                document.body.removeEventListener('mouseup', mouseUpHandler, false);
-                this.dragging = false;
-            };
-
-            document.body.addEventListener('mousemove', mouseMoveHandler, false);
-            document.body.addEventListener('mouseup', mouseUpHandler, false);
-
-            const startTd = e.target.closest('td[data-row-id]');
-            const startTdRect = getRelativeRect(startTd.getBoundingClientRect(), this.quill.root.parentNode);
-            this.dragging = true;
-            this.boundary = computeBoundaryFromRects(startTdRect, startTdRect);
-            this.correctBoundary();
-            this.selectedTds = this.computeSelectedTds();
-            this.repositionHelpLines();
-
-            this.addScrollEvent(this.table.parentNode, () => {
-                // 处理 boundary, 使滚动时 left 等跟随滚动
-                this.repositionHelpLines();
-            });
-
-            const srcollHide = () => {
-                this.clearSelection();
-                this.quill.root.removeEventListener('scroll', srcollHide);
-            };
-            this.quill.root.addEventListener('scroll', srcollHide);
-        }
-
-        computeSelectedTds() {
-            const tableContainer = Quill.find(this.table);
-            // 选中范围计算任然使用 tableCell, tableCellInner 可滚动, width 会影响
-            const tableCells = tableContainer.descendants(TableCellFormat);
-
-            return tableCells.reduce((selectedCells, tableCell) => {
-                let { x, y, width, height } = getRelativeRect(
-                    tableCell.domNode.getBoundingClientRect(),
-                    this.quill.root.parentNode
-                );
-                let isCellIncluded =
-                    x + ERROR_LIMIT >= this.boundary.x &&
-                    x - ERROR_LIMIT + width <= this.boundary.x1 &&
-                    y + ERROR_LIMIT >= this.boundary.y &&
-                    y - ERROR_LIMIT + height <= this.boundary.y1;
-
-                if (isCellIncluded) {
-                    selectedCells.push(tableCell.getCellInner());
-                }
-
-                return selectedCells;
-            }, []);
-        }
-
-        correctBoundary() {
-            // 边框计算任然使用 tableCell, 有 padding 会影响
-            const tableContainer = Quill.find(this.table);
-            const tableCells = tableContainer.descendants(TableCellFormat);
-
-            tableCells.forEach((tableCell) => {
-                const { x, y, width, height } = getRelativeRect(
-                    tableCell.domNode.getBoundingClientRect(),
-                    this.quill.root.parentNode
-                );
-
-                const isCellIntersected =
-                    ((x + ERROR_LIMIT >= this.boundary.x && x + ERROR_LIMIT <= this.boundary.x1) ||
-                        (x - ERROR_LIMIT + width >= this.boundary.x && x - ERROR_LIMIT + width <= this.boundary.x1)) &&
-                    ((y + ERROR_LIMIT >= this.boundary.y && y + ERROR_LIMIT <= this.boundary.y1) ||
-                        (y - ERROR_LIMIT + height >= this.boundary.y && y - ERROR_LIMIT + height <= this.boundary.y1));
-
-                if (isCellIntersected) {
-                    this.boundary = computeBoundaryFromRects(this.boundary, { x, y, width, height });
-                }
-            });
-            this.scrollX = this.table.parentNode.scrollLeft;
-        }
-        // 边框样式显示
-        repositionHelpLines() {
-            const tableViewScrollLeft = this.table.parentNode.scrollLeft;
-            const scrollTop = this.quill.root.parentNode.scrollTop;
-
-            css(this.cellSelect, {
-                display: 'block',
-                left: `${this.boundary.x + (this.scrollX - tableViewScrollLeft) - 1}px`,
-                top: `${scrollTop * 2 + this.boundary.y}px`,
-                width: `${this.boundary.width + 1}px`,
-                height: `${this.boundary.height + 1}px`,
-            });
-        }
-
-        clearSelection() {
-            this.boundary = {};
-            this.selectedTds = [];
-
-            this.cellSelect &&
-                css(this.cellSelect, {
-                    display: 'none',
-                });
-            this.clearScrollEvent();
-        }
-
-        destroy() {
-            this.clearSelection();
-            this.cellSelect.remove();
-            this.cellSelect = null;
-            this.clearScrollEvent();
-
-            this.quill.root.removeEventListener('mousedown', this.selectingHandler, false);
-            this.quill.off(Quill.events.TEXT_CHANGE, this.closeHandler);
-
-            return null;
-        }
-    }
-
-    const MENU_ITEMS_DEFAULT = {
-        insertColumnLeft: {
-            text: '在左侧插入一列',
-            handler() {
-                const tableModule = this.quill.getModule(moduleName.table);
-                tableModule.appendCol();
-                tableModule.hideTableTools();
-            },
-        },
-        insertColumnRight: {
-            text: '在右侧插入一列',
-            handler() {
-                const tableModule = this.quill.getModule(moduleName.table);
-                tableModule.appendCol(true);
-                tableModule.hideTableTools();
-            },
-        },
-        insertRowTop: {
-            text: '在上方插入一行',
-            handler() {
-                const tableModule = this.quill.getModule(moduleName.table);
-                tableModule.appendRow();
-                tableModule.hideTableTools();
-            },
-        },
-        insertRowBottom: {
-            text: '在下方插入一行',
-            groupEnd: true,
-            handler() {
-                const tableModule = this.quill.getModule(moduleName.table);
-                tableModule.appendRow(true);
-                tableModule.hideTableTools();
-            },
-        },
-        removeCol: {
-            text: '删除所在列',
-            handler() {
-                const tableModule = this.quill.getModule(moduleName.table);
-                tableModule.removeCol();
-                tableModule.hideTableTools();
-            },
-        },
-        removeRow: {
-            text: '删除所在行',
-            handler() {
-                const tableModule = this.quill.getModule(moduleName.table);
-                tableModule.removeRow();
-                tableModule.hideTableTools();
-            },
-        },
-        removeTable: {
-            text: '删除表格',
-            groupEnd: true,
-            handler() {
-                const tableModule = this.quill.getModule(moduleName.table);
-                tableModule.removeTable();
-                tableModule.hideTableTools();
-            },
-        },
-        mergeCell: {
-            text: '合并单元格',
-            groupEnd: true,
-            handler() {
-                const tableModule = this.quill.getModule(moduleName.table);
-                tableModule.mergeCells();
-                tableModule.hideTableTools();
-            },
-        },
-        setBackgroundColor: {
-            subTitle: '设置背景颜色',
-            text() {
-                const tableModule = this.quill.getModule(moduleName.table);
-                const input = document.createElement('input');
-                input.type = 'color';
-                input.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                });
-                const tempCells = tableModule.tableSelection.selectedTds;
-                input.addEventListener('input', () => {
-                    tableModule.setBackgroundColor(input.value, tempCells);
-                });
-                input.style.width = '100%';
-                return input;
-            },
-        },
-    };
-    const MENU_MIN_HEIHGT = 150;
-    const MENU_WIDTH = 200;
-
-    /*
-        options = {
-            items: {
-               functionName: {
-                    text: '显示文字',
-                    handle() {},    // 触发事件
-                    iconSrc: string,    // icon url
-                    groupEnd: boolean, // 是否显示分隔线
-                    subTitle: '显示子标题',
-                }
-            }
-        }
-    */
-    class TableOperationMenu {
-        constructor(params, quill, options = {}) {
-            this.table = params.table;
-            this.quill = quill;
-            this.options = options;
-            const tableModule = this.quill.getModule(moduleName.table);
-            this.tableSelection = tableModule.tableSelection;
-            this.menuItems = {};
-            this.optionsMerge();
-
-            this.boundary = this.tableSelection.boundary;
-            this.selectedTds = this.tableSelection.selectedTds;
-
-            this.destroyHandler = this.destroy.bind(this);
-            this.menuInitial(params);
-            this.mount();
-
-            document.addEventListener('click', this.destroyHandler, false);
-        }
-
-        optionsMerge() {
-            if (this.options?.replaceItems) {
-                this.menuItems = this.options?.items ?? {};
-            } else {
-                this.menuItems = Object.assign({}, MENU_ITEMS_DEFAULT, this.options?.items ?? {});
-            }
-        }
-
-        mount() {
-            document.body.appendChild(this.domNode);
-        }
-
-        menuInitial({ table, row, cell, left, top }) {
-            this.domNode = document.createElement('div');
-            this.domNode.classList.add('ql-table-operation-menu');
-
-            const style = {
-                position: 'absolute',
-                'min-height': `${MENU_MIN_HEIHGT}px`,
-                width: `${MENU_WIDTH}px`,
-            };
-            const { innerWidth: width, innerHeight: height } = window;
-            left > width - MENU_WIDTH ? (style.right = `${width - left}px`) : (style.left = `${left}px`);
-            top > height - MENU_MIN_HEIHGT ? (style.bottom = `${height - top}px`) : (style.top = `${top}px`);
-            css(this.domNode, style);
-
-            for (const name in this.menuItems) {
-                if (this.menuItems[name]) {
-                    if (this.menuItems[name].subTitle) {
-                        this.domNode.appendChild(subTitleCreator(this.menuItems[name].subTitle));
-                    }
-
-                    this.domNode.appendChild(
-                        this.menuItemCreator(Object.assign({}, MENU_ITEMS_DEFAULT[name], this.menuItems[name]))
-                    );
-
-                    if (this.menuItems[name].groupEnd) {
-                        this.domNode.appendChild(dividingCreator());
-                    }
-                }
-            }
-
-            // create dividing line
-            function dividingCreator() {
-                const dividing = document.createElement('div');
-                dividing.classList.add('ql-table-operation-menu-dividing');
-                return dividing;
-            }
-
-            // create subtitle for menu
-            function subTitleCreator(title) {
-                const subTitle = document.createElement('div');
-                subTitle.classList.add('ql-table-operation-menu-subtitle');
-                subTitle.innerText = title;
-                return subTitle;
-            }
-        }
-
-        destroy() {
-            this.domNode.remove();
-            document.removeEventListener('click', this.destroyHandler, false);
-            return null;
-        }
-
-        menuItemCreator({ text, iconSrc, handler }) {
-            const node = document.createElement('div');
-            node.classList.add('ql-table-operation-menu-item');
-
-            if (iconSrc) {
-                const iconSpan = document.createElement('span');
-                iconSpan.classList.add('ql-table-operation-menu-icon');
-                iconSpan.innerHTML = iconSrc;
-                node.appendChild(iconSpan);
-            }
-
-            if (isString(text)) {
-                const textSpan = document.createElement('span');
-                textSpan.classList.add('ql-table-operation-menu-text');
-                textSpan.innerText = text;
-                node.appendChild(textSpan);
-            } else if (isFunction(text)) {
-                node.appendChild(text.call(this));
-            }
-
-            isFunction(handler) && node.addEventListener('click', handler.bind(this), false);
-            return node;
-        }
-    }
-
-    const Container$4 = Quill.import('blots/container');
-    const Parchment$6 = Quill.import('parchment');
-
-    class TableRowFormat extends Container$4 {
-        static create(value) {
-            const node = super.create();
-            node.dataset.rowId = value;
-            return node;
-        }
-
-        optimize() {
-            super.optimize();
-            const next = this.next;
-            if (
-                next != null &&
-                next.prev === this &&
-                next.statics.blotName === this.statics.blotName &&
-                next.domNode.dataset.rowId === this.domNode.dataset.rowId
-            ) {
-                next.moveChildren(this);
-                next.remove();
-            }
-        }
-
-        get rowId() {
-            return this.domNode.dataset.rowId;
-        }
-
-        foreachCellInner(func) {
-            const next = this.children.iterator();
-            let i = 0;
-            let cur;
-            while ((cur = next())) {
-                const [tableCell] = cur.descendants(TableCellInnerFormat);
-                if (func(tableCell, i++)) break;
-            }
-        }
-    }
-
-    TableRowFormat.blotName = blotName.tableRow;
-    TableRowFormat.tagName = 'tr';
-    TableRowFormat.className = 'ql-table-row';
-    TableRowFormat.scope = Parchment$6.Scope.BLOCK_BLOT;
-
-    const Parchment$5 = Quill.import('parchment');
-    const BlockEmbed$1 = Quill.import('blots/block/embed');
-
-    class TableColFormat extends BlockEmbed$1 {
-        static create(value) {
-            const { width, tableId, colId, full } = value;
-            const node = super.create();
-            node.setAttribute('width', width);
-            full && node.setAttribute('data-full', full);
-            node.dataset.tableId = tableId;
-            node.dataset.colId = colId;
-
-            return node;
-        }
-
-        static value(domNode) {
-            const { tableId, colId } = domNode.dataset;
-            return {
-                tableId,
-                colId,
-                width: domNode.getAttribute('width'),
-                full: domNode.hasAttribute('data-full'),
-            };
-        }
-
-        get width() {
-            const width = this.domNode.getAttribute('width');
-            if (isNaN(width) && !width.endsWith('%')) return null;
-            return parseFloat(width);
-        }
-        set width(value) {
-            return this.domNode.setAttribute('width', value);
-        }
-
-        get colId() {
-            return this.domNode.dataset.colId;
-        }
-
-        get full() {
-            return this.domNode.hasAttribute('data-full');
-        }
-
-        optimize() {
-            super.optimize();
-
-            const parent = this.parent;
-            if (parent != null && parent.statics.blotName != blotName.tableColGroup) {
-                const mark = Parchment$5.create('block');
-                this.parent.insertBefore(mark, this.next);
-
-                const tableWrapper = Parchment$5.create(blotName.tableWrapper, this.domNode.dataset.tableId);
-                const table = Parchment$5.create(blotName.table, this.domNode.dataset.tableId);
-
-                this.full && (table.full = true);
-
-                const tableColgroup = Parchment$5.create(blotName.tableColGroup);
-
-                tableColgroup.appendChild(this);
-                table.appendChild(tableColgroup);
-                tableWrapper.appendChild(table);
-
-                tableWrapper.replace(mark);
-            }
-            const next = this.next;
-            const { tableId: ttableId, colId: tcolId } = this.domNode.dataset;
-            if (
-                next != null &&
-                next.statics.blotName === this.statics.blotName &&
-                next.domNode.tagName === this.domNode.tagName &&
-                next.domNode.dataset.tableId === ttableId &&
-                next.domNode.dataset.colId === tcolId
-            ) {
-                next.moveChildren(this);
-                next.remove();
-            }
-        }
-    }
-    TableColFormat.blotName = blotName.tableCol;
-    TableColFormat.tagName = 'col';
-    TableColFormat.scope = Parchment$5.Scope.BLOCK_BLOT;
-
-    const Container$3 = Quill.import('blots/container');
-    const Parchment$4 = Quill.import('parchment');
-
-    class TableFormat extends Container$3 {
-        constructor(domNode, value) {
-            super(domNode, value);
-
-            this.formatTableWidth();
-        }
-
-        static create(value) {
-            const node = super.create();
-
-            node.dataset.tableId = value;
-            node.classList.add('ql-table');
-            node.setAttribute('cellpadding', 0);
-            node.setAttribute('cellspacing', 0);
-
-            return node;
-        }
-
-        colWidthFillTable() {
-            if (this.full) return;
-            const colgroup = this.children.head;
-            if (!colgroup || colgroup.statics.blotName !== blotName.tableColGroup) return;
-
-            const colsWidth = colgroup.children.reduce((sum, col) => col.width + sum, 0);
-            if (colsWidth === 0 || isNaN(colsWidth) || this.full) return null;
-            this.domNode.style.width = colsWidth + 'px';
-            return colsWidth;
-        }
-
-        formatTableWidth() {
-            setTimeout(() => {
-                this.colWidthFillTable();
-            }, 0);
-        }
-
-        get tableId() {
-            return this.domNode.dataset.tableId;
-        }
-        get full() {
-            return this.domNode.hasAttribute('data-full');
-        }
-        set full(value) {
-            this.domNode[value ? 'setAttribute' : 'removeAttribute']('data-full', '');
-        }
-
-        getRows() {
-            return this.descendants(TableRowFormat);
-        }
-        getRowIds() {
-            return this.getRows().map((d) => d.rowId);
-        }
-
-        getCols() {
-            return this.descendants(TableColFormat);
-        }
-        getColIds() {
-            return this.getCols().map((d) => d.colId);
-        }
-
-        optimize() {
-            super.optimize();
-            let next = this.next;
-            if (
-                next != null &&
-                next.prev === this &&
-                next.statics.blotName === this.statics.blotName &&
-                next.domNode.tagName === this.domNode.tagName &&
-                next.domNode.dataset.tableId === this.domNode.dataset.tableId
-            ) {
-                next.moveChildren(this);
-                next.remove();
-            }
-        }
-    }
-
-    TableFormat.blotName = blotName.table;
-    TableFormat.tagName = 'table';
-    TableFormat.scope = Parchment$4.Scope.BLOCK_BLOT;
-
-    const Container$2 = Quill.import('blots/container');
-    const Parchment$3 = Quill.import('parchment');
-
-    class TableBodyFormat extends Container$2 {
-        optimize() {
-            super.optimize();
-            const next = this.next;
-            if (
-                next != null &&
-                next.prev === this &&
-                next.statics.blotName === this.statics.blotName &&
-                next.domNode.tagName === this.domNode.tagName
-            ) {
-                next.moveChildren(this);
-                next.remove();
-            }
-        }
-
-        deleteAt(index, length) {
-            if (index === 0 && length === this.length()) {
-                this.parent.remove();
-            }
-            this.children.forEachAt(index, length, function (child, offset, length) {
-                child.deleteAt(offset, length);
-            });
-        }
-    }
-    TableBodyFormat.blotName = blotName.tableBody;
-    TableBodyFormat.tagName = 'tbody';
-    TableBodyFormat.scope = Parchment$3.Scope.BLOCK_BLOT;
-
-    const Container$1 = Quill.import('blots/container');
-    const Parchment$2 = Quill.import('parchment');
-
-    class TableColgroupFormat extends Container$1 {
-        optimize() {
-            super.optimize();
-            const next = this.next;
-            if (
-                next != null &&
-                next.prev === this &&
-                next.statics.blotName === this.statics.blotName &&
-                next.domNode.tagName === this.domNode.tagName
-            ) {
-                next.moveChildren(this);
-                next.remove();
-            }
-        }
-
-        findCol(index) {
-            const next = this.children.iterator();
-            let i = 0;
-            let cur;
-            while ((cur = next())) {
-                if (i === index) {
-                    break;
-                }
-                i++;
-            }
-            return cur;
-        }
-    }
-    TableColgroupFormat.blotName = blotName.tableColGroup;
-    TableColgroupFormat.tagName = 'colgroup';
-    TableColgroupFormat.scope = Parchment$2.Scope.BLOCK_BLOT;
-
-    const Parchment$1 = Quill.import('parchment');
-    const ListItem = Quill.import('formats/list/item');
-
-    class ListRewrite extends ListItem {
-        replaceWith(name, value) {
-            this.parent.isolate(this.offset(this.parent), this.length());
-            if (name === this.parent.statics.blotName) {
-                this.parent.replaceWith(name, value);
-                return this;
-            } else {
-                if (name === blotName.tableCellInner) {
-                    let replacement = typeof name === 'string' ? Parchment$1.create(name, value) : name;
-                    replacement.replace(this.parent);
-                    this.attributes.copy(replacement);
-                    return replacement;
-                }
-                return super.replaceWith(name, value);
-            }
-        }
-    }
-
     var TableSvg = "<svg viewBox=\"0 0 24 24\"><path class=\"ql-stroke\" fill=\"none\" stroke=\"currentColor\" stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M3 5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5zm0 5h18M10 3v18\"/></svg>";
 
     const Parchment = Quill.import('parchment');
@@ -1794,8 +1852,8 @@
                             table: tableNode,
                             row: rowNode,
                             cell: cellNode,
-                            left: evt.pageX,
-                            top: evt.pageY,
+                            left: evt.clientX,
+                            top: evt.clientY,
                         },
                         quill,
                         this.options.operationMenu
@@ -1803,7 +1861,7 @@
                 }
             });
 
-            this.quill.theme.tableToolTip = new TableTooltip(this.quill, this.options.tableToolTip);
+            this.quill.theme.TableTooltip = new TableTooltip(this.quill, this.options.TableTooltip);
         }
 
         showTableTools(table, quill, options) {
@@ -1814,9 +1872,9 @@
         hideTableTools() {
             this.tableSelection && this.tableSelection.destroy();
             this.tableOperationMenu && this.tableOperationMenu.destroy();
-            if (this.quill.theme.tableToolTip) {
-                this.quill.theme.tableToolTip.curTableId = null;
-                this.quill.theme.tableToolTip.hide();
+            if (this.quill.theme.TableTooltip) {
+                this.quill.theme.TableTooltip.curTableId = null;
+                this.quill.theme.TableTooltip.hide();
             }
             this.tableSelection = null;
             this.tableOperationMenu = null;
@@ -2447,9 +2505,9 @@
             }
         }
 
-        setBackgroundColor(color, cells) {
+        setStyle(styles, cells) {
             if (!cells.length) return;
-            cells.map((cellInner) => (cellInner.style = `background-color: ${color};`));
+            cells.map((cellInner) => (cellInner.style = styles));
         }
     }
 
@@ -2476,7 +2534,7 @@
     const rewirteFormats = () =>
         Quill.register(
             {
-                [`formats/list/item`]: ListRewrite,
+                [`formats/list/item`]: ListItemRewrite,
             },
             true
         );

@@ -1,5 +1,5 @@
 import Quill from 'quill';
-import TableWrapperFormat from '../format/TableWrapperFormat';
+import { TableWrapperFormat } from '../format';
 import { css, getRelativeRect } from '../utils';
 import { blotName, toolName, CELL_MIN_WIDTH, CELL_MIN_PRE } from '../assets/const';
 let TIP_HEIGHT = 12;
@@ -9,7 +9,7 @@ let TIP_HEIGHT = 12;
 		disableToolNames: [],	// 表格内禁用项， toolbar 的 name
 	}
 */
-export default class TableTooltip {
+export class TableTooltip {
     constructor(quill, options = {}) {
         this.quill = quill;
         this.options = options;

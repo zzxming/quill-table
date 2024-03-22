@@ -1,7 +1,7 @@
 // 以 ql-better-table 的 table-selection.js 为修改基础
 
 import Quill from 'quill';
-import TableCellFormat from '../format/TableCellFormat';
+import { TableCellFormat } from '../format';
 import { css, getRelativeRect, computeBoundaryFromRects } from '../utils';
 
 let PRIMARY_COLOR = '#0589f3';
@@ -12,7 +12,7 @@ const ERROR_LIMIT = 2;
 		primaryColor: Hex color code
 	}
 */
-export default class TableSelection {
+export class TableSelection {
     constructor(table, quill, options = {}) {
         if (!table) return null;
         this.table = table;

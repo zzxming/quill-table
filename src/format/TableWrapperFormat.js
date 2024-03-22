@@ -76,4 +76,4 @@ TableWrapperFormat.tagName = 'p';
 TableWrapperFormat.className = 'ql-table-wrapper';
 TableWrapperFormat.scope = Parchment.Scope.BLOCK_BLOT;
 
-export default TableWrapperFormat;
+export { TableWrapperFormat };

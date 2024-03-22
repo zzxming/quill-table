@@ -1,6 +1,6 @@
 import Quill from 'quill';
 import { blotName } from '../assets/const';
-import TableCellInnerFormat from './TableCellInnerFormat';
+import { TableCellInnerFormat } from './TableCellInnerFormat';
 const Parchment = Quill.import('parchment');
 const Container = Quill.import('blots/container');
 
@@ -12,7 +12,7 @@ class TableCellFormat extends Container {
         node.dataset.colId = colId;
         node.setAttribute('rowspan', rowspan || 1);
         node.setAttribute('colspan', colspan || 1);
-        node.setAttribute('style', style || '');
+        node.style.cssText = style;
         return node;
     }
 
@@ -34,8 +34,11 @@ class TableCellFormat extends Container {
     set colspan(value) {
         this.domNode.setAttribute('colspan', value);
     }
+    get style() {
+        return this.domNode.style.cssText;
+    }
     set style(value) {
-        this.domNode.setAttribute('style', value);
+        Object.assign(this.domNode.style, value);
     }
 
     getCellInner() {
@@ -78,4 +81,4 @@ TableCellFormat.tagName = 'td';
 TableCellFormat.className = 'ql-table-cell';
 TableCellFormat.scope = Parchment.Scope.BLOCK_BLOT;
 
-export default TableCellFormat;
+export { TableCellFormat };
