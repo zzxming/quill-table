@@ -180,7 +180,8 @@ class TableModule {
         // 重新生成 table 里的所有 id, cellFormat 和 colFormat 进行 table 的添加
         // addMatcher 匹配的是标签字符串, 不是 blotName, 只是这些 blotName 设置的是标签字符串
         this.quill.clipboard.addMatcher(blotName.table, (node, delta) => {
-            const hasCol = !!delta.ops[0].insert?.col;
+            if (!delta.ops.length) return delta;
+            const hasCol = !!delta.ops[0].attributes?.col;
             let colDelta;
             // 粘贴表格若原本存在 col, 仅改变 id, 否则重新生成
             const { width: originTableWidth } = node.getBoundingClientRect();
@@ -192,7 +193,7 @@ class TableModule {
 
             if (!hasCol) {
                 colDelta = colIds.reduce((colDelta, id) => {
-                    colDelta.insert({
+                    colDelta.insert('\n', {
                         [blotName.tableCol]: {
                             colId: id,
                             tableId,
@@ -204,18 +205,26 @@ class TableModule {
                 }, new Delta());
             } else {
                 for (let i = 0; i < delta.ops.length; i++) {
-                    if (!delta.ops[i].insert[blotName.tableCol]) {
+                    if (!delta.ops[i].attributes[blotName.tableCol]) {
                         break;
                     }
-                    delta.ops[i].insert[blotName.tableCol].tableId = tableId;
-                    delta.ops[i].insert[blotName.tableCol].colId = colIds[i];
-                    delta.ops[i].insert[blotName.tableCol].full = isFull;
-                    if (!delta.ops[i].insert[blotName.tableCol].width) {
-                        delta.ops[i].insert[blotName.tableCol].width = defaultColWidth;
-                    } else {
-                        delta.ops[i].insert[blotName.tableCol].width =
-                            parseFloat(delta.ops[i].insert[blotName.tableCol].width) + (isFull ? '%' : 'px');
-                    }
+                    Object.assign(delta.ops[i].attributes[blotName.tableCol], {
+                        tableId,
+                        colId: colIds[i],
+                        full: isFull,
+                        width: !delta.ops[i].attributes[blotName.tableCol].width
+                            ? defaultColWidth
+                            : parseFloat(delta.ops[i].attributes[blotName.tableCol].width) + (isFull ? '%' : 'px'),
+                    });
+                    // delta.ops[i].attributes[blotName.tableCol].tableId = tableId;
+                    // delta.ops[i].attributes[blotName.tableCol].colId = colIds[i];
+                    // delta.ops[i].attributes[blotName.tableCol].full = isFull;
+                    // if (!delta.ops[i].attributes[blotName.tableCol].width) {
+                    //     delta.ops[i].attributes[blotName.tableCol].width = defaultColWidth;
+                    // } else {
+                    //     delta.ops[i].attributes[blotName.tableCol].width =
+                    //         parseFloat(delta.ops[i].attributes[blotName.tableCol].width) + (isFull ? '%' : 'px');
+                    // }
                 }
             }
             tableId = randomId();

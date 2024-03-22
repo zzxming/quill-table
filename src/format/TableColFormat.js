@@ -1,13 +1,16 @@
 import Quill from 'quill';
 import { blotName } from '../assets/const';
 const Parchment = Quill.import('parchment');
+const BlockEmbed = Quill.import('blots/block/embed');
+const Block = Quill.import('blots/block');
+const Container = Quill.import('blots/container');
 import { ContainBlot } from '../blot/contain';
 
 class TableColFormat extends ContainBlot {
     static create(value) {
         const { width, tableId, colId, full } = value;
         const node = super.create();
-        node.setAttribute('width', width);
+        node.setAttribute('width', `${parseFloat(width)}${full ? '%' : 'px'}`);
         full && node.setAttribute('data-full', full);
         node.dataset.tableId = tableId;
         node.dataset.colId = colId;
@@ -17,11 +20,11 @@ class TableColFormat extends ContainBlot {
 
     get width() {
         const width = this.domNode.getAttribute('width');
-        if (isNaN(width) && !width.endsWith('%')) return null;
         return parseFloat(width);
     }
     set width(value) {
-        return this.domNode.setAttribute('width', value);
+        const width = parseFloat(value);
+        return this.domNode.setAttribute('width', `${width}${this.full ? '%' : 'px'}`);
     }
 
     get colId() {
@@ -30,10 +33,6 @@ class TableColFormat extends ContainBlot {
 
     get full() {
         return this.domNode.hasAttribute('data-full');
-    }
-
-    format() {
-        return;
     }
 
     formats() {

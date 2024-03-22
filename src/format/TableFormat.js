@@ -27,7 +27,6 @@ class TableFormat extends Container {
         if (this.full) return;
         const colgroup = this.children.head;
         if (!colgroup || colgroup.statics.blotName !== blotName.tableColGroup) return;
-
         const colsWidth = colgroup.children.reduce((sum, col) => col.width + sum, 0);
         if (colsWidth === 0 || isNaN(colsWidth) || this.full) return null;
         this.domNode.style.width = colsWidth + 'px';
