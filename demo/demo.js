@@ -852,12 +852,15 @@
     TableCellFormat.scope = Parchment$7.Scope.BLOCK_BLOT;
 
     const Parchment$6 = Quill.import('parchment');
+    Quill.import('blots/block/embed');
+    Quill.import('blots/block');
+    Quill.import('blots/container');
 
     class TableColFormat extends ContainBlot {
         static create(value) {
             const { width, tableId, colId, full } = value;
             const node = super.create();
-            node.setAttribute('width', width);
+            node.setAttribute('width', `${parseFloat(width)}${full ? '%' : 'px'}`);
             full && node.setAttribute('data-full', full);
             node.dataset.tableId = tableId;
             node.dataset.colId = colId;
@@ -867,11 +870,11 @@
 
         get width() {
             const width = this.domNode.getAttribute('width');
-            if (isNaN(width) && !width.endsWith('%')) return null;
             return parseFloat(width);
         }
         set width(value) {
-            return this.domNode.setAttribute('width', value);
+            const width = parseFloat(value);
+            return this.domNode.setAttribute('width', `${width}${this.full ? '%' : 'px'}`);
         }
 
         get colId() {
@@ -880,10 +883,6 @@
 
         get full() {
             return this.domNode.hasAttribute('data-full');
-        }
-
-        format() {
-            return;
         }
 
         formats() {
@@ -1041,7 +1040,6 @@
             if (this.full) return;
             const colgroup = this.children.head;
             if (!colgroup || colgroup.statics.blotName !== blotName.tableColGroup) return;
-
             const colsWidth = colgroup.children.reduce((sum, col) => col.width + sum, 0);
             if (colsWidth === 0 || isNaN(colsWidth) || this.full) return null;
             this.domNode.style.width = colsWidth + 'px';
@@ -1892,7 +1890,8 @@
             // 重新生成 table 里的所有 id, cellFormat 和 colFormat 进行 table 的添加
             // addMatcher 匹配的是标签字符串, 不是 blotName, 只是这些 blotName 设置的是标签字符串
             this.quill.clipboard.addMatcher(blotName.table, (node, delta) => {
-                const hasCol = !!delta.ops[0].insert?.col;
+                if (!delta.ops.length) return delta;
+                const hasCol = !!delta.ops[0].attributes?.col;
                 let colDelta;
                 // 粘贴表格若原本存在 col, 仅改变 id, 否则重新生成
                 const { width: originTableWidth } = node.getBoundingClientRect();
@@ -1904,7 +1903,7 @@
 
                 if (!hasCol) {
                     colDelta = colIds.reduce((colDelta, id) => {
-                        colDelta.insert({
+                        colDelta.insert('\n', {
                             [blotName.tableCol]: {
                                 colId: id,
                                 tableId,
@@ -1916,18 +1915,26 @@
                     }, new Delta());
                 } else {
                     for (let i = 0; i < delta.ops.length; i++) {
-                        if (!delta.ops[i].insert[blotName.tableCol]) {
+                        if (!delta.ops[i].attributes[blotName.tableCol]) {
                             break;
                         }
-                        delta.ops[i].insert[blotName.tableCol].tableId = tableId;
-                        delta.ops[i].insert[blotName.tableCol].colId = colIds[i];
-                        delta.ops[i].insert[blotName.tableCol].full = isFull;
-                        if (!delta.ops[i].insert[blotName.tableCol].width) {
-                            delta.ops[i].insert[blotName.tableCol].width = defaultColWidth;
-                        } else {
-                            delta.ops[i].insert[blotName.tableCol].width =
-                                parseFloat(delta.ops[i].insert[blotName.tableCol].width) + (isFull ? '%' : 'px');
-                        }
+                        Object.assign(delta.ops[i].attributes[blotName.tableCol], {
+                            tableId,
+                            colId: colIds[i],
+                            full: isFull,
+                            width: !delta.ops[i].attributes[blotName.tableCol].width
+                                ? defaultColWidth
+                                : parseFloat(delta.ops[i].attributes[blotName.tableCol].width) + (isFull ? '%' : 'px'),
+                        });
+                        // delta.ops[i].attributes[blotName.tableCol].tableId = tableId;
+                        // delta.ops[i].attributes[blotName.tableCol].colId = colIds[i];
+                        // delta.ops[i].attributes[blotName.tableCol].full = isFull;
+                        // if (!delta.ops[i].attributes[blotName.tableCol].width) {
+                        //     delta.ops[i].attributes[blotName.tableCol].width = defaultColWidth;
+                        // } else {
+                        //     delta.ops[i].attributes[blotName.tableCol].width =
+                        //         parseFloat(delta.ops[i].attributes[blotName.tableCol].width) + (isFull ? '%' : 'px');
+                        // }
                     }
                 }
                 tableId = randomId();
@@ -2539,9 +2546,64 @@
             true
         );
 
+    const Toolbar = Quill.import('modules/toolbar');
+    const Icons = Quill.import('ui/icons');
+
+    class ToolbarRewrite extends Toolbar {
+        bindFormatSelect = () => {
+            const range = this.quill.getSelection();
+            if (range.length === 0) return;
+            this.rangeFormat = this.quill.getFormat(range);
+            this.quill.isFormat = true;
+            this.quill.on(Quill.events.SELECTION_CHANGE, this.formatRange);
+            setTimeout(() => {
+                this.formaterBtn.classList.add('ql-active');
+            }, 0);
+        };
+
+        unbindFormatSelect = () => {
+            this.quill.off(Quill.events.SELECTION_CHANGE, this.formatRange);
+            this.rangeFormat = undefined;
+            this.formaterBtn.classList.remove('ql-active');
+            this.quill.isFormat = false;
+        };
+
+        formatRange = (range) => {
+            console.log(range);
+            console.log(this.rangeFormat);
+            this.quill.removeFormat(range.index, range.length);
+            for (const format in this.rangeFormat) {
+                this.quill.format(format, this.rangeFormat[format]);
+            }
+            this.unbindFormatSelect();
+        };
+
+        constructor(quill, options) {
+            super(quill, options);
+            this.formaterBtn = this.controls.find(([name]) => name === 'formater')?.[1];
+        }
+    }
+
+    ToolbarRewrite.moduleName = 'toolbar';
+    ToolbarRewrite.DEFAULTS = {
+        ...Toolbar.DEFAULTS,
+    };
+    ToolbarRewrite.DEFAULTS.handlers.formater = function () {
+        if (this.quill.isFormat) {
+            this.unbindFormatSelect();
+            return;
+        }
+        this.bindFormatSelect();
+    };
+
+    Icons[
+        'formater'
+    ] = `<svg viewBox="0 0 48 48"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="4"><path stroke-linejoin="round" d="M8 24h32v18H8zM4 13h14V6h12v7h14v11H4z"/><path d="M16 32v10"/></g></svg>`;
+
     Quill.register(
         {
             [`modules/${TableModule.moduleName}`]: TableModule,
+            [`modules/${ToolbarRewrite.moduleName}`]: ToolbarRewrite,
         },
         true
     );
@@ -2564,6 +2626,7 @@
                 [{ align: ['', 'center', 'right', 'justify'] }],
                 ['clean'],
                 ['image', 'video'],
+                ['formater'],
 
                 [{ table: [] }],
             ],
