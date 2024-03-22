@@ -46,8 +46,8 @@ class TableCellInnerFormat extends ContainBlot {
         this.clearDeltaCache();
     }
     set style(value) {
-        this.domNode._style = value;
         this.parent.style = value;
+        this.domNode._style = this.parent.style;
         this.clearDeltaCache();
     }
 

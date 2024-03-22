@@ -12,7 +12,7 @@ class TableCellFormat extends Container {
         node.dataset.colId = colId;
         node.setAttribute('rowspan', rowspan || 1);
         node.setAttribute('colspan', colspan || 1);
-        node.setAttribute('style', style || '');
+        node.style.cssText = style;
         return node;
     }
 
@@ -34,8 +34,11 @@ class TableCellFormat extends Container {
     set colspan(value) {
         this.domNode.setAttribute('colspan', value);
     }
+    get style() {
+        return this.domNode.style.cssText;
+    }
     set style(value) {
-        this.domNode.setAttribute('style', value);
+        Object.assign(this.domNode.style, value);
     }
 
     getCellInner() {

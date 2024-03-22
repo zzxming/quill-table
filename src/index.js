@@ -140,8 +140,8 @@ class TableModule {
                         table: tableNode,
                         row: rowNode,
                         cell: cellNode,
-                        left: evt.pageX,
-                        top: evt.pageY,
+                        left: evt.clientX,
+                        top: evt.clientY,
                     },
                     quill,
                     this.options.operationMenu
@@ -793,9 +793,9 @@ class TableModule {
         }
     }
 
-    setBackgroundColor(color, cells) {
+    setStyle(styles, cells) {
         if (!cells.length) return;
-        cells.map((cellInner) => (cellInner.style = `background-color: ${color};`));
+        cells.map((cellInner) => (cellInner.style = styles));
     }
 }
 
