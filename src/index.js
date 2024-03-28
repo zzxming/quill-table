@@ -148,8 +148,7 @@ class TableModule {
                 );
             }
         });
-
-        this.quill.theme.TableTooltip = new TableTooltip(this.quill, this.options.TableTooltip);
+        this.quill.theme.TableTooltip = new TableTooltip(this.quill, this.options.tableToolTip);
     }
 
     showTableTools(table, quill, options) {
