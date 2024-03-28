@@ -74,13 +74,13 @@ The element returned by the customSelect method will be inserted into the toolba
 
 #### OpertationMenuItem
 
-| attribute | type                      | description                                                 | default |
-| --------- | ------------------------- | ----------------------------------------------------------- | ------- |
-| text      | string / () =>HTMLElement | Item text                                                   |         |
-| iconSrc   | HTMLString                | Pre icon                                                    |         |
-| handler   | () => void                | Click event                                                 |         |
-| subTitle  | string                    | Subtitle                                                    |         |
-| groupEnd  | boolean                   | Group underline. Do not display underline for the last item |         |
+| attribute | type                       | description                                                 |
+| --------- | -------------------------- | ----------------------------------------------------------- |
+| text      | string / () => HTMLElement | Item text                                                   |
+| iconSrc   | HTMLString                 | Pre icon                                                    |
+| handler   | () => void                 | Click event                                                 |
+| subTitle  | string                     | Subtitle                                                    |
+| groupEnd  | boolean                    | Group underline. Do not display underline for the last item |
 
 ### TableCellSelection
 
