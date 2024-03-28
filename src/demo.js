@@ -88,7 +88,7 @@ const quill = new Quill('#editor', {
             fullWidth: true,
             tableToolTip: {
                 tipHeight: 12,
-                disableToolNames: ['bold', 'color'],
+                disableToolNames: ['bold', 'color', 'code-block'],
             },
             operationMenu: {},
             selection: {

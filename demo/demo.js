@@ -1448,7 +1448,12 @@
                     return this.hide();
                 }
                 const range = this.quill.getSelection();
-                if (range == null) return;
+
+                if (range == null) {
+                    this.hide();
+                    this.enableFromTable();
+                    return;
+                }
                 const [tableWrapper] = this.quill.scroll.descendant(TableWrapperFormat, range.index);
                 if (tableWrapper !== null) {
                     // 此时在 table 内, 禁用部分功能
@@ -1484,6 +1489,8 @@
                     this.show();
                     this.position();
                     return;
+                } else {
+                    this.enableFromTable();
                 }
                 this.hide();
             });
@@ -1496,7 +1503,6 @@
             // 防止重复触发覆盖保存事件
             if (toolbar.disableByTable) return;
             toolbar.disableByTable = true;
-
             // 去除 toolbar 对应 module 的 handler 事件, 保存在 tableDisableToolHandlers
             for (const toolName of TableTooltip.disableToolNames) {
                 this.tableDisableToolHandlers[toolName] = toolbar.handlers[toolName];
@@ -1607,7 +1613,6 @@
 
         hide() {
             this.root.classList.add('ql-hidden');
-            this.enableFromTable();
         }
 
         bindDrag() {
@@ -1858,8 +1863,7 @@
                     );
                 }
             });
-
-            this.quill.theme.TableTooltip = new TableTooltip(this.quill, this.options.TableTooltip);
+            this.quill.theme.TableTooltip = new TableTooltip(this.quill, this.options.tableToolTip);
         }
 
         showTableTools(table, quill, options) {
@@ -2634,7 +2638,7 @@
                 fullWidth: true,
                 tableToolTip: {
                     tipHeight: 12,
-                    disableToolNames: ['bold', 'color'],
+                    disableToolNames: ['bold', 'color', 'code-block'],
                 },
                 operationMenu: {},
                 selection: {
