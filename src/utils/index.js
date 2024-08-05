@@ -178,7 +178,7 @@ export const showTableCreator = async (row = 3, col = 3) => {
 /**
  * 显示表格选择器
  */
-export const showTableSelector = () => {
+export const showTableSelector = (customButton) => {
     const selectDom = document.createElement('div');
     selectDom.classList.add('create_select');
 
@@ -197,7 +197,7 @@ export const showTableSelector = () => {
 
     const selectCustom = document.createElement('div');
     selectCustom.classList.add('create_select_custom');
-    selectCustom.innerText = '自定义行列数';
+    selectCustom.innerText = customButton || '自定义行列数';
 
     selectDom.appendChild(selectBlock);
     selectDom.appendChild(selectCustom);
