@@ -204,7 +204,7 @@
     /**
      * 显示表格选择器
      */
-    const showTableSelector = () => {
+    const showTableSelector = (customButton) => {
         const selectDom = document.createElement('div');
         selectDom.classList.add('create_select');
 
@@ -223,7 +223,7 @@
 
         const selectCustom = document.createElement('div');
         selectCustom.classList.add('create_select_custom');
-        selectCustom.innerText = '自定义行列数';
+        selectCustom.innerText = customButton || '自定义行列数';
 
         selectDom.appendChild(selectBlock);
         selectDom.appendChild(selectCustom);
@@ -1798,7 +1798,7 @@
                     } else {
                         this.controlItem = control[1];
                     }
-                    this.buildCustomSelect(this.options.customSelect, control[1].tagName.toLowerCase());
+                    this.buildCustomSelect(this.options.customSelect, control[1].tagName.toLowerCase(), this.options.customButton);
                     toolbar.addHandler(TableModule.toolName, this.handleSelectDisplay.bind(this));
                 }
             }
@@ -1984,10 +1984,10 @@
             });
         }
 
-        async buildCustomSelect(customSelect, tagName) {
+        async buildCustomSelect(customSelect, tagName, customButton) {
             const dom = document.createElement('div');
             dom.classList.add('ql-custom-select');
-            const selector = customSelect && isFunction(customSelect) ? await customSelect() : this.createSelect();
+            const selector = customSelect && isFunction(customSelect) ? await customSelect() : this.createSelect(customButton);
             dom.appendChild(selector);
 
             let appendTo = this.controlItem;
@@ -2017,8 +2017,8 @@
             window.addEventListener('click', this.tableInsertSelectCloseHandler);
         }
 
-        createSelect() {
-            return showTableSelector();
+        createSelect(customButton) {
+            return showTableSelector(customButton);
         }
 
         closeSelecte() {
