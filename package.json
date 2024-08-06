@@ -20,7 +20,7 @@
         "url": "git+https://github.com/zzxming/quill-table"
     },
     "author": "zzxming",
-    "license": "ISC",
+    "license": "MIT",
     "devDependencies": {
         "@babel/preset-env": "^7.23.9",
         "@rollup/plugin-babel": "^6.0.4",
@@ -38,7 +38,6 @@
         "postcss": "^8.4.33",
         "postcss-preset-env": "^9.4.0",
         "postcss-pxtorem": "^6.1.0",
-        "quill": "^1.3.7",
         "rollup": "^4.12.0",
         "rollup-plugin-svg-import": "^3.0.0"
     },
