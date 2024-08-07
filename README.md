@@ -71,8 +71,9 @@ The element returned by the customSelect method will be inserted into the toolba
 
 | attribute    | description              | type                               | default                                                                                                              |
 | ------------ | ------------------------ | ---------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| items        | Contextmenu item         | Record<string, OpertationMenuItem> | { insertColumnLeft, insertColumnRight, insertRowTop, insertRowBottom, removeRow, removeCol, removeTable, mergeCell } |
+| items        | Contextmenu item         | Record<string, OpertationMenuItem> | { insertColumnLeft, insertColumnRight, insertRowTop, insertRowBottom, removeRow, removeCol, removeTable, mergeCell, setBorderColor, setBackgroundColor, clearBackgroundColor, clearBorderColor } |
 | replaceItems | Replace contextmenu item | Boolean                            |                                                                                                                      |
+| modifyItems | Modify contextmenu items | Boolean                            |                                                                                                                      |
 
 #### OpertationMenuItem
 

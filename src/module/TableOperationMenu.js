@@ -146,6 +146,7 @@ export class TableOperationMenu {
         this.tableSelection = tableModule.tableSelection;
         this.menuItems = {};
         this.optionsMerge();
+        this.optionsModify();
 
         this.boundary = this.tableSelection.boundary;
         this.selectedTds = this.tableSelection.selectedTds;
@@ -159,9 +160,64 @@ export class TableOperationMenu {
     optionsMerge() {
         if (this.options?.replaceItems) {
             this.menuItems = this.options?.items ?? {};
-        } else {
+        } else if (!this.options?.modifyItems) {
             this.menuItems = Object.assign({}, MENU_ITEMS_DEFAULT, this.options?.items ?? {});
+        } // The menuItems for the other condition is managed through the optionsModify function.
+    }
+    /**
+     * Rewrite the whole functionality in case of 'setBorderColor' and 'setBackgroundColor' buttons.
+     * @param {string} item The type of the button
+     * @param {object} itemNewOptions Contains the user-defined attributes get used to override the buttons' properties
+     */
+    overrideButton(item, itemNewOptions) {
+        MENU_ITEMS_DEFAULT[item] = {
+            text() {
+                const subTitle = document.createElement('span');
+                subTitle.innerText = itemNewOptions.text;
+                const tableModule = this.quill.getModule(moduleName.table);
+                const input = document.createElement('input');
+                input.type = 'color';
+                input.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                });
+                const tempCells = tableModule.tableSelection.selectedTds;
+                input.addEventListener('input', () => {
+                    switch (item) {
+                        case 'setBorderColor':
+                            tableModule.setStyle({ borderColor: input.value }, tempCells);
+                            break;
+                        case 'setBackgroundColor':
+                            tableModule.setStyle({ backgroundColor: input.value }, tempCells);
+                            break;
+                    }
+                });
+                input.style.marginLeft = 'auto';
+                return [subTitle, input];
+            },
         }
+    }
+    /**
+     * Override the attributes of the context menu items if they exist;
+     * otherwise, define a new one for them.
+     */
+    optionsModify() {
+        if (!this.options?.modifyItems) return;
+        for (const [item, itemNewOptions] of Object.entries(this.options?.items)) {
+            if (!MENU_ITEMS_DEFAULT.hasOwnProperty(item)) continue;
+            switch (item) {
+                case 'setBorderColor':
+                case 'setBackgroundColor':
+                    this.overrideButton(item, itemNewOptions);
+                    break;
+                default:
+                    const itemDefaultOptions = MENU_ITEMS_DEFAULT[item];
+                    Object.keys(itemNewOptions).forEach(option => {
+                        itemDefaultOptions[option] = itemNewOptions[option];
+                    });
+                    break;
+            }
+        }
+        this.menuItems = Object.assign({}, MENU_ITEMS_DEFAULT);
     }
 
     setMenuPosition({ left, top }) {
