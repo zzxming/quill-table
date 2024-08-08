@@ -55,7 +55,7 @@ const buildTheme = () => {
 const buildModule = async () => {
     const bundle = await rollup({
         input: moduleInput,
-        external: [/^quill/],
+        external: ['quill'],
         treeshake: true,
         plugins: [
             commonjs(),
@@ -77,6 +77,7 @@ const buildModule = async () => {
 const buildDemo = async () => {
     const bundle = await rollup({
         input: demoInput,
+        external: ['quill'],
         treeshake: true,
         plugins: [
             commonjs(),
@@ -84,16 +85,14 @@ const buildDemo = async () => {
                 stringify: true,
             }),
         ],
-        output: {
-            globals: {
-                quill: 'Quill',
-            },
-        },
     });
     return bundle.write({
         file: resolve(demoRoot, 'demo.js'),
         format: 'iife',
         sourcemap: true,
+        globals: {
+            quill: 'Quill',
+        },
     });
 };
 const build = parallel(buildTheme, series(buildModule, buildDemo));
@@ -102,7 +101,7 @@ export const theme = buildTheme;
 export const module = buildModule;
 export const demo = buildDemo;
 export const dev = () => {
-    watch('./src/**/*.js', series(buildModule, buildDemo));
+    watch('./src/**/*.js', buildDemo);
     watch('./src/**/*.less', buildTheme);
 };
 export default build;

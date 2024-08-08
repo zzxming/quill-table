@@ -388,55 +388,33 @@
             },
         },
         setBackgroundColor: {
-            text() {
-                const subTitle = document.createElement('span');
-                subTitle.innerText = '设置背景颜色';
-
+            text: '设置背景颜色',
+            isColorChoose: true,
+            handler(color) {
                 const tableModule = this.quill.getModule(moduleName.table);
-                const input = document.createElement('input');
-                input.type = 'color';
-                input.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                });
-                const tempCells = tableModule.tableSelection.selectedTds;
-                input.addEventListener('input', () => {
-                    tableModule.setStyle({ backgroundColor: input.value }, tempCells);
-                });
-                input.style.marginLeft = 'auto';
-                return [subTitle, input];
+                tableModule.setStyle({ backgroundColor: color }, this.selectedTds);
             },
         },
         clearBackgroundColor: {
             text: '清除背景颜色',
             handler() {
                 const tableModule = this.quill.getModule(moduleName.table);
-                tableModule.setStyle({ backgroundColor: null }, tableModule.tableSelection.selectedTds);
+                tableModule.setStyle({ backgroundColor: null }, this.selectedTds);
             },
         },
         setBorderColor: {
-            text() {
-                const subTitle = document.createElement('span');
-                subTitle.innerText = '设置边框颜色';
-
+            text: '设置边框颜色',
+            isColorChoose: true,
+            handler(color) {
                 const tableModule = this.quill.getModule(moduleName.table);
-                const input = document.createElement('input');
-                input.type = 'color';
-                input.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                });
-                const tempCells = tableModule.tableSelection.selectedTds;
-                input.addEventListener('input', () => {
-                    tableModule.setStyle({ borderColor: input.value }, tempCells);
-                });
-                input.style.marginLeft = 'auto';
-                return [subTitle, input];
+                tableModule.setStyle({ borderColor: color }, this.selectedTds);
             },
         },
         clearBorderColor: {
             text: '清除边框颜色',
             handler() {
                 const tableModule = this.quill.getModule(moduleName.table);
-                tableModule.setStyle({ borderColor: null }, tableModule.tableSelection.selectedTds);
+                tableModule.setStyle({ borderColor: null }, this.selectedTds);
             },
         },
     };
@@ -463,8 +441,7 @@
             const tableModule = this.quill.getModule(moduleName.table);
             this.tableSelection = tableModule.tableSelection;
             this.menuItems = {};
-            this.optionsMerge();
-            this.optionsModify();
+            this.mergeMenuItems();
 
             this.boundary = this.tableSelection.boundary;
             this.selectedTds = this.tableSelection.selectedTds;
@@ -475,67 +452,25 @@
             document.addEventListener('click', this.destroyHandler, false);
         }
 
-        optionsMerge() {
+        mergeMenuItems() {
             if (this.options?.replaceItems) {
                 this.menuItems = this.options?.items ?? {};
-            } else if (!this.options?.modifyItems) {
-                this.menuItems = Object.assign({}, MENU_ITEMS_DEFAULT, this.options?.items ?? {});
-            } // The menuItems for the other condition is managed through the optionsModify function.
-        }
-        /**
-         * Rewrite the whole functionality in case of 'setBorderColor' and 'setBackgroundColor' buttons.
-         * @param {string} item The type of the button
-         * @param {object} itemNewOptions Contains the user-defined attributes get used to override the buttons' properties
-         */
-        overrideButton(item, itemNewOptions) {
-            MENU_ITEMS_DEFAULT[item] = {
-                text() {
-                    const subTitle = document.createElement('span');
-                    subTitle.innerText = itemNewOptions.text;
-                    const tableModule = this.quill.getModule(moduleName.table);
-                    const input = document.createElement('input');
-                    input.type = 'color';
-                    input.addEventListener('click', (e) => {
-                        e.stopPropagation();
-                    });
-                    const tempCells = tableModule.tableSelection.selectedTds;
-                    input.addEventListener('input', () => {
-                        switch (item) {
-                            case 'setBorderColor':
-                                tableModule.setStyle({ borderColor: input.value }, tempCells);
-                                break;
-                            case 'setBackgroundColor':
-                                tableModule.setStyle({ backgroundColor: input.value }, tempCells);
-                                break;
-                        }
-                    });
-                    input.style.marginLeft = 'auto';
-                    return [subTitle, input];
-                },
-            };
-        }
-        /**
-         * Override the attributes of the context menu items if they exist;
-         * otherwise, define a new one for them.
-         */
-        optionsModify() {
-            if (!this.options?.modifyItems) return;
-            for (const [item, itemNewOptions] of Object.entries(this.options?.items)) {
-                if (!MENU_ITEMS_DEFAULT.hasOwnProperty(item)) continue;
-                switch (item) {
-                    case 'setBorderColor':
-                    case 'setBackgroundColor':
-                        this.overrideButton(item, itemNewOptions);
-                        break;
-                    default:
-                        const itemDefaultOptions = MENU_ITEMS_DEFAULT[item];
-                        Object.keys(itemNewOptions).forEach(option => {
-                            itemDefaultOptions[option] = itemNewOptions[option];
-                        });
-                        break;
-                }
+            } else if (this.options?.modifyItems) {
+                this.menuItems = this.modifyMenuItems(this.options?.items ?? {});
+            } else {
+                this.menuItems = MENU_ITEMS_DEFAULT;
             }
-            this.menuItems = Object.assign({}, MENU_ITEMS_DEFAULT);
+        }
+        /**
+         * Override the attributes of the context menu items
+         */
+        modifyMenuItems() {
+            if (!this.options?.modifyItems) return MENU_ITEMS_DEFAULT;
+            const newOptionsItems = { ...MENU_ITEMS_DEFAULT };
+            for (const [item, itemNewOptions] of Object.entries(this.options?.items)) {
+                newOptionsItems[item] = Object.assign({ ...newOptionsItems[item] }, itemNewOptions);
+            }
+            return newOptionsItems;
         }
 
         setMenuPosition({ left, top }) {
@@ -564,19 +499,15 @@
                 'min-height': `${MENU_MIN_HEIHGT}px`,
             });
 
-            for (const name in this.menuItems) {
-                if (this.menuItems[name]) {
-                    if (this.menuItems[name].subTitle) {
-                        this.domNode.appendChild(subTitleCreator(this.menuItems[name].subTitle));
-                    }
+            for (const [name, item] of Object.entries(this.menuItems)) {
+                if (item.subTitle) {
+                    this.domNode.appendChild(subTitleCreator(item.subTitle));
+                }
 
-                    this.domNode.appendChild(
-                        this.menuItemCreator(Object.assign({}, MENU_ITEMS_DEFAULT[name], this.menuItems[name]))
-                    );
+                this.domNode.appendChild(this.menuItemCreator(Object.assign({}, MENU_ITEMS_DEFAULT[name], item)));
 
-                    if (this.menuItems[name].groupEnd) {
-                        this.domNode.appendChild(dividingCreator());
-                    }
+                if (item.groupEnd) {
+                    this.domNode.appendChild(dividingCreator());
                 }
             }
 
@@ -604,8 +535,8 @@
             return null;
         }
 
-        menuItemCreator({ text, iconSrc, handler }) {
-            const node = document.createElement('div');
+        menuItemCreator({ text, iconSrc, handler, isColorChoose }) {
+            const node = document.createElement(isColorChoose ? 'label' : 'div');
             node.classList.add('ql-table-operation-menu-item');
 
             if (iconSrc) {
@@ -628,7 +559,30 @@
                 nodes.map((sub) => node.appendChild(sub));
             }
 
-            isFunction(handler) && node.addEventListener('click', handler.bind(this), false);
+            // color choose handler will trigger when the color input event
+            if (isColorChoose) {
+                const input = document.createElement('input');
+                input.type = 'color';
+                Object.assign(input.style, {
+                    width: 0,
+                    height: 0,
+                    padding: 0,
+                    border: 0,
+                });
+                if (isFunction(handler)) {
+                    node.addEventListener('click', (e) => e.stopPropagation());
+                    input.addEventListener(
+                        'input',
+                        () => {
+                            handler.call(this, input.value);
+                        },
+                        false
+                    );
+                }
+                node.appendChild(input);
+            } else {
+                isFunction(handler) && node.addEventListener('click', handler.bind(this), false);
+            }
             return node;
         }
     }
@@ -2640,7 +2594,54 @@
                     tipHeight: 12,
                     disableToolNames: ['bold', 'color', 'code-block'],
                 },
-                operationMenu: {},
+                operationMenu: {
+                    items: {
+                        insertColumnLeft: {
+                            text: 'insert column left',
+                        },
+                        insertColumnRight: {
+                            text: 'insert column right',
+                        },
+                        insertRowTop: {
+                            text: 'insert row up',
+                        },
+                        insertRowBottom: {
+                            text: 'insert row down',
+                        },
+                        removeCol: {
+                            text: 'remove column',
+                        },
+                        removeRow: {
+                            text: 'remove row',
+                        },
+                        removeTable: {
+                            text: 'remove table',
+                        },
+                        mergeCell: {
+                            text: 'merge cell',
+                        },
+                        setBackgroundColor: {
+                            text: 'set background color',
+                        },
+                        clearBackgroundColor: {
+                            text: 'clear background color',
+                        },
+                        setBorderColor: {
+                            text: 'set border color',
+                        },
+                        clearBorderColor: {
+                            text: 'clear border color',
+                        },
+                        otherBtn: {
+                            text: 'other color',
+                            isColorChoose: true,
+                            handler(color) {
+                                console.log('get color', color);
+                            },
+                        },
+                    },
+                    modifyItems: true,
+                },
                 selection: {
                     primaryColor: '#0589f3',
                 },

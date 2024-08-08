@@ -35,7 +35,54 @@ const quill = new Quill('#editor', {
                 tipHeight: 12,
                 disableToolNames: ['bold', 'color', 'code-block'],
             },
-            operationMenu: {},
+            operationMenu: {
+                items: {
+                    insertColumnLeft: {
+                        text: 'insert column left',
+                    },
+                    insertColumnRight: {
+                        text: 'insert column right',
+                    },
+                    insertRowTop: {
+                        text: 'insert row up',
+                    },
+                    insertRowBottom: {
+                        text: 'insert row down',
+                    },
+                    removeCol: {
+                        text: 'remove column',
+                    },
+                    removeRow: {
+                        text: 'remove row',
+                    },
+                    removeTable: {
+                        text: 'remove table',
+                    },
+                    mergeCell: {
+                        text: 'merge cell',
+                    },
+                    setBackgroundColor: {
+                        text: 'set background color',
+                    },
+                    clearBackgroundColor: {
+                        text: 'clear background color',
+                    },
+                    setBorderColor: {
+                        text: 'set border color',
+                    },
+                    clearBorderColor: {
+                        text: 'clear border color',
+                    },
+                    otherBtn: {
+                        text: 'other color',
+                        isColorChoose: true,
+                        handler(color) {
+                            console.log('get color', color);
+                        },
+                    },
+                },
+                modifyItems: true,
+            },
             selection: {
                 primaryColor: '#0589f3',
             },
