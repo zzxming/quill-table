@@ -69,21 +69,22 @@ The element returned by the customSelect method will be inserted into the toolba
 
 ### OperationMenu
 
-| attribute    | description              | type                               | default                                                                                                              |
-| ------------ | ------------------------ | ---------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| attribute    | description              | type                               | default                                                                                                                                                                                          |
+| ------------ | ------------------------ | ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | items        | Contextmenu item         | Record<string, OpertationMenuItem> | { insertColumnLeft, insertColumnRight, insertRowTop, insertRowBottom, removeRow, removeCol, removeTable, mergeCell, setBorderColor, setBackgroundColor, clearBackgroundColor, clearBorderColor } |
-| replaceItems | Replace contextmenu item | Boolean                            |                                                                                                                      |
-| modifyItems | Modify contextmenu items | Boolean                            |                                                                                                                      |
+| replaceItems | Replace contextmenu item | Boolean                            | false                                                                                                                                                                                            |
+| modifyItems  | Modify contextmenu items | Boolean                            | false                                                                                                                                                                                            |
 
 #### OpertationMenuItem
 
-| attribute | type                       | description                                                 |
-| --------- | -------------------------- | ----------------------------------------------------------- |
-| text      | string / () => HTMLElement | Item text                                                   |
-| iconSrc   | HTMLString                 | Pre icon                                                    |
-| handler   | () => void                 | Click event                                                 |
-| subTitle  | string                     | Subtitle                                                    |
-| groupEnd  | boolean                    | Group underline. Do not display underline for the last item |
+| attribute     | type                                        | description                                                                                                     |
+| ------------- | ------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| text          | string / () => HTMLElement \| HTMLElement[] | Item text or the nodes to append to the item.                                                                   |
+| iconSrc       | HTMLString                                  | Pre icon                                                                                                        |
+| handler       | () => void / (color) => void                | Click event or color input event. handler                                                                       |
+| subTitle      | string                                      | Subtitle                                                                                                        |
+| groupEnd      | boolean                                     | Group underline. Do not display underline for the last item                                                     |
+| isColorChoose | boolean                                     | Set this true will make this item as color choose item. `handler` will be called when color trigger input event |
 
 ### TableCellSelection
 
