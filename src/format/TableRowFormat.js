@@ -1,43 +1,63 @@
 import Quill from 'quill';
 import { blotName } from '../assets/const';
 import { TableCellInnerFormat } from './TableCellInnerFormat';
+
 const Container = Quill.import('blots/container');
 const Parchment = Quill.import('parchment');
 
 class TableRowFormat extends Container {
-    static create(value) {
-        const node = super.create();
-        node.dataset.rowId = value;
-        return node;
-    }
+  static create(value) {
+    const node = super.create();
+    node.dataset.rowId = value;
+    return node;
+  }
 
-    optimize() {
-        super.optimize();
-        const next = this.next;
-        if (
-            next != null &&
-            next.prev === this &&
-            next.statics.blotName === this.statics.blotName &&
-            next.domNode.dataset.rowId === this.domNode.dataset.rowId
-        ) {
-            next.moveChildren(this);
-            next.remove();
-        }
+  optimize() {
+    super.optimize();
+    const next = this.next;
+    if (
+      next != null
+      && next.prev === this
+      && next.statics.blotName === this.statics.blotName
+      && next.domNode.dataset.rowId === this.domNode.dataset.rowId
+    ) {
+      next.moveChildren(this);
+      next.remove();
     }
+  }
 
-    get rowId() {
-        return this.domNode.dataset.rowId;
-    }
+  get rowId() {
+    return this.domNode.dataset.rowId;
+  }
 
-    foreachCellInner(func) {
-        const next = this.children.iterator();
-        let i = 0;
-        let cur;
-        while ((cur = next())) {
-            const [tableCell] = cur.descendants(TableCellInnerFormat);
-            if (func(tableCell, i++)) break;
-        }
+  insertCell(targetIndex, value) {
+    let index = 0;
+    let cur;
+    const next = this.children.iterator();
+    while ((cur = next())) {
+      index += cur.colspan;
+      if (index >= targetIndex) break;
     }
+    if (index > targetIndex) {
+      cur.colspan += 1;
+    }
+    else {
+      const tableCell = Parchment.create(blotName.tableCell, value);
+      const tableCellInner = Parchment.create(blotName.tableCellInner, value);
+      tableCell.appendChild(tableCellInner);
+      this.insertBefore(tableCell, cur?.next);
+    }
+  }
+
+  foreachCellInner(func) {
+    const next = this.children.iterator();
+    let i = 0;
+    let cur;
+    while ((cur = next())) {
+      const [tableCell] = cur.descendants(TableCellInnerFormat);
+      if (func(tableCell, i++)) break;
+    }
+  }
 }
 
 TableRowFormat.blotName = blotName.tableRow;

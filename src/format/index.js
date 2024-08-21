@@ -7,3 +7,4 @@ export * from './TableFormat';
 export * from './TableRowFormat';
 export * from './TableWrapperFormat';
 export * from './rewrite';
+export * from './ContainerFormat';
