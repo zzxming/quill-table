@@ -5,9 +5,11 @@ const MENU_ITEMS_DEFAULT = {
   insertColumnLeft: {
     text: '在左侧插入一列',
     handler() {
+      // const tableModule = this.quill.getModule(moduleName.table);
+      // tableModule.appendCol();
+      // tableModule.hideTableTools();
       const tableModule = this.quill.getModule(moduleName.table);
-      tableModule.appendCol();
-      tableModule.hideTableTools();
+      tableModule.insertColLeft();
     },
   },
   insertColumnRight: {
@@ -17,7 +19,7 @@ const MENU_ITEMS_DEFAULT = {
       // tableModule.appendCol(true);
       // tableModule.hideTableTools();
       const tableModule = this.quill.getModule(moduleName.table);
-      tableModule.insertRightCol();
+      tableModule.insertColRight();
     },
   },
   insertRowTop: {

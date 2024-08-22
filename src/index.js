@@ -581,7 +581,6 @@ class TableModule {
   }
 
   insertCol(isRight) {
-    console.log(this);
     const selectedTds = this.tableSelection.selectedTds;
     const baseTd = selectedTds[0];
     const tableBlot = this.findTable(baseTd);
@@ -594,7 +593,7 @@ class TableModule {
         colId: newColId,
         rowspan: 1,
         colspan: 1,
-      });
+      }, isRight);
     }
     const [colgroup] = tableBlot.descendants(TableColgroupFormat, 0);
     if (colgroup) {
@@ -607,8 +606,12 @@ class TableModule {
     }
   }
 
-  insertRightCol() {
+  insertColRight() {
     this.insertCol(true);
+  }
+
+  insertColLeft() {
+    this.insertCol(false);
   }
 
   /*

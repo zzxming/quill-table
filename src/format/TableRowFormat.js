@@ -30,22 +30,27 @@ class TableRowFormat extends Container {
     return this.domNode.dataset.rowId;
   }
 
-  insertCell(targetIndex, value) {
+  insertCell(targetIndex, value, isRight) {
+    const next = this.children.iterator();
     let index = 0;
     let cur;
-    const next = this.children.iterator();
     while ((cur = next())) {
-      index += cur.colspan;
+      if (isRight) index += cur.colspan;
       if (index >= targetIndex) break;
+      if (!isRight) index += cur.colspan;
     }
-    if (index > targetIndex) {
+
+    if (isRight && index > targetIndex) {
       cur.colspan += 1;
+    }
+    else if (!isRight && index > targetIndex && index - cur.colspan >= targetIndex) {
+      cur.prev.colspan += 1;
     }
     else {
       const tableCell = Parchment.create(blotName.tableCell, value);
       const tableCellInner = Parchment.create(blotName.tableCellInner, value);
       tableCell.appendChild(tableCellInner);
-      this.insertBefore(tableCell, cur?.next);
+      this.insertBefore(tableCell, isRight ? cur?.next : cur);
     }
   }
 
