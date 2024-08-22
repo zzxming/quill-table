@@ -2,7 +2,6 @@ import Quill from 'quill';
 import { blotName } from '../assets/const';
 import { TableRowFormat } from './TableRowFormat';
 import { TableColFormat } from './TableColFormat';
-import { TableColgroupFormat } from './TableColgroupFormat';
 
 const Container = Quill.import('blots/container');
 const Parchment = Quill.import('parchment');
@@ -27,9 +26,9 @@ class TableFormat extends Container {
 
   colWidthFillTable() {
     if (this.full) return;
-    const [colgroup] = this.descendants(TableColgroupFormat, 0);
-    if (!colgroup) return;
-    const colsWidth = colgroup.children.reduce((sum, col) => col.width + sum, 0);
+    const cols = this.descendants(TableColFormat, 0);
+    if (!cols) return;
+    const colsWidth = cols.reduce((sum, col) => col.width + sum, 0);
     if (colsWidth === 0 || Number.isNaN(colsWidth) || this.full) return null;
     this.domNode.style.width = `${colsWidth}px`;
     return colsWidth;
