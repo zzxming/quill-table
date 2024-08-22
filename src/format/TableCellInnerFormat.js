@@ -72,22 +72,15 @@ class TableCellInnerFormat extends ContainerFormat {
   }
 
   getColumnIndex() {
-    let tr = this.parent;
+    let table = this.parent;
     // find till scroll stop
-    while (tr && tr.statics.blotName !== blotName.tableRow && tr !== this.scroll) {
-      tr = tr.parent;
+    while (table && table.statics.blotName !== blotName.table && table !== this.scroll) {
+      table = table.parent;
     }
-    if (tr === this.scroll) {
+    if (table === this.scroll) {
       throw new Error(`TableCellInerFormat must be a child of TableRow`);
     }
-    let index = -1;
-    let cur;
-    const next = tr.children.iterator();
-    while ((cur = next())) {
-      index += cur.colspan;
-      if (cur === this.parent) break;
-    }
-    return index;
+    return table.getColIds().indexOf(this.colId);
   }
 
   replace(target) {

@@ -582,7 +582,17 @@ class TableModule {
 
   insertCol(isRight) {
     const selectedTds = this.tableSelection.selectedTds;
-    const baseTd = selectedTds[0];
+
+    const [baseTd] = selectedTds.reduce((pre, cur) => {
+      if (!isRight && cur.getColumnIndex() < pre[1]) {
+        pre = [cur, cur.getColumnIndex()];
+      }
+      else if (isRight && cur.getColumnIndex() > pre[1]) {
+        pre = [cur, cur.getColumnIndex()];
+      }
+      return pre;
+    }, [null, isRight ? 0 : Infinity]);
+
     const tableBlot = this.findTable(baseTd);
     const columnIndex = baseTd.getColumnIndex() + (isRight ? 1 : 0);
     const trs = tableBlot.descendants(TableRowFormat);
@@ -593,7 +603,7 @@ class TableModule {
         colId: newColId,
         rowspan: 1,
         colspan: 1,
-      }, isRight);
+      });
     }
     const [colgroup] = tableBlot.descendants(TableColgroupFormat, 0);
     if (colgroup) {
