@@ -30,6 +30,7 @@ class TableRowFormat extends Container {
     return this.domNode.dataset.rowId;
   }
 
+  // TODO: return a value to judge should or not to skip next row insert
   insertCell(targetIndex, value) {
     const next = this.children.iterator();
     let index = 0;
@@ -38,7 +39,6 @@ class TableRowFormat extends Container {
       index += cur.colspan;
       if (index > targetIndex) break;
     }
-    console.log(index, targetIndex, cur && cur.domNode);
     if (cur && index - cur.colspan < targetIndex) {
       cur.colspan += 1;
     }
