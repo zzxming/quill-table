@@ -1,5 +1,6 @@
 import Quill from 'quill';
 import { blotName } from '../assets/const';
+import { findParentBlot } from '../utils';
 import { ContainerFormat } from './ContainerFormat';
 
 const Parchment = Quill.import('parchment');
@@ -72,14 +73,7 @@ class TableCellInnerFormat extends ContainerFormat {
   }
 
   getColumnIndex() {
-    let table = this.parent;
-    // find till scroll stop
-    while (table && table.statics.blotName !== blotName.table && table !== this.scroll) {
-      table = table.parent;
-    }
-    if (table === this.scroll) {
-      throw new Error(`TableCellInerFormat must be a child of TableRow`);
-    }
+    const table = findParentBlot(this, blotName.table);
     return table.getColIds().indexOf(this.colId);
   }
 

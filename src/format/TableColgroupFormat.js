@@ -53,6 +53,21 @@ class TableColgroupFormat extends Container {
     }
     this.insertBefore(tableCellInner, col);
   }
+
+  removeColByIndex(index) {
+    const table = this.parent;
+    if (!(table instanceof TableFormat)) {
+      throw new TypeError('TableColgroupFormat should be child of TableFormat');
+    }
+    const col = this.findCol(index);
+    if (col.next) {
+      col.next.width += col.width;
+    }
+    else if (col.prev) {
+      col.prev.width += col.width;
+    }
+    col.remove();
+  }
 }
 TableColgroupFormat.blotName = blotName.tableColGroup;
 TableColgroupFormat.tagName = 'colgroup';

@@ -14,7 +14,7 @@ import {
   TableWrapperFormat,
 } from './format';
 
-import { isFunction, randomId, showTableSelector } from './utils';
+import { findParentBlot, isFunction, randomId, showTableSelector } from './utils';
 import { CELL_MIN_PRE, CELL_MIN_WIDTH, CREATE_TABLE, blotName, moduleName, toolName } from './assets/const';
 import TableSvg from './assets/icons/table.svg';
 
@@ -599,12 +599,22 @@ class TableModule {
     const columnIndex = baseTd.getColumnIndex() + (isRight ? 1 : 0);
 
     const tableBlot = this.findTable(baseTd);
-    const trs = tableBlot.descendants(TableRowFormat);
     const newColId = randomId();
+
+    const [colgroup] = tableBlot.descendants(TableColgroupFormat, 0);
+    if (colgroup) {
+      colgroup.insertColByIndex(columnIndex, {
+        tableId: tableBlot.tableId,
+        colId: newColId,
+        width: tableBlot.full ? '6%' : '160px',
+        full: tableBlot.full,
+      });
+    }
 
     // loop tr and insert cell at index
     // if index is inner cell, skip next `rowspan` line
     // if there are cells both have column span and row span before index cell, minus `colspan` cell for next line
+    const trs = tableBlot.descendants(TableRowFormat);
     const spanCols = [];
     let skipRowNum = 0;
     for (const tr of Object.values(trs)) {
@@ -625,16 +635,6 @@ class TableModule {
       for (const [i, n] of nextSpanCols.entries()) {
         spanCols[i] = (spanCols[i] || 0) + n;
       }
-    }
-
-    const [colgroup] = tableBlot.descendants(TableColgroupFormat, 0);
-    if (colgroup) {
-      colgroup.insertColByIndex(columnIndex, {
-        tableId: tableBlot.tableId,
-        colId: newColId,
-        width: tableBlot.full ? '6%' : '160px',
-        full: tableBlot.full,
-      });
     }
   }
 
@@ -742,6 +742,50 @@ class TableModule {
     }
   }
 
+  removeColv2() {
+    const selectedTds = this.tableSelection.selectedTds;
+    if (selectedTds.length === 0) return;
+    const baseTd = selectedTds[0];
+    const tableBlot = this.findTable(baseTd);
+    const colspanMap = {};
+    for (const td of selectedTds) {
+      if (!colspanMap[td.rowId]) colspanMap[td.rowId] = 0;
+      colspanMap[td.rowId] += td.colspan;
+    }
+    const colspanCount = Math.max(...Object.values(colspanMap));
+    const columnIndex = baseTd.getColumnIndex();
+
+    const [colgroup] = tableBlot.descendants(TableColgroupFormat, 0);
+    if (colgroup) {
+      for (let i = 0; i < colspanCount; i++) {
+        colgroup.removeColByIndex(columnIndex);
+      }
+    }
+
+    const trs = tableBlot.descendants(TableRowFormat);
+    for (let i = 0; i < colspanCount; i++) {
+      const spanCols = [];
+      let skipRowNum = 0;
+      for (const tr of Object.values(trs)) {
+        const spanCol = spanCols.shift() || 0;
+        if (skipRowNum > 0) {
+          skipRowNum -= 1;
+          continue;
+        }
+        const nextSpanCols = tr.removeCell(columnIndex - spanCol);
+        if (nextSpanCols.skipRowNum) {
+          skipRowNum += nextSpanCols.skipRowNum;
+        }
+        for (const [i, n] of nextSpanCols.entries()) {
+          spanCols[i] = (spanCols[i] || 0) + n;
+        }
+        if (tr.children.length === 1 && tr.children.head.rowspan === colgroup.children.length) {
+          tr.children.head.rowspan = 1;
+        }
+      }
+    }
+  }
+
   /*
     找到需要删除的所有 colId
       获取所有 colIds, 遍历选中 cell, 找到 cell 在 colIds 下标, while cell 的 colspan, 将对应 colId 加入 set. 同时保存第一个 col 的 index (first)和最后一个 col 的 index(last)
@@ -793,6 +837,12 @@ class TableModule {
     for (let i = 0; i < cols.length; i++) {
       if (i >= firstSelectColIndex && i <= lastSelectColIndex) {
         cols[i].remove();
+        if (cols[i].next) {
+          cols[i].next.width += cols[i].width;
+        }
+        else if (cols[i].prev) {
+          cols[i].prev.width += cols[i].width;
+        }
       }
       if (i > lastSelectColIndex) {
         break;
@@ -810,7 +860,7 @@ class TableModule {
   mergeCellsv2() {
     const selectedTds = this.tableSelection.selectedTds;
     if (selectedTds.length === 0) return;
-    const table = this.findTable(selectedTds[0]);
+    const tableBlot = this.findTable(selectedTds[0]);
     const counts = selectedTds.reduce(
       (pre, selectTd, index) => {
         // count column span
@@ -824,7 +874,7 @@ class TableModule {
         // merge select cell
         if (index !== 0) {
           selectTd.moveChildren(pre[2]);
-          selectTd.remove();
+          selectTd.parent.remove();
         }
         return pre;
       },
@@ -837,12 +887,28 @@ class TableModule {
     baseTd.colspan = colCount;
     baseTd.rowspan = rowCount;
 
-    const tableCols = table.getCols();
-    const tableColLength = tableCols.length;
-    const tableRowLength = table.getRowIds().length;
-    if (colCount >= tableColLength) {
-      baseTd.rowspan = 1;
+    const tableCols = tableBlot.getCols();
+    const tableRowLength = tableBlot.getRowIds().length;
+
+    // TODO: merge rowspan merge
+    const tr = findParentBlot(baseTd, blotName.tableRow);
+    const next = tr.children.iterator();
+    let cur = next();
+    const rowspan = cur.rowspan;
+    let merge = true;
+    while ((cur = next())) {
+      if (rowspan !== cur.rowspan) {
+        merge = false;
+        break;
+      }
     }
+    if (merge) {
+      tr.foreachCellInner((td) => {
+        td.rowspan = 1;
+      });
+    }
+
+    // TODO: merge colspan merge
     if (rowCount >= tableRowLength) {
       let baseCol = null;
       let lastDeleteColNum = -1;
@@ -946,7 +1012,7 @@ class TableModule {
     if (selectedTds.length !== 1) return;
     const baseTd = selectedTds[0];
     if (baseTd.colspan === 1 && baseTd.rowspan === 1) return;
-    const table = this.findTable(baseTd);
+    const tableBlot = this.findTable(baseTd);
     const colIndex = baseTd.getColumnIndex();
     let baseTr = baseTd.parent;
     while (baseTr && baseTr.statics.blotName !== blotName.tableRow && baseTr !== this.scroll) {
@@ -957,7 +1023,7 @@ class TableModule {
     }
     let curTr = baseTr;
     let rowspan = baseTd.rowspan;
-    const colIds = table.getColIds().slice(colIndex, colIndex + baseTd.colspan).reverse();
+    const colIds = tableBlot.getColIds().slice(colIndex, colIndex + baseTd.colspan).reverse();
     // reset span first. insertCell need colspan to judge insert position
     baseTd.colspan = 1;
     baseTd.rowspan = 1;
@@ -998,3 +1064,5 @@ export const rewirteFormats = () =>
     true,
   );
 export default TableModule;
+
+// TODO: add optimize arguments

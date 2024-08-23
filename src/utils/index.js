@@ -302,6 +302,17 @@ export function computeBoundaryFromRects(startRect, endRect) {
   return { x, x1, y, y1, width, height };
 }
 
+export function findParentBlot(blot, targetBlotName) {
+  let target = blot.parent;
+  while (target && target.statics.blotName !== targetBlotName && target !== blot.scroll) {
+    target = target.parent;
+  }
+  if (target === blot.scroll) {
+    throw new Error(`${blot.statics.blotName} must be a child of ${targetBlotName}`);
+  }
+  return target;
+}
+
 export function isString(val) {
   return typeof val === 'string';
 }

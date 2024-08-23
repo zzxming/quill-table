@@ -44,9 +44,12 @@ const MENU_ITEMS_DEFAULT = {
   removeCol: {
     text: '删除所在列',
     handler() {
+      // const tableModule = this.quill.getModule(moduleName.table);
+      // tableModule.removeCol();
+      // tableModule.hideTableTools();
       const tableModule = this.quill.getModule(moduleName.table);
-      tableModule.removeCol();
-      tableModule.hideTableTools();
+      tableModule.removeColv2();
+      // tableModule.hideTableTools();
     },
   },
   removeRow: {
@@ -83,7 +86,7 @@ const MENU_ITEMS_DEFAULT = {
     handler() {
       const tableModule = this.quill.getModule(moduleName.table);
       tableModule.splitCell();
-      // tableModule.hideTableTools();
+      tableModule.hideTableTools();
     },
   },
   setBackgroundColor: {

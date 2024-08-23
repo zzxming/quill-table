@@ -63,6 +63,40 @@ class TableRowFormat extends Container {
     return skip;
   }
 
+  removeCell(targetIndex) {
+    const skip = [];
+    if (targetIndex < 0) return skip;
+    const next = this.children.iterator();
+    let index = 0;
+    let cur;
+    while ((cur = next())) {
+      index += cur.colspan;
+      if (cur.rowspan !== 1) {
+        for (let i = 0; i < cur.rowspan - 1; i++) {
+          skip[i] = (skip[i] || 0) + cur.colspan;
+        }
+      }
+      if (index > targetIndex) break;
+    }
+    if (!cur) return skip;
+
+    if (index - cur.colspan < targetIndex || cur.colspan > 1) {
+      // if (index - cur.colspan === targetIndex) {
+      //   const table = this.getTable();
+      //   const colIds = table.getColIds();
+      //   cur.colId = colIds[colIds.indexOf(cur.colId) + 1];
+      // }
+      cur.colspan -= 1;
+      if (cur.rowspan !== 1) {
+        skip.skipRowNum = cur.rowspan - 1;
+      }
+    }
+    else {
+      cur.remove();
+    }
+    return skip;
+  }
+
   foreachCellInner(func) {
     const next = this.children.iterator();
     let i = 0;
