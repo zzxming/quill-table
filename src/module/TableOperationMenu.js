@@ -10,6 +10,7 @@ const MENU_ITEMS_DEFAULT = {
       // tableModule.hideTableTools();
       const tableModule = this.quill.getModule(moduleName.table);
       tableModule.insertColLeft();
+      tableModule.hideTableTools();
     },
   },
   insertColumnRight: {
@@ -20,6 +21,7 @@ const MENU_ITEMS_DEFAULT = {
       // tableModule.hideTableTools();
       const tableModule = this.quill.getModule(moduleName.table);
       tableModule.insertColRight();
+      tableModule.hideTableTools();
     },
   },
   insertRowTop: {

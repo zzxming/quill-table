@@ -30,17 +30,29 @@ class TableRowFormat extends Container {
     return this.domNode.dataset.rowId;
   }
 
-  // TODO: return a value to judge should or not to skip next row insert
+  // insert cell at index
+  // return the minus skip column number
+  // [2, 3]. means next line should skip 2 columns. next next line skip 3 columns
   insertCell(targetIndex, value) {
+    const skip = [];
     const next = this.children.iterator();
     let index = 0;
     let cur;
     while ((cur = next())) {
       index += cur.colspan;
+      if (cur.rowspan !== 1) {
+        for (let i = 0; i < cur.rowspan - 1; i++) {
+          skip[i] = (skip[i] || 0) + cur.colspan;
+        }
+      }
       if (index > targetIndex) break;
     }
+
     if (cur && index - cur.colspan < targetIndex) {
       cur.colspan += 1;
+      if (cur.rowspan !== 1) {
+        skip.skipRowNum = cur.rowspan - 1;
+      }
     }
     else {
       const tableCell = Parchment.create(blotName.tableCell, value);
@@ -48,6 +60,7 @@ class TableRowFormat extends Container {
       tableCell.appendChild(tableCellInner);
       this.insertBefore(tableCell, cur);
     }
+    return skip;
   }
 
   foreachCellInner(func) {
