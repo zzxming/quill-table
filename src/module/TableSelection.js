@@ -1,9 +1,8 @@
-/* eslint-disable unused-imports/no-unused-vars */
 // 以 ql-better-table 的 table-selection.js 为修改基础
 
 import Quill from 'quill';
 import { TableCellFormat } from '../format';
-import { computeBoundaryFromRects, css, getRelativeRect } from '../utils';
+import { css, getRelativeRect, isRectanglesIntersect } from '../utils';
 
 let PRIMARY_COLOR = '#0589f3';
 const ERROR_LIMIT = 2;
@@ -21,6 +20,7 @@ export class TableSelection {
     this.options = options;
     this.optionsMerge();
 
+    this.startScrollX = 0;
     this.boundary = {};
     // 选中的 cell
     this.selectedTds = [];
@@ -30,13 +30,13 @@ export class TableSelection {
     this.scrollHandler = [];
     this.helpLinesInitial();
 
-    const resizeObserver = new ResizeObserver((entries) => {
-      this.clearSelection();
+    const resizeObserver = new ResizeObserver(() => {
+      this.hideSelection();
     });
     resizeObserver.observe(this.quill.root);
 
     this.quill.root.addEventListener('mousedown', this.selectingHandler, false);
-    this.closeHandler = this.clearSelection.bind(this);
+    this.closeHandler = this.hideSelection.bind(this);
     this.quill.on(Quill.events.TEXT_CHANGE, this.closeHandler);
   }
 
@@ -67,28 +67,18 @@ export class TableSelection {
 
   mouseDownHandler(e) {
     if (e.button !== 0 || !e.target.closest('.ql-table')) return;
+
     const startTableId = e.target.closest('.ql-table').dataset.tableId;
-
-    const startTd = e.target.closest('td[data-row-id]');
-    const startTdRect = getRelativeRect(startTd.getBoundingClientRect(), this.quill.root.parentNode);
     this.dragging = true;
-    this.boundary = computeBoundaryFromRects(startTdRect, startTdRect);
-    this.correctBoundary();
-    this.selectedTds = this.computeSelectedTds();
-    this.repositionHelpLines();
+    const startPoint = { x: e.clientX, y: e.clientY };
+    this.startScrollX = this.table.parentNode.scrollLeft;
+    this.selectedTds = this.computeSelectedTds(startPoint, startPoint);
+    this.showSelection();
 
-    this.addScrollEvent(this.table.parentNode, () => {
-      // 处理 boundary, 使滚动时 left 等跟随滚动
-      this.repositionHelpLines();
-    });
-
-    const srcollHide = () => {
-      this.clearSelection();
-      this.quill.root.removeEventListener('scroll', srcollHide);
-    };
-    // TODO: selection wrong tds
     const mouseMoveHandler = (e) => {
-      // 根据 tableId 判断是否跨表格，跨表格不计算
+      if (this.selectedTds.length > 1) {
+        e.preventDefault();
+      }
       if (
         e.button !== 0
         || !e.target.closest('.ql-table')
@@ -96,105 +86,101 @@ export class TableSelection {
       ) {
         return;
       }
-
-      const endTd = e.target.closest('td[data-row-id]');
-      const endTdRect = getRelativeRect(endTd.getBoundingClientRect(), this.quill.root.parentNode);
-      this.boundary = computeBoundaryFromRects(startTdRect, endTdRect);
-      this.correctBoundary();
-      this.selectedTds = this.computeSelectedTds();
-      this.repositionHelpLines();
-
-      if (startTd !== endTd) {
-        this.quill.blur();
-      }
+      const movePoint = { x: e.clientX, y: e.clientY };
+      this.selectedTds = this.computeSelectedTds(startPoint, movePoint);
+      this.updateSelection();
     };
-    const mouseUpHandler = (e) => {
+    const mouseUpHandler = () => {
       document.body.removeEventListener('mousemove', mouseMoveHandler, false);
       document.body.removeEventListener('mouseup', mouseUpHandler, false);
       this.dragging = false;
     };
-
     document.body.addEventListener('mousemove', mouseMoveHandler, false);
     document.body.addEventListener('mouseup', mouseUpHandler, false);
-
-    this.quill.root.addEventListener('scroll', srcollHide);
   }
 
-  computeSelectedTds() {
+  computeSelectedTds(startPoint, endPoint) {
     const tableContainer = Quill.find(this.table);
-    // 选中范围计算任然使用 tableCell, tableCellInner 可滚动, width 会影响
+    // Use TableCell to calculation selected range, because TableCellInner is scrollable, the width will effect calculate
     const tableCells = tableContainer.descendants(TableCellFormat);
 
+    // Find the cell that intersects with the rectangle enclosed from startPoint to movePoint
+    const tempSelectCells = tableCells.reduce((selectedCells, tableCell) => {
+      const rect = tableCell.domNode.getBoundingClientRect();
+      const { x, y, width, height } = rect;
+      tableCell.__rect = rect;
+      if (isRectanglesIntersect(startPoint, endPoint, { x, y }, { x: x + width, y: y + height })) {
+        selectedCells.push(tableCell);
+      }
+      return selectedCells;
+    }, []);
+    // Find the maximum enclosing edge based on intersecting cells
+    const [y, x1, y1, x] = tempSelectCells.reduce((position, { __rect: rect }) => {
+      position[0] = Math.min(position[0], rect.y);
+      position[1] = Math.max(position[1], rect.x + rect.width);
+      position[2] = Math.max(position[2], rect.y + rect.height);
+      position[3] = Math.min(position[3], rect.x);
+      return position;
+    }, [Infinity, 0, 0, Infinity]);
+    this.boundary = getRelativeRect({ x, y, width: x1 - x, height: y1 - y }, this.quill.root.parentNode);
+    // Recalculate selected cells by boundary
     return tableCells.reduce((selectedCells, tableCell) => {
       const { x, y, width, height } = getRelativeRect(
         tableCell.domNode.getBoundingClientRect(),
         this.quill.root.parentNode,
       );
-      const isCellIncluded
-                = x + ERROR_LIMIT >= this.boundary.x
-                && x - ERROR_LIMIT + width <= this.boundary.x1
-                && y + ERROR_LIMIT >= this.boundary.y
-                && y - ERROR_LIMIT + height <= this.boundary.y1;
+      const isCellIncluded = x + ERROR_LIMIT >= this.boundary.x
+        && x - ERROR_LIMIT + width <= this.boundary.x1
+        && y + ERROR_LIMIT >= this.boundary.y
+        && y - ERROR_LIMIT + height <= this.boundary.y1;
 
       if (isCellIncluded) {
         selectedCells.push(tableCell.getCellInner());
       }
-
       return selectedCells;
     }, []);
   }
 
-  correctBoundary() {
-    // 边框计算任然使用 tableCell, 有 padding 会影响
-    const tableContainer = Quill.find(this.table);
-    const tableCells = tableContainer.descendants(TableCellFormat);
-
-    for (const tableCell of tableCells) {
-      const { x, y, width, height } = getRelativeRect(
-        tableCell.domNode.getBoundingClientRect(),
-        this.quill.root.parentNode,
-      );
-
-      const isCellIntersected
-                = ((x + ERROR_LIMIT >= this.boundary.x && x + ERROR_LIMIT <= this.boundary.x1)
-                || (x - ERROR_LIMIT + width >= this.boundary.x && x - ERROR_LIMIT + width <= this.boundary.x1))
-                && ((y + ERROR_LIMIT >= this.boundary.y && y + ERROR_LIMIT <= this.boundary.y1)
-                || (y - ERROR_LIMIT + height >= this.boundary.y && y - ERROR_LIMIT + height <= this.boundary.y1));
-
-      if (isCellIntersected) {
-        this.boundary = computeBoundaryFromRects(this.boundary, { x, y, width, height });
-      }
-    }
-    this.scrollX = this.table.parentNode.scrollLeft;
-  }
-
-  // 边框样式显示
-  repositionHelpLines() {
+  updateSelection() {
     const tableViewScrollLeft = this.table.parentNode.scrollLeft;
     const scrollTop = this.quill.root.parentNode.scrollTop;
 
     css(this.cellSelect, {
-      display: 'block',
-      left: `${this.boundary.x + (this.scrollX - tableViewScrollLeft) - 1}px`,
+      left: `${this.boundary.x + (this.startScrollX - tableViewScrollLeft) - 1}px`,
       top: `${scrollTop * 2 + this.boundary.y}px`,
       width: `${this.boundary.width + 1}px`,
       height: `${this.boundary.height + 1}px`,
     });
   }
 
-  clearSelection() {
+  showSelection() {
+    this.clearScrollEvent();
+
+    css(this.cellSelect, { display: 'block' });
+    this.updateSelection();
+
+    this.addScrollEvent(this.table.parentNode, () => {
+      this.updateSelection();
+    });
+    const srcollHide = () => {
+      this.hideSelection();
+      this.quill.root.removeEventListener('scroll', srcollHide);
+    };
+    this.addScrollEvent(this.quill.root, srcollHide);
+  }
+
+  hideSelection() {
     this.boundary = {};
     this.selectedTds = [];
 
-    this.cellSelect
-    && css(this.cellSelect, {
+    this.cellSelect && css(this.cellSelect, {
       display: 'none',
     });
     this.clearScrollEvent();
   }
 
   destroy() {
-    this.clearSelection();
+    this.hideSelection();
     this.cellSelect.remove();
     this.cellSelect = null;
     this.clearScrollEvent();

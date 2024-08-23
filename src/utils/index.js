@@ -260,6 +260,21 @@ export function css(domNode, rules) {
     }
   }
 }
+export function isRectanglesIntersect(a, b, c, d) {
+  const minA = Math.min(a.x, b.x);
+  const maxA = Math.max(a.x, b.x);
+  const minB = Math.min(a.y, b.y);
+  const maxB = Math.max(a.y, b.y);
+
+  const minC = Math.min(c.x, d.x);
+  const maxC = Math.max(c.x, d.x);
+  const minD = Math.min(c.y, d.y);
+  const maxD = Math.max(c.y, d.y);
+
+  const xOverlap = (minA <= maxC && maxA >= minC);
+  const yOverlap = (minB <= maxD && maxB >= minD);
+  return xOverlap && yOverlap;
+}
 
 export function getRelativeRect(targetRect, container) {
   const containerRect = container.getBoundingClientRect();
@@ -274,6 +289,7 @@ export function getRelativeRect(targetRect, container) {
   };
 }
 
+// Deprecated
 export function computeBoundaryFromRects(startRect, endRect) {
   const x = Math.min(startRect.x, endRect.x, startRect.x + startRect.width - 1, endRect.x + endRect.width - 1);
   const x1 = Math.max(startRect.x, endRect.x, startRect.x + startRect.width - 1, endRect.x + endRect.width - 1);

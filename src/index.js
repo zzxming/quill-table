@@ -813,17 +813,6 @@ class TableModule {
     this.findTable(selectTds[0]).remove();
   }
 
-  /**
-  TODO: bug
-  ---------------------
-  |      |     |      |
-  --------     --------
-  |select|     |select|
-  --------     --------
-  |      |     |      |
-  ---------------------
-
-   */
   mergeCells() {
     if (this.tableSelection.selectedTds.length === 0) return;
     const selectTds = this.tableSelection.selectedTds;
