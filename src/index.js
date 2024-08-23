@@ -42,7 +42,9 @@ TableRowFormat.allowedChildren = [TableCellFormat];
 TableRowFormat.requiredContainer = TableBodyFormat;
 
 TableCellFormat.allowedChildren = [TableCellInnerFormat];
+TableCellFormat.requiredContainer = TableRowFormat;
 
+TableCellInnerFormat.requiredContainer = TableCellFormat;
 TableCellInnerFormat.defaultChild = 'block';
 
 export { ListItemRewrite };
@@ -580,7 +582,7 @@ class TableModule {
     }
   }
 
-  insertCol(isRight) {
+  appendColv2(isRight) {
     const selectedTds = this.tableSelection.selectedTds;
 
     // find insert column index in row
@@ -634,14 +636,6 @@ class TableModule {
         full: tableBlot.full,
       });
     }
-  }
-
-  insertColRight() {
-    this.insertCol(true);
-  }
-
-  insertColLeft() {
-    this.insertCol(false);
   }
 
   /*
@@ -811,6 +805,66 @@ class TableModule {
     const selectTds = this.tableSelection.selectedTds;
     if (selectTds.length === 0) return;
     this.findTable(selectTds[0]).remove();
+  }
+
+  mergeCellsv2() {
+    const selectedTds = this.tableSelection.selectedTds;
+    if (selectedTds.length === 0) return;
+    const table = this.findTable(selectedTds[0]);
+    const counts = selectedTds.reduce(
+      (pre, selectTd, index) => {
+        // count column span
+        const colId = selectTd.colId;
+        if (!pre[0][colId]) pre[0][colId] = 0;
+        pre[0][colId] += selectTd.rowspan;
+        // count row span
+        const rowId = selectTd.rowId;
+        if (!pre[1][rowId]) pre[1][rowId] = 0;
+        pre[1][rowId] += selectTd.colspan;
+        // merge select cell
+        if (index !== 0) {
+          selectTd.moveChildren(pre[2]);
+          selectTd.remove();
+        }
+        return pre;
+      },
+      [{}, {}, selectedTds[0]],
+    );
+
+    const rowCount = Math.max(...Object.values(counts[0]));
+    const colCount = Math.max(...Object.values(counts[1]));
+    const baseTd = counts[2];
+    baseTd.colspan = colCount;
+    baseTd.rowspan = rowCount;
+
+    const tableCols = table.getCols();
+    const tableColLength = tableCols.length;
+    const tableRowLength = table.getRowIds().length;
+    if (colCount >= tableColLength) {
+      baseTd.rowspan = 1;
+    }
+    if (rowCount >= tableRowLength) {
+      let baseCol = null;
+      let lastDeleteColNum = -1;
+      for (let i = 0; i < tableCols.length; i++) {
+        const col = tableCols[i];
+        if (baseCol) {
+          if (lastDeleteColNum > 0) {
+            baseCol.width += col.width;
+            col.remove();
+            lastDeleteColNum -= 1;
+          }
+          else {
+            break;
+          }
+        }
+        if (col.colId === baseTd.colId) {
+          baseCol = col;
+          lastDeleteColNum = baseTd.colspan - 1;
+        }
+      }
+      baseTd.colspan = 1;
+    }
   }
 
   mergeCells() {

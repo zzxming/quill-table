@@ -9,7 +9,7 @@ const MENU_ITEMS_DEFAULT = {
       // tableModule.appendCol();
       // tableModule.hideTableTools();
       const tableModule = this.quill.getModule(moduleName.table);
-      tableModule.insertColLeft();
+      tableModule.appendColv2();
       tableModule.hideTableTools();
     },
   },
@@ -20,7 +20,7 @@ const MENU_ITEMS_DEFAULT = {
       // tableModule.appendCol(true);
       // tableModule.hideTableTools();
       const tableModule = this.quill.getModule(moduleName.table);
-      tableModule.insertColRight();
+      tableModule.appendColv2(true);
       tableModule.hideTableTools();
     },
   },
@@ -70,8 +70,11 @@ const MENU_ITEMS_DEFAULT = {
     text: '合并单元格',
     groupEnd: true,
     handler() {
+      // const tableModule = this.quill.getModule(moduleName.table);
+      // tableModule.mergeCells();
+      // tableModule.hideTableTools();
       const tableModule = this.quill.getModule(moduleName.table);
-      tableModule.mergeCells();
+      tableModule.mergeCellsv2();
       tableModule.hideTableTools();
     },
   },
