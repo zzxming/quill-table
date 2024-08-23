@@ -38,5 +38,14 @@
     "less",
     "scss",
     "postcss"
-  ]
+  ],
+  "search.exclude": {
+    "**/.git": true,
+    "**/.vscode": true,
+    "**/dist/**": true,
+    "**/demo/**": true,
+    "**/node_modules": true,
+    "**/package-lock.json": true,
+    "**/pnpm-lock.yaml": true
+  }
 }
