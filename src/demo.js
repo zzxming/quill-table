@@ -33,7 +33,7 @@ const quill = new Quill('#editor', {
       fullWidth: true,
       tableToolTip: {
         tipHeight: 12,
-        disableToolNames: ['bold', 'color', 'code-block'],
+        disableToolNames: ['code-block'],
       },
       operationMenu: {
         items: {
@@ -60,6 +60,9 @@ const quill = new Quill('#editor', {
           },
           mergeCell: {
             text: 'merge cell',
+          },
+          splitCell: {
+            text: 'split cell',
           },
           setBackgroundColor: {
             text: 'set background color',
@@ -93,22 +96,21 @@ const quill = new Quill('#editor', {
 
 quill.setContents([
   { insert: '\n' },
-  { attributes: { col: { tableId: 'dd2cbej7f9p', colId: 'nfswnl3gfw', width: '25%', full: true } }, insert: '\n' },
-  { attributes: { col: { tableId: 'dd2cbej7f9p', colId: 'ssp1eq3w3gs', width: '25%', full: true } }, insert: '\n' },
-  { attributes: { col: { tableId: 'dd2cbej7f9p', colId: 'b5qyodbo2y', width: '25%', full: true } }, insert: '\n' },
-  { attributes: { col: { tableId: 'dd2cbej7f9p', colId: '248kjrqxnhg', width: '25%', full: true } }, insert: '\n' },
-  { attributes: { tableCellInner: { tableId: 'dd2cbej7f9p', rowId: 'avjhqjq6to', colId: 'nfswnl3gfw', rowspan: '1', colspan: '2' } }, insert: '\n\n' },
-  { attributes: { tableCellInner: { tableId: 'dd2cbej7f9p', rowId: 'avjhqjq6to', colId: 'b5qyodbo2y', rowspan: '1', colspan: '1' } }, insert: '\n' },
-  { attributes: { tableCellInner: { tableId: 'dd2cbej7f9p', rowId: 'avjhqjq6to', colId: '248kjrqxnhg', rowspan: '1', colspan: '1' } }, insert: '\n' },
-  { attributes: { tableCellInner: { tableId: 'dd2cbej7f9p', rowId: 'ypmmcwdypcm', colId: 'nfswnl3gfw', rowspan: '1', colspan: '1' } }, insert: '\n' },
-  { attributes: { tableCellInner: { tableId: 'dd2cbej7f9p', rowId: 'ypmmcwdypcm', colId: 'ssp1eq3w3gs', rowspan: '1', colspan: '2' } }, insert: '\n\n' },
-  { attributes: { tableCellInner: { tableId: 'dd2cbej7f9p', rowId: 'ypmmcwdypcm', colId: '248kjrqxnhg', rowspan: '1', colspan: '1' } }, insert: '\n' },
-  { attributes: { tableCellInner: { tableId: 'dd2cbej7f9p', rowId: 'ejrikno5q86', colId: 'nfswnl3gfw', rowspan: '1', colspan: '3' } }, insert: '\n\n\n' },
-  { attributes: { tableCellInner: { tableId: 'dd2cbej7f9p', rowId: 'ejrikno5q86', colId: '248kjrqxnhg', rowspan: '1', colspan: '1' } }, insert: '\n' },
-  { attributes: { tableCellInner: { tableId: 'dd2cbej7f9p', rowId: '8m2wl74ldqn', colId: 'nfswnl3gfw', rowspan: '1', colspan: '1' } }, insert: '\n' },
-  { attributes: { tableCellInner: { tableId: 'dd2cbej7f9p', rowId: '8m2wl74ldqn', colId: 'ssp1eq3w3gs', rowspan: '1', colspan: '1' } }, insert: '\n' },
-  { attributes: { tableCellInner: { tableId: 'dd2cbej7f9p', rowId: '8m2wl74ldqn', colId: 'b5qyodbo2y', rowspan: '1', colspan: '1' } }, insert: '\n' },
-  { attributes: { tableCellInner: { tableId: 'dd2cbej7f9p', rowId: '8m2wl74ldqn', colId: '248kjrqxnhg', rowspan: '1', colspan: '1' } }, insert: '\n' },
+  { attributes: { col: { tableId: 'fdyrtko82h', colId: 'zqxpzf48m7', width: '25%', full: true } }, insert: '\n' },
+  { attributes: { col: { tableId: 'fdyrtko82h', colId: 'n35i5ver1f', width: '25%', full: true } }, insert: '\n' },
+  { attributes: { col: { tableId: 'fdyrtko82h', colId: '3ndvaw7qqwe', width: '25%', full: true } }, insert: '\n' },
+  { attributes: { col: { tableId: 'fdyrtko82h', colId: 'z6rtj7yki9g', width: '25%', full: true } }, insert: '\n' },
+  { attributes: { tableCellInner: { tableId: 'fdyrtko82h', rowId: 'dlmdzw35b5k', colId: 'zqxpzf48m7', rowspan: '1', colspan: '1' } }, insert: '\n' },
+  { attributes: { tableCellInner: { tableId: 'fdyrtko82h', rowId: 'dlmdzw35b5k', colId: 'n35i5ver1f', rowspan: '1', colspan: '1' } }, insert: '\n' },
+  { attributes: { tableCellInner: { tableId: 'fdyrtko82h', rowId: 'dlmdzw35b5k', colId: '3ndvaw7qqwe', rowspan: '1', colspan: '1' } }, insert: '\n' },
+  { attributes: { tableCellInner: { tableId: 'fdyrtko82h', rowId: 'dlmdzw35b5k', colId: 'z6rtj7yki9g', rowspan: '1', colspan: '1' } }, insert: '\n' },
+  { attributes: { tableCellInner: { tableId: 'fdyrtko82h', rowId: 'cm98yaqsj1i', colId: 'zqxpzf48m7', rowspan: '1', colspan: '1' } }, insert: '\n' },
+  { attributes: { tableCellInner: { tableId: 'fdyrtko82h', rowId: 'cm98yaqsj1i', colId: 'n35i5ver1f', rowspan: '2', colspan: '3' } }, insert: '\n\n\n\n\n\n' },
+  { attributes: { tableCellInner: { tableId: 'fdyrtko82h', rowId: 'x17tof30f9o', colId: 'zqxpzf48m7', rowspan: '1', colspan: '1' } }, insert: '\n' },
+  { attributes: { tableCellInner: { tableId: 'fdyrtko82h', rowId: 'snr7fvelmh', colId: 'zqxpzf48m7', rowspan: '1', colspan: '1' } }, insert: '\n' },
+  { attributes: { tableCellInner: { tableId: 'fdyrtko82h', rowId: 'snr7fvelmh', colId: 'n35i5ver1f', rowspan: '1', colspan: '1' } }, insert: '\n' },
+  { attributes: { tableCellInner: { tableId: 'fdyrtko82h', rowId: 'snr7fvelmh', colId: '3ndvaw7qqwe', rowspan: '1', colspan: '1' } }, insert: '\n' },
+  { attributes: { tableCellInner: { tableId: 'fdyrtko82h', rowId: 'snr7fvelmh', colId: 'z6rtj7yki9g', rowspan: '1', colspan: '1' } }, insert: '\n' },
   { insert: '\n' },
 ]);
 

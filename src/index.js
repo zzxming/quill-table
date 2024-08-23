@@ -941,6 +941,43 @@ class TableModule {
     }
   }
 
+  splitCell() {
+    const selectedTds = this.tableSelection.selectedTds;
+    if (selectedTds.length !== 1) return;
+    const baseTd = selectedTds[0];
+    if (baseTd.colspan === 1 && baseTd.rowspan === 1) return;
+    const table = this.findTable(baseTd);
+    const colIndex = baseTd.getColumnIndex();
+    let baseTr = baseTd.parent;
+    while (baseTr && baseTr.statics.blotName !== blotName.tableRow && baseTr !== this.scroll) {
+      baseTr = baseTr.parent;
+    }
+    if (baseTr === this.scroll) {
+      throw new Error(`TableCellInerFormat must be a child of TableRow`);
+    }
+    let curTr = baseTr;
+    let rowspan = baseTd.rowspan;
+    const colIds = table.getColIds().slice(colIndex, colIndex + baseTd.colspan).reverse();
+    // reset span first. insertCell need colspan to judge insert position
+    baseTd.colspan = 1;
+    baseTd.rowspan = 1;
+    while (curTr && rowspan > 0) {
+      for (const id of colIds) {
+        // keep baseTd. baseTr should insert at baseTd's column index + 1
+        if (curTr === baseTr && id === baseTd.colId) continue;
+        curTr.insertCell(colIndex + (curTr === baseTr ? 1 : 0), {
+          rowId: curTr.rowId,
+          colId: id,
+          rowspan: 1,
+          colspan: 1,
+        });
+      }
+
+      rowspan -= 1;
+      curTr = curTr.next;
+    }
+  }
+
   setStyle(styles, cells) {
     if (cells.length === 0) return;
     cells.map(cellInner => (cellInner.style = styles));

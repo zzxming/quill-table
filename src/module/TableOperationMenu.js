@@ -68,7 +68,6 @@ const MENU_ITEMS_DEFAULT = {
   },
   mergeCell: {
     text: '合并单元格',
-    groupEnd: true,
     handler() {
       // const tableModule = this.quill.getModule(moduleName.table);
       // tableModule.mergeCells();
@@ -76,6 +75,15 @@ const MENU_ITEMS_DEFAULT = {
       const tableModule = this.quill.getModule(moduleName.table);
       tableModule.mergeCellsv2();
       tableModule.hideTableTools();
+    },
+  },
+  splitCell: {
+    text: '拆分单元格',
+    groupEnd: true,
+    handler() {
+      const tableModule = this.quill.getModule(moduleName.table);
+      tableModule.splitCell();
+      // tableModule.hideTableTools();
     },
   },
   setBackgroundColor: {
