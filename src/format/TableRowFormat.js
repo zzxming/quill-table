@@ -79,13 +79,8 @@ class TableRowFormat extends Container {
       if (index > targetIndex) break;
     }
     if (!cur) return skip;
-
+    console.log(cur.domNode, index - cur.colspan < targetIndex || cur.colspan > 1);
     if (index - cur.colspan < targetIndex || cur.colspan > 1) {
-      // if (index - cur.colspan === targetIndex) {
-      //   const table = this.getTable();
-      //   const colIds = table.getColIds();
-      //   cur.colId = colIds[colIds.indexOf(cur.colId) + 1];
-      // }
       cur.colspan -= 1;
       if (cur.rowspan !== 1) {
         skip.skipRowNum = cur.rowspan - 1;
