@@ -1,5 +1,4 @@
 import Quill from 'quill';
-
 import { TableOperationMenu, TableSelection, TableTooltip } from './module';
 import {
   ContainerFormat,
@@ -14,7 +13,7 @@ import {
   TableWrapperFormat,
 } from './format';
 
-import { isFunction, randomId, showTableSelector } from './utils';
+import { isFunction, isUndefined, randomId, showTableSelector } from './utils';
 import { CELL_MIN_PRE, CELL_MIN_WIDTH, CREATE_TABLE, blotName, moduleName, toolName } from './assets/const';
 import TableSvg from './assets/icons/table.svg';
 
@@ -171,7 +170,9 @@ class TableModule {
         );
       }
     });
-    this.quill.theme.TableTooltip = new TableTooltip(this.quill, this.options.tableToolTip);
+    if (isUndefined(this.options.dragResize) || this.options.dragResize) {
+      this.quill.theme.TableTooltip = new TableTooltip(this.quill, this.options.tableToolTip);
+    }
   }
 
   showTableTools(table, quill, options) {
@@ -325,6 +326,7 @@ class TableModule {
   closeSelecte() {
     this.controlItem.classList.remove('ql-expanded');
     this.controlItem.dataset.active = false;
+
     window.removeEventListener('click', this.tableInsertSelectCloseHandler);
   }
 

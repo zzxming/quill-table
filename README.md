@@ -16,18 +16,19 @@ npm install quill1.3.7-table-module
 import Quill from 'quill';
 import TableHandler, { rewirteFormats } from 'quill1.3.7-table-module';
 import 'quill1.3.7-table-module/dist/index.css';
+
 Quill.register({ [`modules/${TableHandler.moduleName}`]: TableHandler }, true);
 rewirteFormats();
 
-new Quill('#editor', {
-    theme: 'snow',
-    modules: {
-        toolbar: [TableHandler.toolName],
-        [`${TableHandler.moduleName}`]: {
-            fullWidth: true,
-            customButton: 'Custom Table',
-        },
+const quill = new Quill('#editor', {
+  theme: 'snow',
+  modules: {
+    toolbar: [TableHandler.toolName],
+    [`${TableHandler.moduleName}`]: {
+      fullWidth: true,
+      customButton: 'Custom Table',
     },
+  },
 });
 ```
 
@@ -43,14 +44,15 @@ To handle exceptions, it is necessary to rewrite some native formats. you can sk
 
 # Options
 
-| attribute     | description                                                                             | type               | default      |
-| ------------- | --------------------------------------------------------------------------------------- | ------------------ | ------------ |
-| fullWidth     | Always 100% width                                                                       | boolean            | false        |
-| customSelect  | Custom picker element. The returned element needs to trigger an event to create a table | () => HTMLElement  |              |
-| tableToolTip  | Table tool tip configuration                                                            | ToolTip            |              |
-| operationMenu | OTable contextmenu configuration                                                        | perationMenu       |              |
-| selection     | Table cell selection configuration                                                      | TableCellSelection |              |
-| customButton  | Define a label for the custom table button                                              | string             | 自定义行列数 |
+| attribute     | description                                                                             | type                 | default          |
+| ------------- | --------------------------------------------------------------------------------------- | -------------------- | ---------------- |
+| fullWidth     | Always 100% width                                                                       | `boolean`            | `false`          |
+| customSelect  | Custom picker element. The returned element needs to trigger an event to create a table | `() => HTMLElement`  |                  |
+| tableToolTip  | Table tool tip configuration                                                            | `ToolTip`            |                  |
+| operationMenu | OTable contextmenu configuration                                                        | `perationMenu`       |                  |
+| selection     | Table cell selection configuration                                                      | `TableCellSelection` |                  |
+| dragResize    | Enable table cell width dragger                                                         | `boolean`            | `true`           |
+| customButton  | Define a label for the custom table button                                              | `string`             | `'自定义行列数'` |
 
 ## fullWidth
 
