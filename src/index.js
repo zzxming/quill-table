@@ -324,9 +324,10 @@ class TableModule {
   }
 
   closeSelecte() {
-    this.controlItem.classList.remove('ql-expanded');
-    this.controlItem.dataset.active = false;
-
+    if (this.controlItem) {
+      this.controlItem.classList.remove('ql-expanded');
+      this.controlItem.dataset.active = false;
+    }
     window.removeEventListener('click', this.tableInsertSelectCloseHandler);
   }
 
@@ -1074,5 +1075,10 @@ export const rewirteFormats = () =>
     true,
   );
 export default TableModule;
+export {
+  TableOperationMenu,
+  TableSelection,
+  TableTooltip,
+};
 
 // TODO: add optimize arguments
