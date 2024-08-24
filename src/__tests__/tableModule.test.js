@@ -76,7 +76,7 @@ describe('Table', () => {
         <p>
           <table cellpadding="0" cellspacing="0" data-full>
             <colgroup>
-              ${new Array(3).fill(0).map(() => `<col width="33.33333333333333%" data-full="true" contenteditable="false" />`).join('\n')}
+              ${new Array(3).fill(0).map(() => `<col width="${1 / 3 * 100}%" data-full="true" contenteditable="false" />`).join('\n')}
             </colgroup>
             <tbody>
               <tr>
@@ -142,6 +142,59 @@ describe('Table', () => {
                   </td>`).join('\n')
                 }
               </tr>
+            </tbody>
+          </table>
+        </p>
+        <p><br></p>
+      `,
+      { ignoreAttrs: ['class', 'style', 'data-table-id', 'data-row-id', 'data-col-id', 'data-rowspan', 'data-colspan'] },
+    );
+  });
+
+  it('split cell', async () => {
+    const quill = createQuillWithTableModule(`<p><br></p>`, {
+      fullWidth: true,
+      dragResize: false,
+    });
+    const table = quill.getModule('table');
+    table.insertTable(3, 3);
+    await vi.runAllTimersAsync();
+    table.tableSelection = new TableSelection(table, quill);
+    const tds = quill.scroll.descendants(TableCellInnerFormat, 0);
+    table.tableSelection.selectedTds = [tds[0], tds[1], tds[3], tds[4]];
+    table.mergeCellsv2();
+    await vi.runAllTimersAsync();
+    table.tableSelection.selectedTds = [tds[0]];
+    table.splitCell();
+    await vi.runAllTimersAsync();
+    expect(quill.root).toEqualHTML(
+      `
+        <p><br></p>
+        <p>
+          <table cellpadding="0" cellspacing="0" data-full>
+            <colgroup>
+              ${new Array(3).fill(0).map(() => `<col width="${1 / 3 * 100}%" data-full="true" contenteditable="false" />`).join('\n')}
+            </colgroup>
+            <tbody>
+              <tr>
+                <td rowspan="1" colspan="1">
+                  <p>
+                    <p><br></p>
+                    <p><br></p>
+                    <p><br></p>
+                    <p><br></p>
+                  </p>
+                </td>
+                <td rowspan="1" colspan="1"><p><p><br></p></p></td>
+                <td rowspan="1" colspan="1"><p><p><br></p></p></td>
+              </tr>
+              ${
+                new Array(2).fill(0).map(() => `
+                  <tr>
+                    ${new Array(3).fill(0).map(() => `<td rowspan="1" colspan="1"><p><p><br></p></p></td>`).join('\n')}
+                  </tr>
+                `).join('\n')
+              }
             </tbody>
           </table>
         </p>
