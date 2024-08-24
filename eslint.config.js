@@ -3,7 +3,7 @@ import { factory } from '@zzxming/eslint-config';
 export default factory({
   overrides: [
     {
-      ignores: ['demo/**', 'dist/**'],
+      ignores: ['demo/*.js*', 'dist/**'],
     },
     {
       rules: {

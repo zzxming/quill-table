@@ -49,7 +49,7 @@ const MENU_ITEMS_DEFAULT = {
       // tableModule.hideTableTools();
       const tableModule = this.quill.getModule(moduleName.table);
       tableModule.removeColv2();
-      // tableModule.hideTableTools();
+      tableModule.hideTableTools();
     },
   },
   removeRow: {
