@@ -260,20 +260,12 @@ export function css(domNode, rules) {
     }
   }
 }
-export function isRectanglesIntersect(a, b, c, d) {
-  const minA = Math.min(a.x, b.x);
-  const maxA = Math.max(a.x, b.x);
-  const minB = Math.min(a.y, b.y);
-  const maxB = Math.max(a.y, b.y);
-
-  const minC = Math.min(c.x, d.x);
-  const maxC = Math.max(c.x, d.x);
-  const minD = Math.min(c.y, d.y);
-  const maxD = Math.max(c.y, d.y);
-
-  const xOverlap = (minA <= maxC && maxA >= minC);
-  const yOverlap = (minB <= maxD && maxB >= minD);
-  return xOverlap && yOverlap;
+export function isRectanglesIntersect(a, b, tolerance = 4) {
+  const { x: minAx, y: minAy, x1: maxAx, y1: maxAy } = a;
+  const { x: minBx, y: minBy, x1: maxBx, y1: maxBy } = b;
+  const notOverlapX = maxAx <= minBx + tolerance || minAx + tolerance >= maxBx;
+  const notOverlapY = maxAy <= minBy + tolerance || minAy + tolerance >= maxBy;
+  return !(notOverlapX || notOverlapY);
 }
 
 export function getRelativeRect(targetRect, container) {

@@ -100,45 +100,55 @@ export class TableSelection {
   }
 
   computeSelectedTds(startPoint, endPoint) {
-    const tableContainer = Quill.find(this.table);
     // Use TableCell to calculation selected range, because TableCellInner is scrollable, the width will effect calculate
-    const tableCells = tableContainer.descendants(TableCellFormat);
+    const tableContainer = Quill.find(this.table);
+    const tableCells = new Set(tableContainer.descendants(TableCellFormat));
 
-    // Find the cell that intersects with the rectangle enclosed from startPoint to movePoint
-    const tempSelectCells = tableCells.reduce((selectedCells, tableCell) => {
-      const rect = tableCell.domNode.getBoundingClientRect();
-      const { x, y, width, height } = rect;
-      tableCell.__rect = rect;
-      if (isRectanglesIntersect(startPoint, endPoint, { x, y }, { x: x + width, y: y + height })) {
-        selectedCells.push(tableCell);
+    // set boundary to initially mouse move rectangle
+    let boundary = {
+      x: Math.min(endPoint.x, startPoint.x),
+      y: Math.min(endPoint.y, startPoint.y),
+      x1: Math.max(endPoint.x, startPoint.x),
+      y1: Math.max(endPoint.y, startPoint.y),
+    };
+    const selectedCells = new Set();
+    let findEnd = true;
+    // loop all cells to find correct boundary
+    while (findEnd) {
+      findEnd = false;
+      for (const cell of tableCells) {
+        if (!cell.__rect) {
+          cell.__rect = cell.domNode.getBoundingClientRect();
+        }
+        // Determine whether the cell intersects with the current boundary
+        const { x, y, right, bottom } = cell.__rect;
+        if (isRectanglesIntersect(boundary, { x, y, x1: right, y1: bottom }, ERROR_LIMIT)) {
+          // add cell to selected
+          selectedCells.add(cell);
+          tableCells.delete(cell);
+          // update boundary
+          boundary = {
+            x: Math.min(boundary.x, x),
+            y: Math.min(boundary.y, y),
+            x1: Math.max(boundary.x1, right),
+            y1: Math.max(boundary.y1, bottom),
+          };
+          // recalculate boundary last cells
+          findEnd = true;
+          break;
+        }
       }
-      return selectedCells;
-    }, []);
-    // Find the maximum enclosing edge based on intersecting cells
-    const [y, x1, y1, x] = tempSelectCells.reduce((position, { __rect: rect }) => {
-      position[0] = Math.min(position[0], rect.y);
-      position[1] = Math.max(position[1], rect.x + rect.width);
-      position[2] = Math.max(position[2], rect.y + rect.height);
-      position[3] = Math.min(position[3], rect.x);
-      return position;
-    }, [Infinity, 0, 0, Infinity]);
-    this.boundary = getRelativeRect({ x, y, width: x1 - x, height: y1 - y }, this.quill.root.parentNode);
-    // Recalculate selected cells by boundary
-    return tableCells.reduce((selectedCells, tableCell) => {
-      const { x, y, width, height } = getRelativeRect(
-        tableCell.domNode.getBoundingClientRect(),
-        this.quill.root.parentNode,
-      );
-      const isCellIncluded = x + ERROR_LIMIT >= this.boundary.x
-        && x - ERROR_LIMIT + width <= this.boundary.x1
-        && y + ERROR_LIMIT >= this.boundary.y
-        && y - ERROR_LIMIT + height <= this.boundary.y1;
-
-      if (isCellIncluded) {
-        selectedCells.push(tableCell.getCellInner());
-      }
-      return selectedCells;
-    }, []);
+    }
+    for (const cell of tableCells) {
+      delete cell.__rect;
+    }
+    // save result boundary relative to the editor
+    this.boundary = getRelativeRect({
+      ...boundary,
+      width: boundary.x1 - boundary.x,
+      height: boundary.y1 - boundary.y,
+    }, this.quill.root.parentNode);
+    return Array.from(selectedCells).map(cell => cell.getCellInner());
   }
 
   updateSelection() {
