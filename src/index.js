@@ -413,12 +413,12 @@ class TableModule {
    * after insert or remove cell. handle cell colspan and rowspan merge
    */
   fixTableSpan(tableBlot) {
-    // merge rowspan
     // calculate all cells
+    // merge rowspan
     const trBlots = tableBlot.descendants(TableRowFormat, 0);
-
-    const colIdMap = tableBlot.getColIds().reduce((idMap, colId) => {
-      idMap[colId] = 0;
+    const tableCols = tableBlot.getCols();
+    const colIdMap = tableCols.reduce((idMap, col) => {
+      idMap[col.colId] = 0;
       return idMap;
     }, {});
     const reverseTrBlots = [...trBlots].reverse();
@@ -459,6 +459,18 @@ class TableModule {
         }
       }
       index += 1;
+    }
+    // remove col
+    for (const col of tableCols) {
+      if (colIdMap[col.colId] === 0) {
+        if (col.prev) {
+          col.prev.width += col.width;
+        }
+        else if (col.next) {
+          col.next.width += col.width;
+        }
+        col.remove();
+      }
     }
   }
 
@@ -913,7 +925,7 @@ class TableModule {
 
   mergeCellsv2() {
     const selectedTds = this.tableSelection.selectedTds;
-    if (selectedTds.length === 0) return;
+    if (selectedTds.length <= 1) return;
     const tableBlot = this.findTable(selectedTds[0]);
     const counts = selectedTds.reduce(
       (pre, selectTd, index) => {
