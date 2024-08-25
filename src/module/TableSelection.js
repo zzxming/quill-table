@@ -139,7 +139,7 @@ export class TableSelection {
         }
       }
     }
-    for (const cell of tableCells) {
+    for (const cell of [...selectedCells, ...tableCells]) {
       delete cell.__rect;
     }
     // save result boundary relative to the editor
