@@ -664,7 +664,7 @@ class TableModule {
       }
       return pre;
     }, [null, isRight ? 0 : Infinity]);
-    const columnIndex = baseTd.getColumnIndex() + (isRight ? 1 : 0);
+    const columnIndex = baseTd.getColumnIndex() + (isRight ? baseTd.colspan : 0);
 
     const tableBlot = this.findTable(baseTd);
     const newColId = randomId();

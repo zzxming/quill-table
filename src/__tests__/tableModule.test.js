@@ -244,6 +244,58 @@ describe('Table', () => {
     );
   });
 
+  it('insert column left with colspan cell', async () => {
+    const quill = createQuillWithTableModule(`<p><br></p>`, {
+      fullWidth: true,
+      dragResize: false,
+    });
+    const table = quill.getModule('table');
+    table.insertTable(2, 2);
+    await vi.runAllTimersAsync();
+    table.tableSelection = new TableSelection(table, quill);
+    const tds = quill.scroll.descendants(TableCellInnerFormat);
+    table.tableSelection.selectedTds = [tds[0], tds[1]];
+    table.mergeCellsv2();
+    await vi.runAllTimersAsync();
+    table.tableSelection.selectedTds = [tds[0]];
+    table.appendColv2(true);
+    await vi.runAllTimersAsync();
+    expect(quill.root).toEqualHTML(
+      `
+        <p><br></p>
+        <p>
+          <table cellpadding="0" cellspacing="0" data-full>
+            <colgroup>
+              <col width="44%" data-full="true" contenteditable="false" />
+              <col width="50%" data-full="true" contenteditable="false" />
+              <col width="6%" data-full="true" contenteditable="false" />
+            </colgroup>
+            <tbody>
+              <tr>
+                <td rowspan="1" colspan="2">
+                  <p>
+                    <p><br></p>
+                    <p><br></p>
+                  </p>
+                </td>
+                <td rowspan="1" colspan="1">
+                  <p>
+                    <p><br></p>
+                  </p>
+                </td>
+              </tr>
+              <tr>
+                ${new Array(3).fill(0).map(() => `<td rowspan="1" colspan="1"><p><p><br></p></p></td>`).join('\n')}
+              </tr>
+            </tbody>
+          </table>
+        </p>
+        <p><br></p>
+      `,
+      { ignoreAttrs: ['class', 'style', 'data-table-id', 'data-row-id', 'data-col-id', 'data-rowspan', 'data-colspan'] },
+    );
+  });
+
   it('insert column left and index is inside colspan cell', async () => {
     const quill = createQuillWithTableModule(`<p><br></p>`, {
       fullWidth: true,
