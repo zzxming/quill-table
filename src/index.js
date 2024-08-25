@@ -924,6 +924,58 @@ class TableModule {
     tableBodyBlot.insertRow(insertRowIndex);
   }
 
+  removeRowv2() {
+    const selectedTds = this.tableSelection.selectedTds;
+    if (selectedTds.length <= 0) return;
+    const baseTd = selectedTds[0];
+    const tableBlot = findParentBlot(baseTd, blotName.table);
+    const trs = tableBlot.getRows();
+    let endTrIndex = trs.length;
+    let nextTrIndex = -1;
+    for (const td of selectedTds) {
+      const tr = findParentBlot(td, blotName.tableRow);
+      const index = trs.indexOf(tr);
+      if (index < endTrIndex) {
+        endTrIndex = index;
+      }
+      if (index + td.rowspan > nextTrIndex) {
+        nextTrIndex = index + td.rowspan;
+      }
+    }
+
+    const patchTds = {};
+    for (let i = endTrIndex; i < Math.min(trs.length, nextTrIndex); i++) {
+      const tr = trs[i];
+      tr.foreachCellInner((td) => {
+        // find cells in rowspan that exceed the deletion range
+        if (td.rowspan + i > nextTrIndex) {
+          patchTds[td.colId] = {
+            rowspan: td.rowspan + i - nextTrIndex,
+            colspan: td.colspan,
+            colIndex: td.getColumnIndex(),
+          };
+        }
+        // only remove td. empty tr to calculate colspan and rowspan
+        td.parent.remove();
+      });
+    }
+
+    if (trs[nextTrIndex]) {
+      const nextTr = trs[nextTrIndex];
+      // insert cell in nextTr to patch exceed cell
+      for (const [colId, { colIndex, colspan, rowspan }] of Object.entries(patchTds)) {
+        nextTr.insertCell(colIndex, {
+          rowId: nextTr.rowId,
+          colId,
+          colspan,
+          rowspan,
+        });
+      }
+    }
+
+    this.fixTableSpan(tableBlot);
+  }
+
   appendColv2(isRight) {
     const selectedTds = this.tableSelection.selectedTds;
     if (selectedTds.length <= 0) return;

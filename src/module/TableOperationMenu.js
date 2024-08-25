@@ -21,9 +21,6 @@ const MENU_ITEMS_DEFAULT = {
   insertRowTop: {
     text: '在上方插入一行',
     handler() {
-      // const tableModule = this.quill.getModule(moduleName.table);
-      // tableModule.appendRow();
-      // tableModule.hideTableTools();
       const tableModule = this.quill.getModule(moduleName.table);
       tableModule.appendRowv2();
       tableModule.hideTableTools();
@@ -33,9 +30,6 @@ const MENU_ITEMS_DEFAULT = {
     text: '在下方插入一行',
     groupEnd: true,
     handler() {
-      // const tableModule = this.quill.getModule(moduleName.table);
-      // tableModule.appendRow(true);
-      // tableModule.hideTableTools();
       const tableModule = this.quill.getModule(moduleName.table);
       tableModule.appendRowv2(true);
       tableModule.hideTableTools();
@@ -53,7 +47,7 @@ const MENU_ITEMS_DEFAULT = {
     text: '删除所在行',
     handler() {
       const tableModule = this.quill.getModule(moduleName.table);
-      tableModule.removeRow();
+      tableModule.removeRowv2();
       tableModule.hideTableTools();
     },
   },
