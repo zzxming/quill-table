@@ -176,8 +176,10 @@ class TableModule {
   }
 
   showTableTools(table, quill, options) {
-    this.table = table;
-    this.tableSelection = new TableSelection(table, quill, options);
+    if (table) {
+      this.table = table;
+      this.tableSelection = new TableSelection(table, quill, options);
+    }
   }
 
   hideTableTools() {
@@ -916,7 +918,6 @@ class TableModule {
 
     tableBodyBlot.insertRow(insertRowIndex);
   }
-  
 
   appendColv2(isRight) {
     const selectedTds = this.tableSelection.selectedTds;

@@ -14,7 +14,6 @@ const ERROR_LIMIT = 2;
 */
 export class TableSelection {
   constructor(table, quill, options = {}) {
-    if (!table) return null;
     this.table = table;
     this.quill = quill;
     this.options = options;
