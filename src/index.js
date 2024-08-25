@@ -838,13 +838,13 @@ class TableModule {
    */
   fixTableSpan(tableBlot) {
     // calculate all cells
-    // merge rowspan
     const trBlots = tableBlot.descendants(TableRowFormat);
     const tableCols = tableBlot.getCols();
     const colIdMap = tableCols.reduce((idMap, col) => {
       idMap[col.colId] = 0;
       return idMap;
     }, {});
+    // merge rowspan
     const reverseTrBlots = [...trBlots].reverse();
     const removeTr = [];
     for (const [index, tr] of reverseTrBlots.entries()) {
@@ -882,7 +882,9 @@ class TableModule {
           }
         }
       }
-      index += 1;
+      else {
+        index += 1;
+      }
     }
     // remove col
     for (const col of tableCols) {
@@ -954,7 +956,6 @@ class TableModule {
         skipRowNum -= 1;
         continue;
       }
-      console.log(columnIndex, spanCol);
       const nextSpanCols = tr.insertCell(columnIndex - spanCol, {
         rowId: tr.rowId,
         colId: newColId,
@@ -983,7 +984,7 @@ class TableModule {
     const colspanCount = Math.max(...Object.values(colspanMap));
     const columnIndex = baseTd.getColumnIndex();
 
-    const [colgroup] = tableBlot.descendant(TableColgroupFormat, 0);
+    const [colgroup] = tableBlot.descendants(TableColgroupFormat);
     if (colgroup) {
       for (let i = 0; i < colspanCount; i++) {
         colgroup.removeColByIndex(columnIndex);
