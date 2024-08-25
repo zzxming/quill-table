@@ -840,6 +840,7 @@ class TableModule {
    */
   fixTableSpan(tableBlot) {
     // calculate all cells
+    // maybe will get empty tr
     const trBlots = tableBlot.descendants(TableRowFormat);
     const tableCols = tableBlot.getCols();
     const colIdMap = tableCols.reduce((idMap, col) => {
@@ -855,6 +856,7 @@ class TableModule {
         removeTr.push(i);
       }
       else {
+        // if have td rowspan across empty tr. minus rowspan
         tr.foreachCellInner((td) => {
           const sum = removeTr.reduce((sum, val) => td.rowspan + i > val ? sum + 1 : sum, 0);
           td.rowspan -= sum;
@@ -871,13 +873,16 @@ class TableModule {
         let skipRowNum = 0;
         for (const tr of Object.values(trBlots)) {
           const spanCol = spanCols.shift() || 0;
+          let nextSpanCols = [];
           if (skipRowNum > 0) {
+            nextSpanCols = tr.getCellByColumIndex(index - spanCol);
             skipRowNum -= 1;
-            continue;
           }
-          const nextSpanCols = tr.removeCell(index - spanCol);
-          if (nextSpanCols.skipRowNum) {
-            skipRowNum += nextSpanCols.skipRowNum;
+          else {
+            nextSpanCols = tr.removeCell(index - spanCol);
+            if (nextSpanCols.skipRowNum) {
+              skipRowNum += nextSpanCols.skipRowNum;
+            }
           }
           for (const [i, n] of nextSpanCols.entries()) {
             spanCols[i] = (spanCols[i] || 0) + n;

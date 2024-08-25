@@ -65,7 +65,7 @@ describe('Table', () => {
     const table = quill.getModule('table');
     table.insertTable(3, 3);
     await vi.runAllTimersAsync();
-    table.tableSelection = new TableSelection(table, quill);
+    table.tableSelection = new TableSelection(null, quill);
     const tds = quill.scroll.descendants(TableCellInnerFormat, 0);
     table.tableSelection.selectedTds = [tds[3], tds[4], tds[6], tds[7]];
     table.mergeCellsv2();
@@ -113,7 +113,7 @@ describe('Table', () => {
     const table = quill.getModule('table');
     table.insertTable(2, 5);
     await vi.runAllTimersAsync();
-    table.tableSelection = new TableSelection(table, quill);
+    table.tableSelection = new TableSelection(null, quill);
     const tds = quill.scroll.descendants(TableCellInnerFormat, 0);
     table.tableSelection.selectedTds = [tds[1], tds[2], tds[3], tds[6], tds[7], tds[8]];
     table.mergeCellsv2();
@@ -156,6 +156,80 @@ describe('Table', () => {
     );
   });
 
+  it('merge cells across rowspan and colspan', async () => {
+    const quill = createQuillWithTableModule(`<p><br></p>`, {
+      fullWidth: true,
+      dragResize: false,
+    });
+    const table = quill.getModule('table');
+    table.insertTable(6, 7);
+    await vi.runAllTimersAsync();
+    table.tableSelection = new TableSelection(null, quill);
+    const tds = quill.scroll.descendants(TableCellInnerFormat, 0);
+    table.tableSelection.selectedTds = [tds[7], tds[8], tds[9], tds[14], tds[15], tds[16], tds[21], tds[22], tds[23]];
+    table.mergeCellsv2();
+    await vi.runAllTimersAsync();
+    table.tableSelection.selectedTds = [tds[25], tds[26], tds[27], tds[32], tds[33], tds[34], tds[39], tds[40], tds[41]];
+    table.mergeCellsv2();
+    await vi.runAllTimersAsync();
+    table.tableSelection.selectedTds = [tds[3], tds[4], tds[5], tds[10], tds[11], tds[12], tds[17], tds[18], tds[19]];
+    table.mergeCellsv2();
+    await vi.runAllTimersAsync();
+    expect(quill.root).toEqualHTML(
+      `
+        <p><br></p>
+        <p>
+          <table cellpadding="0" cellspacing="0" data-full>
+            <colgroup>
+              ${new Array(4).fill(0).map(() => `<col width="${1 / 7 * 100}%" data-full="true" contenteditable="false" />`).join('\n')}
+              <col width="${2 / 7 * 100}%" data-full="true" contenteditable="false" />
+              <col width="${1 / 7 * 100}%" data-full="true" contenteditable="false" />
+            </colgroup>
+            <tbody>
+              <tr>
+                ${new Array(3).fill(0).map(() => `<td rowspan="1" colspan="1"><p><p><br></p></p></td>`).join('\n')}
+                <td rowspan="3" colspan="2">
+                  <p>
+                    ${new Array(9).fill(0).map(() => `<p><br></p>`).join('\n')}
+                  </p>
+                </td>
+                <td rowspan="1" colspan="1"><p><p><br></p></p></td>
+              </tr>
+              <tr>
+                <td rowspan="3" colspan="3">
+                  <p>
+                    ${new Array(9).fill(0).map(() => `<p><br></p>`).join('\n')}
+                  </p>
+                </td>
+                <td rowspan="1" colspan="1"><p><p><br></p></p></td>
+              </tr>
+              <tr>
+                <td rowspan="1" colspan="1"><p><p><br></p></p></td>
+              </tr>
+              <tr>
+                <td rowspan="1" colspan="1"><p><p><br></p></p></td>
+                <td rowspan="3" colspan="2">
+                  <p>
+                    ${new Array(9).fill(0).map(() => `<p><br></p>`).join('\n')}
+                  </p>
+                </td>
+              </tr>
+              ${
+                new Array(2).fill(0).map(() => `
+                  <tr>
+                    ${new Array(4).fill(0).map(() => `<td rowspan="1" colspan="1"><p><p><br></p></p></td>`).join('\n')}
+                  </tr>
+                `).join('\n')
+              }
+            </tbody>
+          </table>
+        </p>
+        <p><br></p>
+      `,
+      { ignoreAttrs: ['class', 'style', 'data-table-id', 'data-row-id', 'data-col-id', 'data-rowspan', 'data-colspan'] },
+    );
+  });
+
   it('split cell', async () => {
     const quill = createQuillWithTableModule(`<p><br></p>`, {
       fullWidth: true,
@@ -164,7 +238,7 @@ describe('Table', () => {
     const table = quill.getModule('table');
     table.insertTable(3, 3);
     await vi.runAllTimersAsync();
-    table.tableSelection = new TableSelection(table, quill);
+    table.tableSelection = new TableSelection(null, quill);
     const tds = quill.scroll.descendants(TableCellInnerFormat, 0);
     table.tableSelection.selectedTds = [tds[0], tds[1], tds[3], tds[4]];
     table.mergeCellsv2();
@@ -217,7 +291,7 @@ describe('Table', () => {
     const table = quill.getModule('table');
     table.insertTable(2, 2);
     await vi.runAllTimersAsync();
-    table.tableSelection = new TableSelection(table, quill);
+    table.tableSelection = new TableSelection(null, quill);
     const tds = quill.scroll.descendants(TableCellInnerFormat);
     table.tableSelection.selectedTds = [tds[0]];
     table.appendColv2(false);
@@ -257,7 +331,7 @@ describe('Table', () => {
     const table = quill.getModule('table');
     table.insertTable(2, 2);
     await vi.runAllTimersAsync();
-    table.tableSelection = new TableSelection(table, quill);
+    table.tableSelection = new TableSelection(null, quill);
     const tds = quill.scroll.descendants(TableCellInnerFormat);
     table.tableSelection.selectedTds = [tds[2], tds[3]];
     table.mergeCellsv2();
@@ -304,7 +378,7 @@ describe('Table', () => {
     const table = quill.getModule('table');
     table.insertTable(2, 2);
     await vi.runAllTimersAsync();
-    table.tableSelection = new TableSelection(table, quill);
+    table.tableSelection = new TableSelection(null, quill);
     const tds = quill.scroll.descendants(TableCellInnerFormat);
     table.tableSelection.selectedTds = [tds[1]];
     table.appendColv2(true);
@@ -344,7 +418,7 @@ describe('Table', () => {
     const table = quill.getModule('table');
     table.insertTable(2, 2);
     await vi.runAllTimersAsync();
-    table.tableSelection = new TableSelection(table, quill);
+    table.tableSelection = new TableSelection(null, quill);
     const tds = quill.scroll.descendants(TableCellInnerFormat);
     table.tableSelection.selectedTds = [tds[2], tds[3]];
     table.mergeCellsv2();
@@ -391,7 +465,7 @@ describe('Table', () => {
     const table = quill.getModule('table');
     table.insertTable(2, 2);
     await vi.runAllTimersAsync();
-    table.tableSelection = new TableSelection(table, quill);
+    table.tableSelection = new TableSelection(null, quill);
     const tds = quill.scroll.descendants(TableCellInnerFormat);
     table.tableSelection.selectedTds = [tds[0], tds[1]];
     table.mergeCellsv2();
@@ -443,7 +517,7 @@ describe('Table', () => {
     const table = quill.getModule('table');
     table.insertTable(2, 2);
     await vi.runAllTimersAsync();
-    table.tableSelection = new TableSelection(table, quill);
+    table.tableSelection = new TableSelection(null, quill);
     const tds = quill.scroll.descendants(TableCellInnerFormat);
     table.tableSelection.selectedTds = [tds[0]];
     table.appendRowv2(false);
@@ -482,7 +556,7 @@ describe('Table', () => {
     const table = quill.getModule('table');
     table.insertTable(3, 5);
     await vi.runAllTimersAsync();
-    table.tableSelection = new TableSelection(table, quill);
+    table.tableSelection = new TableSelection(null, quill);
     const tds = quill.scroll.descendants(TableCellInnerFormat);
     table.tableSelection.selectedTds = [tds[0], tds[1], tds[2], tds[5], tds[6], tds[7]];
     table.mergeCellsv2();
@@ -552,7 +626,7 @@ describe('Table', () => {
     const table = quill.getModule('table');
     table.insertTable(2, 2);
     await vi.runAllTimersAsync();
-    table.tableSelection = new TableSelection(table, quill);
+    table.tableSelection = new TableSelection(null, quill);
     const tds = quill.scroll.descendants(TableCellInnerFormat);
     table.tableSelection.selectedTds = [tds[2]];
     table.appendRowv2(true);
@@ -591,7 +665,7 @@ describe('Table', () => {
     const table = quill.getModule('table');
     table.insertTable(2, 5);
     await vi.runAllTimersAsync();
-    table.tableSelection = new TableSelection(table, quill);
+    table.tableSelection = new TableSelection(null, quill);
     const tds = quill.scroll.descendants(TableCellInnerFormat);
     table.tableSelection.selectedTds = [tds[1], tds[2], tds[3], tds[6], tds[7], tds[8]];
     table.mergeCellsv2();
