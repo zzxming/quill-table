@@ -58,6 +58,9 @@ class TableRowFormat extends Container {
     else {
       const tableCell = Parchment.create(blotName.tableCell, value);
       const tableCellInner = Parchment.create(blotName.tableCellInner, value);
+      const block = Parchment.create('block');
+      block.appendChild(Parchment.create('break'));
+      tableCellInner.appendChild(block);
       tableCell.appendChild(tableCellInner);
       this.insertBefore(tableCell, cur);
     }
