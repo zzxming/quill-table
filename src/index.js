@@ -906,13 +906,17 @@ class TableModule {
     // find baseTd and baseTr
     const baseTd = selectedTds[isDown ? selectedTds.length - 1 : 0];
     const tableBlot = findParentBlot(baseTd, blotName.table);
+    const [tableBodyBlot] = tableBlot.descendants(TableBodyFormat);
+    if (!tableBodyBlot) return;
+
     const baseTdParentTr = findParentBlot(baseTd, blotName.tableRow);
     const tableTrs = tableBlot.getRows();
     const i = tableTrs.indexOf(baseTdParentTr);
-    const insertRowIndex = isDown ? i + baseTd.rowspan : i;
-    console.log(baseTd.domNode);
-    console.log(insertRowIndex);
+    const insertRowIndex = i + (isDown ? baseTd.rowspan : 0);
+
+    tableBodyBlot.insertRow(insertRowIndex);
   }
+  
 
   appendColv2(isRight) {
     const selectedTds = this.tableSelection.selectedTds;

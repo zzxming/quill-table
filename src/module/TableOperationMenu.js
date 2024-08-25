@@ -5,9 +5,6 @@ const MENU_ITEMS_DEFAULT = {
   insertColumnLeft: {
     text: '在左侧插入一列',
     handler() {
-      // const tableModule = this.quill.getModule(moduleName.table);
-      // tableModule.appendCol();
-      // tableModule.hideTableTools();
       const tableModule = this.quill.getModule(moduleName.table);
       tableModule.appendColv2();
       tableModule.hideTableTools();
@@ -16,9 +13,6 @@ const MENU_ITEMS_DEFAULT = {
   insertColumnRight: {
     text: '在右侧插入一列',
     handler() {
-      // const tableModule = this.quill.getModule(moduleName.table);
-      // tableModule.appendCol(true);
-      // tableModule.hideTableTools();
       const tableModule = this.quill.getModule(moduleName.table);
       tableModule.appendColv2(true);
       tableModule.hideTableTools();
@@ -27,8 +21,11 @@ const MENU_ITEMS_DEFAULT = {
   insertRowTop: {
     text: '在上方插入一行',
     handler() {
+      // const tableModule = this.quill.getModule(moduleName.table);
+      // tableModule.appendRow();
+      // tableModule.hideTableTools();
       const tableModule = this.quill.getModule(moduleName.table);
-      tableModule.appendRow();
+      tableModule.appendRowv2();
       tableModule.hideTableTools();
     },
   },
@@ -36,17 +33,17 @@ const MENU_ITEMS_DEFAULT = {
     text: '在下方插入一行',
     groupEnd: true,
     handler() {
+      // const tableModule = this.quill.getModule(moduleName.table);
+      // tableModule.appendRow(true);
+      // tableModule.hideTableTools();
       const tableModule = this.quill.getModule(moduleName.table);
-      tableModule.appendRow(true);
+      tableModule.appendRowv2(true);
       tableModule.hideTableTools();
     },
   },
   removeCol: {
     text: '删除所在列',
     handler() {
-      // const tableModule = this.quill.getModule(moduleName.table);
-      // tableModule.removeCol();
-      // tableModule.hideTableTools();
       const tableModule = this.quill.getModule(moduleName.table);
       tableModule.removeColv2();
       tableModule.hideTableTools();
@@ -72,9 +69,6 @@ const MENU_ITEMS_DEFAULT = {
   mergeCell: {
     text: '合并单元格',
     handler() {
-      // const tableModule = this.quill.getModule(moduleName.table);
-      // tableModule.mergeCells();
-      // tableModule.hideTableTools();
       const tableModule = this.quill.getModule(moduleName.table);
       tableModule.mergeCellsv2();
       tableModule.hideTableTools();

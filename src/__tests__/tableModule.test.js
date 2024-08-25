@@ -111,14 +111,11 @@ describe('Table', () => {
       dragResize: false,
     });
     const table = quill.getModule('table');
-    table.insertTable(2, 4);
+    table.insertTable(2, 5);
     await vi.runAllTimersAsync();
     table.tableSelection = new TableSelection(table, quill);
     const tds = quill.scroll.descendants(TableCellInnerFormat, 0);
-    table.tableSelection.selectedTds = [tds[0], tds[1], tds[4], tds[5]];
-    table.mergeCellsv2();
-    await vi.runAllTimersAsync();
-    table.tableSelection.selectedTds = [tds[2], tds[3], tds[6], tds[7]];
+    table.tableSelection.selectedTds = [tds[1], tds[2], tds[3], tds[6], tds[7], tds[8]];
     table.mergeCellsv2();
     await vi.runAllTimersAsync();
     expect(quill.root).toEqualHTML(
@@ -127,20 +124,28 @@ describe('Table', () => {
         <p>
           <table cellpadding="0" cellspacing="0" data-full>
             <colgroup>
-              ${new Array(2).fill(0).map(() => `<col width="50%" data-full="true" contenteditable="false" />`).join('\n')}
+              <col width="20%" data-full="true" contenteditable="false" />
+              <col width="60%" data-full="true" contenteditable="false" />
+              <col width="20%" data-full="true" contenteditable="false" />
             </colgroup>
             <tbody>
               <tr>
-                ${
-                  new Array(2).fill(0).map(() => `<td rowspan="1" colspan="1">
-                    <p>
-                      <p><br></p>
-                      <p><br></p>
-                      <p><br></p>
-                      <p><br></p>
-                    </p>
-                  </td>`).join('\n')
-                }
+                <td rowspan="1" colspan="1"><p><p><br></p></p></td>
+                <td rowspan="2" colspan="1">
+                  <p>
+                    <p><br></p>
+                    <p><br></p>
+                    <p><br></p>
+                    <p><br></p>
+                    <p><br></p>
+                    <p><br></p>
+                  </p>
+                </td>
+                <td rowspan="1" colspan="1"><p><p><br></p></p></td>
+              </tr>
+              <tr>
+                <td rowspan="1" colspan="1"><p><p><br></p></p></td>
+                <td rowspan="1" colspan="1"><p><p><br></p></p></td>
               </tr>
             </tbody>
           </table>
@@ -235,58 +240,6 @@ describe('Table', () => {
                   </tr>
                 `).join('\n')
               }
-            </tbody>
-          </table>
-        </p>
-        <p><br></p>
-      `,
-      { ignoreAttrs: ['class', 'style', 'data-table-id', 'data-row-id', 'data-col-id', 'data-rowspan', 'data-colspan'] },
-    );
-  });
-
-  it('insert column left with colspan cell', async () => {
-    const quill = createQuillWithTableModule(`<p><br></p>`, {
-      fullWidth: true,
-      dragResize: false,
-    });
-    const table = quill.getModule('table');
-    table.insertTable(2, 2);
-    await vi.runAllTimersAsync();
-    table.tableSelection = new TableSelection(table, quill);
-    const tds = quill.scroll.descendants(TableCellInnerFormat);
-    table.tableSelection.selectedTds = [tds[0], tds[1]];
-    table.mergeCellsv2();
-    await vi.runAllTimersAsync();
-    table.tableSelection.selectedTds = [tds[0]];
-    table.appendColv2(true);
-    await vi.runAllTimersAsync();
-    expect(quill.root).toEqualHTML(
-      `
-        <p><br></p>
-        <p>
-          <table cellpadding="0" cellspacing="0" data-full>
-            <colgroup>
-              <col width="44%" data-full="true" contenteditable="false" />
-              <col width="50%" data-full="true" contenteditable="false" />
-              <col width="6%" data-full="true" contenteditable="false" />
-            </colgroup>
-            <tbody>
-              <tr>
-                <td rowspan="1" colspan="2">
-                  <p>
-                    <p><br></p>
-                    <p><br></p>
-                  </p>
-                </td>
-                <td rowspan="1" colspan="1">
-                  <p>
-                    <p><br></p>
-                  </p>
-                </td>
-              </tr>
-              <tr>
-                ${new Array(3).fill(0).map(() => `<td rowspan="1" colspan="1"><p><p><br></p></p></td>`).join('\n')}
-              </tr>
             </tbody>
           </table>
         </p>
@@ -420,6 +373,264 @@ describe('Table', () => {
                     <p><br></p>
                   </p>
                 </td>
+              </tr>
+            </tbody>
+          </table>
+        </p>
+        <p><br></p>
+      `,
+      { ignoreAttrs: ['class', 'style', 'data-table-id', 'data-row-id', 'data-col-id', 'data-rowspan', 'data-colspan'] },
+    );
+  });
+
+  it('insert column with colspan cell', async () => {
+    const quill = createQuillWithTableModule(`<p><br></p>`, {
+      fullWidth: true,
+      dragResize: false,
+    });
+    const table = quill.getModule('table');
+    table.insertTable(2, 2);
+    await vi.runAllTimersAsync();
+    table.tableSelection = new TableSelection(table, quill);
+    const tds = quill.scroll.descendants(TableCellInnerFormat);
+    table.tableSelection.selectedTds = [tds[0], tds[1]];
+    table.mergeCellsv2();
+    await vi.runAllTimersAsync();
+    table.tableSelection.selectedTds = [tds[0]];
+    table.appendColv2(true);
+    await vi.runAllTimersAsync();
+    expect(quill.root).toEqualHTML(
+      `
+        <p><br></p>
+        <p>
+          <table cellpadding="0" cellspacing="0" data-full>
+            <colgroup>
+              <col width="44%" data-full="true" contenteditable="false" />
+              <col width="50%" data-full="true" contenteditable="false" />
+              <col width="6%" data-full="true" contenteditable="false" />
+            </colgroup>
+            <tbody>
+              <tr>
+                <td rowspan="1" colspan="2">
+                  <p>
+                    <p><br></p>
+                    <p><br></p>
+                  </p>
+                </td>
+                <td rowspan="1" colspan="1">
+                  <p>
+                    <p><br></p>
+                  </p>
+                </td>
+              </tr>
+              <tr>
+                ${new Array(3).fill(0).map(() => `<td rowspan="1" colspan="1"><p><p><br></p></p></td>`).join('\n')}
+              </tr>
+            </tbody>
+          </table>
+        </p>
+        <p><br></p>
+      `,
+      { ignoreAttrs: ['class', 'style', 'data-table-id', 'data-row-id', 'data-col-id', 'data-rowspan', 'data-colspan'] },
+    );
+  });
+
+  it('insert row top', async () => {
+    const quill = createQuillWithTableModule(`<p><br></p>`, {
+      fullWidth: true,
+      dragResize: false,
+    });
+    const table = quill.getModule('table');
+    table.insertTable(2, 2);
+    await vi.runAllTimersAsync();
+    table.tableSelection = new TableSelection(table, quill);
+    const tds = quill.scroll.descendants(TableCellInnerFormat);
+    table.tableSelection.selectedTds = [tds[0]];
+    table.appendRowv2(false);
+    await vi.runAllTimersAsync();
+    expect(quill.root).toEqualHTML(
+      `
+        <p><br></p>
+        <p>
+          <table cellpadding="0" cellspacing="0" data-full>
+            <colgroup>
+              <col width="50%" data-full="true" contenteditable="false" />
+              <col width="50%" data-full="true" contenteditable="false" />
+            </colgroup>
+            <tbody>
+              ${
+                new Array(3).fill(0).map(() => `
+                  <tr>
+                    ${new Array(2).fill(0).map(() => `<td rowspan="1" colspan="1"><p><p><br></p></p></td>`).join('\n')}
+                  </tr>
+                `).join('\n')
+              }
+            </tbody>
+          </table>
+        </p>
+        <p><br></p>
+      `,
+      { ignoreAttrs: ['class', 'style', 'data-table-id', 'data-row-id', 'data-col-id', 'data-rowspan', 'data-colspan'] },
+    );
+  });
+
+  it('insert row top and index is inside rowspan cell', async () => {
+    const quill = createQuillWithTableModule(`<p><br></p>`, {
+      fullWidth: true,
+      dragResize: false,
+    });
+    const table = quill.getModule('table');
+    table.insertTable(3, 5);
+    await vi.runAllTimersAsync();
+    table.tableSelection = new TableSelection(table, quill);
+    const tds = quill.scroll.descendants(TableCellInnerFormat);
+    table.tableSelection.selectedTds = [tds[0], tds[1], tds[2], tds[5], tds[6], tds[7]];
+    table.mergeCellsv2();
+    await vi.runAllTimersAsync();
+    table.tableSelection.selectedTds = [tds[9], tds[14]];
+    table.mergeCellsv2();
+    await vi.runAllTimersAsync();
+    table.tableSelection.selectedTds = [tds[8]];
+    table.appendRowv2();
+    await vi.runAllTimersAsync();
+    expect(quill.root).toEqualHTML(
+      `
+        <p><br></p>
+        <p>
+          <table cellpadding="0" cellspacing="0" data-full>
+            <colgroup>
+              ${new Array(5).fill(0).map(() => `<col width="20%" data-full="true" contenteditable="false" />`).join('\n')}
+            </colgroup>
+            <tbody>
+              <tr>
+                <td rowspan="3" colspan="3">
+                  <p>
+                    <p><br></p>
+                    <p><br></p>
+                    <p><br></p>
+                    <p><br></p>
+                    <p><br></p>
+                    <p><br></p>
+                  </p>
+                </td>
+                <td rowspan="1" colspan="1"><p><p><br></p></p></td>
+                <td rowspan="1" colspan="1"><p><p><br></p></p></td>
+              </tr>
+              <tr>
+                <td rowspan="1" colspan="1"><p><p><br></p></p></td>
+                <td rowspan="1" colspan="1"><p><p><br></p></p></td>
+              </tr>
+              <tr>
+                <td rowspan="1" colspan="1"><p><p><br></p></p></td>
+                <td rowspan="2" colspan="1">
+                  <p>
+                    <p><br></p>
+                    <p><br></p>
+                  </p>
+                </td>
+              </tr>
+              <tr>
+                <td rowspan="1" colspan="1"><p><p><br></p></p></td>
+                <td rowspan="1" colspan="1"><p><p><br></p></p></td>
+                <td rowspan="1" colspan="1"><p><p><br></p></p></td>
+                <td rowspan="1" colspan="1"><p><p><br></p></p></td>
+              </tr>
+            </tbody>
+          </table>
+        </p>
+        <p><br></p>
+      `,
+      { ignoreAttrs: ['class', 'style', 'data-table-id', 'data-row-id', 'data-col-id', 'data-rowspan', 'data-colspan'] },
+    );
+  });
+
+  it('insert row bottom', async () => {
+    const quill = createQuillWithTableModule(`<p><br></p>`, {
+      fullWidth: true,
+      dragResize: false,
+    });
+    const table = quill.getModule('table');
+    table.insertTable(2, 2);
+    await vi.runAllTimersAsync();
+    table.tableSelection = new TableSelection(table, quill);
+    const tds = quill.scroll.descendants(TableCellInnerFormat);
+    table.tableSelection.selectedTds = [tds[2]];
+    table.appendRowv2(true);
+    await vi.runAllTimersAsync();
+    expect(quill.root).toEqualHTML(
+      `
+        <p><br></p>
+        <p>
+          <table cellpadding="0" cellspacing="0" data-full>
+            <colgroup>
+              <col width="50%" data-full="true" contenteditable="false" />
+              <col width="50%" data-full="true" contenteditable="false" />
+            </colgroup>
+            <tbody>
+              ${
+                new Array(3).fill(0).map(() => `
+                  <tr>
+                    ${new Array(2).fill(0).map(() => `<td rowspan="1" colspan="1"><p><p><br></p></p></td>`).join('\n')}
+                  </tr>
+                `).join('\n')
+              }
+            </tbody>
+          </table>
+        </p>
+        <p><br></p>
+      `,
+      { ignoreAttrs: ['class', 'style', 'data-table-id', 'data-row-id', 'data-col-id', 'data-rowspan', 'data-colspan'] },
+    );
+  });
+
+  it('insert row bottom and index is inside rowspan cell', async () => {
+    const quill = createQuillWithTableModule(`<p><br></p>`, {
+      fullWidth: true,
+      dragResize: false,
+    });
+    const table = quill.getModule('table');
+    table.insertTable(2, 5);
+    await vi.runAllTimersAsync();
+    table.tableSelection = new TableSelection(table, quill);
+    const tds = quill.scroll.descendants(TableCellInnerFormat);
+    table.tableSelection.selectedTds = [tds[1], tds[2], tds[3], tds[6], tds[7], tds[8]];
+    table.mergeCellsv2();
+    await vi.runAllTimersAsync();
+    table.tableSelection.selectedTds = [tds[0]];
+    table.appendRowv2(true);
+    await vi.runAllTimersAsync();
+    expect(quill.root).toEqualHTML(
+      `
+        <p><br></p>
+        <p>
+          <table cellpadding="0" cellspacing="0" data-full>
+            <colgroup>
+              <col width="20%" data-full="true" contenteditable="false" />
+              <col width="60%" data-full="true" contenteditable="false" />
+              <col width="20%" data-full="true" contenteditable="false" />
+            </colgroup>
+            <tbody>
+              <tr>
+                <td rowspan="1" colspan="1"><p><p><br></p></p></td>
+                <td rowspan="3" colspan="1">
+                  <p>
+                    <p><br></p>
+                    <p><br></p>
+                    <p><br></p>
+                    <p><br></p>
+                    <p><br></p>
+                    <p><br></p>
+                  </p>
+                </td>
+                <td rowspan="1" colspan="1"><p><p><br></p></p></td>
+              </tr>
+              <tr>
+                <td rowspan="1" colspan="1"><p><p><br></p></p></td>
+                <td rowspan="1" colspan="1"><p><p><br></p></p></td>
+              </tr>
+              <tr>
+                <td rowspan="1" colspan="1"><p><p><br></p></p></td>
+                <td rowspan="1" colspan="1"><p><p><br></p></p></td>
               </tr>
             </tbody>
           </table>
