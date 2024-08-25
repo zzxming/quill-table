@@ -38,6 +38,11 @@ export class TableSelection {
     this.quill.root.addEventListener('mousedown', this.selectingHandler, false);
     this.closeHandler = this.hideSelection.bind(this);
     this.quill.on(Quill.events.TEXT_CHANGE, this.closeHandler);
+    this.table.addEventListener('selectstart', this.preventDefault);
+  }
+
+  preventDefault(e) {
+    e.preventDefault();
   }
 
   optionsMerge() {
@@ -197,7 +202,7 @@ export class TableSelection {
 
     this.quill.root.removeEventListener('mousedown', this.selectingHandler, false);
     this.quill.off(Quill.events.TEXT_CHANGE, this.closeHandler);
-
+    this.table.removeEventListener('selectstart', this.preventDefault);
     return null;
   }
 }
