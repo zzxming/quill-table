@@ -26,7 +26,7 @@ class TableFormat extends Container {
 
   colWidthFillTable() {
     if (this.full) return;
-    const cols = this.descendants(TableColFormat, 0);
+    const cols = this.descendants(TableColFormat);
     if (!cols) return;
     const colsWidth = cols.reduce((sum, col) => col.width + sum, 0);
     if (colsWidth === 0 || Number.isNaN(colsWidth) || this.full) return null;

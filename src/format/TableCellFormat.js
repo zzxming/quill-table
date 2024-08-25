@@ -23,7 +23,7 @@ class TableCellFormat extends Container {
 
   set rowId(value) {
     this.domNode.dataset.rowId = value;
-    const [cellInner] = this.descendants(TableCellInnerFormat, 0);
+    const [cellInner] = this.descendants(TableCellInnerFormat);
     cellInner.rowId = value;
   }
 
@@ -33,7 +33,7 @@ class TableCellFormat extends Container {
 
   set colId(value) {
     this.domNode.dataset.colId = value;
-    const [cellInner] = this.descendants(TableCellInnerFormat, 0);
+    const [cellInner] = this.descendants(TableCellInnerFormat);
     cellInner.colId = value;
   }
 

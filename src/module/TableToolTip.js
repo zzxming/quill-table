@@ -222,6 +222,7 @@ export class TableTooltip {
     this.root.classList.add('ql-hidden');
   }
 
+  // TODO: drag click will set NaN width
   bindDrag() {
     let tipColBreak = null;
     let curColIndex = -1;
@@ -293,11 +294,11 @@ export class TableTooltip {
         }
       }
       else {
-        this.table.domNode.style.width
-                    = `${Number.parseFloat(this.table.domNode.style.width)
-                    - Number.parseFloat(tableColHeads[curColIndex].style.width)
-                    + w
-                     }px`;
+        this.table.domNode.style.width = `${
+          Number.parseFloat(this.table.domNode.style.width)
+          - Number.parseFloat(tableColHeads[curColIndex].style.width)
+          + w
+        }px`;
         tableColHeads[curColIndex].style.width = `${w}px`;
         this.tableCols[curColIndex].width = `${w}px`;
       }

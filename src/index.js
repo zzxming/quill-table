@@ -13,7 +13,7 @@ import {
   TableWrapperFormat,
 } from './format';
 
-import { isFunction, isUndefined, randomId, showTableSelector } from './utils';
+import { findParentBlot, isFunction, isUndefined, randomId, showTableSelector } from './utils';
 import { CELL_MIN_PRE, CELL_MIN_WIDTH, CREATE_TABLE, blotName, moduleName, toolName } from './assets/const';
 import TableSvg from './assets/icons/table.svg';
 
@@ -352,126 +352,55 @@ class TableModule {
       throw new Error(`Not supported nesting of ${currentBlot.type} type object within a table.`);
     }
 
-    setTimeout(() => {
-      let delta = new Delta().retain(range.index);
-      delta.insert('\n');
-      const tableId = randomId();
-      const colId = new Array(columns).fill(0).map(() => randomId());
+    let delta = new Delta().retain(range.index);
+    delta.insert('\n');
+    const tableId = randomId();
+    const colId = new Array(columns).fill(0).map(() => randomId());
 
-      let { width, paddingLeft, paddingRight } = getComputedStyle(this.quill.root);
-      width = Number.parseInt(width);
-      paddingLeft = Number.parseInt(paddingLeft);
-      paddingRight = Number.parseInt(paddingRight);
-      width = width - paddingLeft - paddingRight;
+    let { width, paddingLeft, paddingRight } = getComputedStyle(this.quill.root);
+    width = Number.parseInt(width);
+    paddingLeft = Number.parseInt(paddingLeft);
+    paddingRight = Number.parseInt(paddingRight);
+    width = width - paddingLeft - paddingRight;
 
-      delta = new Array(columns).fill('\n').reduce((memo, text, i) => {
+    delta = new Array(columns).fill('\n').reduce((memo, text, i) => {
+      memo.insert(text, {
+        [blotName.tableCol]: {
+          width: !this.options.fullWidth ? `${Math.floor(width / columns)}px` : `${(1 / columns) * 100}%`,
+          tableId,
+          colId: colId[i],
+          full: this.options.fullWidth,
+        },
+      });
+      return memo;
+    }, delta);
+
+    // 直接生成 delta 的数据格式并插入
+    delta = new Array(rows).fill(0).reduce((memo) => {
+      const rowId = randomId();
+      return new Array(columns).fill('\n').reduce((memo, text, i) => {
         memo.insert(text, {
-          [blotName.tableCol]: {
-            width: !this.options.fullWidth ? `${Math.floor(width / columns)}px` : `${(1 / columns) * 100}%`,
+          [blotName.tableCellInner]: {
             tableId,
+            rowId,
             colId: colId[i],
-            full: this.options.fullWidth,
+            rowspan: 1,
+            colspan: 1,
           },
         });
         return memo;
-      }, delta);
+      }, memo);
+    }, delta);
+    // console.log(columns, rows);
+    this.quill.updateContents(delta, Quill.sources.USER);
+    this.quill.setSelection(range.index + columns + columns * rows + 1, Quill.sources.API);
+    this.quill.focus();
 
-      // 直接生成 delta 的数据格式并插入
-      delta = new Array(rows).fill(0).reduce((memo) => {
-        const rowId = randomId();
-        return new Array(columns).fill('\n').reduce((memo, text, i) => {
-          memo.insert(text, {
-            [blotName.tableCellInner]: {
-              tableId,
-              rowId,
-              colId: colId[i],
-              rowspan: 1,
-              colspan: 1,
-            },
-          });
-          return memo;
-        }, memo);
-      }, delta);
-      // console.log(columns, rows);
-      this.quill.updateContents(delta, Quill.sources.USER);
-      this.quill.setSelection(range.index + columns + columns * rows + 1, Quill.sources.API);
-      this.quill.focus();
-
-      this.closeSelecte();
-    }, 0);
+    this.closeSelecte();
   }
 
   findTable(blot) {
-    let cur = blot;
-    while (cur.statics.blotName !== blotName.table && cur !== null) {
-      cur = cur.parent;
-    }
-    return cur;
-  }
-
-  /**
-   * after insert or remove cell. handle cell colspan and rowspan merge
-   */
-  fixTableSpan(tableBlot) {
-    // calculate all cells
-    // merge rowspan
-    const trBlots = tableBlot.descendants(TableRowFormat, 0);
-    const tableCols = tableBlot.getCols();
-    const colIdMap = tableCols.reduce((idMap, col) => {
-      idMap[col.colId] = 0;
-      return idMap;
-    }, {});
-    const reverseTrBlots = [...trBlots].reverse();
-    const removeTr = [];
-    for (const [index, tr] of reverseTrBlots.entries()) {
-      const i = trBlots.length - index - 1;
-      if (tr.children.length <= 0) {
-        removeTr.push(i);
-      }
-      else {
-        tr.foreachCellInner((td) => {
-          const sum = removeTr.reduce((sum, val) => td.rowspan + i > val ? sum + 1 : sum, 0);
-          td.rowspan -= sum;
-          // count exist col
-          colIdMap[td.colId] += 1;
-        });
-      }
-    }
-    // merge colspan
-    let index = 0;
-    for (const count of Object.values(colIdMap)) {
-      if (count === 0) {
-        const spanCols = [];
-        let skipRowNum = 0;
-        for (const tr of Object.values(trBlots)) {
-          const spanCol = spanCols.shift() || 0;
-          if (skipRowNum > 0) {
-            skipRowNum -= 1;
-            continue;
-          }
-          const nextSpanCols = tr.removeCell(index - spanCol);
-          if (nextSpanCols.skipRowNum) {
-            skipRowNum += nextSpanCols.skipRowNum;
-          }
-          for (const [i, n] of nextSpanCols.entries()) {
-            spanCols[i] = (spanCols[i] || 0) + n;
-          }
-        }
-      }
-      index += 1;
-    }
-    // remove col
-    for (const col of tableCols) {
-      if (colIdMap[col.colId] === 0) {
-        if (col.prev) {
-          col.prev.width += col.width;
-        }
-        else if (col.next) {
-          col.next.width += col.width;
-        }
-        col.remove();
-      }
-    }
+    return findParentBlot(blot, blotName.table);
   }
 
   /*
@@ -650,62 +579,6 @@ class TableModule {
     }
   }
 
-  appendColv2(isRight) {
-    const selectedTds = this.tableSelection.selectedTds;
-
-    // find insert column index in row
-    const [baseTd] = selectedTds.reduce((pre, cur) => {
-      const columnIndex = cur.getColumnIndex();
-      if (!isRight && columnIndex <= pre[1]) {
-        pre = [cur, columnIndex];
-      }
-      else if (isRight && columnIndex >= pre[1]) {
-        pre = [cur, columnIndex];
-      }
-      return pre;
-    }, [null, isRight ? 0 : Infinity]);
-    const columnIndex = baseTd.getColumnIndex() + (isRight ? baseTd.colspan : 0);
-
-    const tableBlot = this.findTable(baseTd);
-    const newColId = randomId();
-
-    const [colgroup] = tableBlot.descendants(TableColgroupFormat, 0);
-    if (colgroup) {
-      colgroup.insertColByIndex(columnIndex, {
-        tableId: tableBlot.tableId,
-        colId: newColId,
-        width: tableBlot.full ? '6%' : '160px',
-        full: tableBlot.full,
-      });
-    }
-
-    // loop tr and insert cell at index
-    // if index is inner cell, skip next `rowspan` line
-    // if there are cells both have column span and row span before index cell, minus `colspan` cell for next line
-    const trs = tableBlot.descendants(TableRowFormat, 0);
-    const spanCols = [];
-    let skipRowNum = 0;
-    for (const tr of Object.values(trs)) {
-      const spanCol = spanCols.shift() || 0;
-      if (skipRowNum > 0) {
-        skipRowNum -= 1;
-        continue;
-      }
-      const nextSpanCols = tr.insertCell(columnIndex - spanCol, {
-        rowId: tr.rowId,
-        colId: newColId,
-        rowspan: 1,
-        colspan: 1,
-      });
-      if (nextSpanCols.skipRowNum) {
-        skipRowNum += nextSpanCols.skipRowNum;
-      }
-      for (const [i, n] of nextSpanCols.entries()) {
-        spanCols[i] = (spanCols[i] || 0) + n;
-      }
-    }
-  }
-
   /*
     基准列
       向左: 选中 cell 的第一列 id, index
@@ -810,48 +683,6 @@ class TableModule {
     }
   }
 
-  removeColv2() {
-    const selectedTds = this.tableSelection.selectedTds;
-    if (selectedTds.length === 0) return;
-    const baseTd = selectedTds[0];
-    const tableBlot = this.findTable(baseTd);
-    const colspanMap = {};
-    for (const td of selectedTds) {
-      if (!colspanMap[td.rowId]) colspanMap[td.rowId] = 0;
-      colspanMap[td.rowId] += td.colspan;
-    }
-    const colspanCount = Math.max(...Object.values(colspanMap));
-    const columnIndex = baseTd.getColumnIndex();
-
-    const [colgroup] = tableBlot.descendant(TableColgroupFormat, 0);
-    if (colgroup) {
-      for (let i = 0; i < colspanCount; i++) {
-        colgroup.removeColByIndex(columnIndex);
-      }
-    }
-
-    const trs = tableBlot.descendants(TableRowFormat);
-    for (let i = 0; i < colspanCount; i++) {
-      const spanCols = [];
-      let skipRowNum = 0;
-      for (const tr of Object.values(trs)) {
-        const spanCol = spanCols.shift() || 0;
-        if (skipRowNum > 0) {
-          skipRowNum -= 1;
-          continue;
-        }
-        const nextSpanCols = tr.removeCell(columnIndex - spanCol);
-        if (nextSpanCols.skipRowNum) {
-          skipRowNum += nextSpanCols.skipRowNum;
-        }
-        for (const [i, n] of nextSpanCols.entries()) {
-          spanCols[i] = (spanCols[i] || 0) + n;
-        }
-      }
-    }
-    this.fixTableSpan(tableBlot);
-  }
-
   /*
     找到需要删除的所有 colId
       获取所有 colIds, 遍历选中 cell, 找到 cell 在 colIds 下标, while cell 的 colspan, 将对应 colId 加入 set. 同时保存第一个 col 的 index (first)和最后一个 col 的 index(last)
@@ -921,39 +752,6 @@ class TableModule {
     const selectTds = this.tableSelection.selectedTds;
     if (selectTds.length === 0) return;
     this.findTable(selectTds[0]).remove();
-  }
-
-  mergeCellsv2() {
-    const selectedTds = this.tableSelection.selectedTds;
-    if (selectedTds.length <= 1) return;
-    const tableBlot = this.findTable(selectedTds[0]);
-    const counts = selectedTds.reduce(
-      (pre, selectTd, index) => {
-        // count column span
-        const colId = selectTd.colId;
-        if (!pre[0][colId]) pre[0][colId] = 0;
-        pre[0][colId] += selectTd.rowspan;
-        // count row span
-        const rowId = selectTd.rowId;
-        if (!pre[1][rowId]) pre[1][rowId] = 0;
-        pre[1][rowId] += selectTd.colspan;
-        // merge select cell
-        if (index !== 0) {
-          selectTd.moveChildren(pre[2]);
-          selectTd.parent.remove();
-        }
-        return pre;
-      },
-      [{}, {}, selectedTds[0]],
-    );
-
-    const rowCount = Math.max(...Object.values(counts[0]));
-    const colCount = Math.max(...Object.values(counts[1]));
-    const baseTd = counts[2];
-    baseTd.colspan = colCount;
-    baseTd.rowspan = rowCount;
-
-    this.fixTableSpan(tableBlot);
   }
 
   mergeCells() {
@@ -1030,23 +828,202 @@ class TableModule {
     }
   }
 
+  setStyle(styles, cells) {
+    if (cells.length === 0) return;
+    cells.map(cellInner => (cellInner.style = styles));
+  }
+
+  /**
+   * after insert or remove cell. handle cell colspan and rowspan merge
+   */
+  fixTableSpan(tableBlot) {
+    // calculate all cells
+    // merge rowspan
+    const trBlots = tableBlot.descendants(TableRowFormat);
+    const tableCols = tableBlot.getCols();
+    const colIdMap = tableCols.reduce((idMap, col) => {
+      idMap[col.colId] = 0;
+      return idMap;
+    }, {});
+    const reverseTrBlots = [...trBlots].reverse();
+    const removeTr = [];
+    for (const [index, tr] of reverseTrBlots.entries()) {
+      const i = trBlots.length - index - 1;
+      if (tr.children.length <= 0) {
+        removeTr.push(i);
+      }
+      else {
+        tr.foreachCellInner((td) => {
+          const sum = removeTr.reduce((sum, val) => td.rowspan + i > val ? sum + 1 : sum, 0);
+          td.rowspan -= sum;
+          // count exist col
+          colIdMap[td.colId] += 1;
+        });
+      }
+    }
+    // merge colspan
+    let index = 0;
+    for (const count of Object.values(colIdMap)) {
+      if (count === 0) {
+        const spanCols = [];
+        let skipRowNum = 0;
+        for (const tr of Object.values(trBlots)) {
+          const spanCol = spanCols.shift() || 0;
+          if (skipRowNum > 0) {
+            skipRowNum -= 1;
+            continue;
+          }
+          const nextSpanCols = tr.removeCell(index - spanCol);
+          if (nextSpanCols.skipRowNum) {
+            skipRowNum += nextSpanCols.skipRowNum;
+          }
+          for (const [i, n] of nextSpanCols.entries()) {
+            spanCols[i] = (spanCols[i] || 0) + n;
+          }
+        }
+      }
+      index += 1;
+    }
+    // remove col
+    for (const col of tableCols) {
+      if (colIdMap[col.colId] === 0) {
+        if (col.prev) {
+          col.prev.width += col.width;
+        }
+        else if (col.next) {
+          col.next.width += col.width;
+        }
+        col.remove();
+      }
+    }
+  }
+
+  appendRowv2(isDown) {
+    const selectedTds = this.tableSelection.selectedTds;
+    if (selectedTds.length <= 0) return;
+    // find baseTd and baseTr
+    const baseTd = selectedTds[isDown ? selectedTds.length - 1 : 0];
+    const tableBlot = findParentBlot(baseTd, blotName.table);
+    const baseTdParentTr = findParentBlot(baseTd, blotName.tableRow);
+    const tableTrs = tableBlot.getRows();
+    const i = tableTrs.indexOf(baseTdParentTr);
+    const insertRowIndex = isDown ? i + baseTd.rowspan : i;
+    console.log(baseTd.domNode);
+    console.log(insertRowIndex);
+  }
+
+  appendColv2(isRight) {
+    const selectedTds = this.tableSelection.selectedTds;
+    if (selectedTds.length <= 0) return;
+
+    // find insert column index in row
+    const [baseTd] = selectedTds.reduce((pre, cur) => {
+      const columnIndex = cur.getColumnIndex();
+      if (!isRight && columnIndex <= pre[1]) {
+        pre = [cur, columnIndex];
+      }
+      else if (isRight && columnIndex >= pre[1]) {
+        pre = [cur, columnIndex];
+      }
+      return pre;
+    }, [null, isRight ? 0 : Infinity]);
+    const columnIndex = baseTd.getColumnIndex() + (isRight ? baseTd.colspan : 0);
+
+    const tableBlot = findParentBlot(baseTd, blotName.table);
+    const newColId = randomId();
+
+    const [colgroup] = tableBlot.descendants(TableColgroupFormat);
+    if (colgroup) {
+      colgroup.insertColByIndex(columnIndex, {
+        tableId: tableBlot.tableId,
+        colId: newColId,
+        width: tableBlot.full ? '6%' : '160px',
+        full: tableBlot.full,
+      });
+    }
+
+    // loop tr and insert cell at index
+    // if index is inner cell, skip next `rowspan` line
+    // if there are cells both have column span and row span before index cell, minus `colspan` cell for next line
+    const trs = tableBlot.descendants(TableRowFormat);
+    const spanCols = [];
+    let skipRowNum = 0;
+    for (const tr of Object.values(trs)) {
+      const spanCol = spanCols.shift() || 0;
+      if (skipRowNum > 0) {
+        skipRowNum -= 1;
+        continue;
+      }
+      console.log(columnIndex, spanCol);
+      const nextSpanCols = tr.insertCell(columnIndex - spanCol, {
+        rowId: tr.rowId,
+        colId: newColId,
+        rowspan: 1,
+        colspan: 1,
+      });
+      if (nextSpanCols.skipRowNum) {
+        skipRowNum += nextSpanCols.skipRowNum;
+      }
+      for (const [i, n] of nextSpanCols.entries()) {
+        spanCols[i] = (spanCols[i] || 0) + n;
+      }
+    }
+  }
+
+  removeColv2() {
+    const selectedTds = this.tableSelection.selectedTds;
+    if (selectedTds.length <= 0) return;
+    const baseTd = selectedTds[0];
+    const tableBlot = findParentBlot(baseTd, blotName.table);
+    const colspanMap = {};
+    for (const td of selectedTds) {
+      if (!colspanMap[td.rowId]) colspanMap[td.rowId] = 0;
+      colspanMap[td.rowId] += td.colspan;
+    }
+    const colspanCount = Math.max(...Object.values(colspanMap));
+    const columnIndex = baseTd.getColumnIndex();
+
+    const [colgroup] = tableBlot.descendant(TableColgroupFormat, 0);
+    if (colgroup) {
+      for (let i = 0; i < colspanCount; i++) {
+        colgroup.removeColByIndex(columnIndex);
+      }
+    }
+
+    const trs = tableBlot.descendants(TableRowFormat);
+    for (let i = 0; i < colspanCount; i++) {
+      const spanCols = [];
+      let skipRowNum = 0;
+      for (const tr of Object.values(trs)) {
+        const spanCol = spanCols.shift() || 0;
+        if (skipRowNum > 0) {
+          skipRowNum -= 1;
+          continue;
+        }
+        const nextSpanCols = tr.removeCell(columnIndex - spanCol);
+        if (nextSpanCols.skipRowNum) {
+          skipRowNum += nextSpanCols.skipRowNum;
+        }
+        for (const [i, n] of nextSpanCols.entries()) {
+          spanCols[i] = (spanCols[i] || 0) + n;
+        }
+      }
+    }
+    this.fixTableSpan(tableBlot);
+  }
+
   splitCell() {
     const selectedTds = this.tableSelection.selectedTds;
     if (selectedTds.length !== 1) return;
     const baseTd = selectedTds[0];
     if (baseTd.colspan === 1 && baseTd.rowspan === 1) return;
-    const tableBlot = this.findTable(baseTd);
+    const baseTr = findParentBlot(baseTd, blotName.tableRow);
+    const tableBlot = findParentBlot(baseTd, blotName.table);
     const colIndex = baseTd.getColumnIndex();
-    let baseTr = baseTd.parent;
-    while (baseTr && baseTr.statics.blotName !== blotName.tableRow && baseTr !== this.scroll) {
-      baseTr = baseTr.parent;
-    }
-    if (baseTr === this.scroll) {
-      throw new Error(`TableCellInerFormat must be a child of TableRow`);
-    }
+    const colIds = tableBlot.getColIds().slice(colIndex, colIndex + baseTd.colspan).reverse();
+
     let curTr = baseTr;
     let rowspan = baseTd.rowspan;
-    const colIds = tableBlot.getColIds().slice(colIndex, colIndex + baseTd.colspan).reverse();
     // reset span first. insertCell need colspan to judge insert position
     baseTd.colspan = 1;
     baseTd.rowspan = 1;
@@ -1067,9 +1044,37 @@ class TableModule {
     }
   }
 
-  setStyle(styles, cells) {
-    if (cells.length === 0) return;
-    cells.map(cellInner => (cellInner.style = styles));
+  mergeCellsv2() {
+    const selectedTds = this.tableSelection.selectedTds;
+    if (selectedTds.length <= 1) return;
+    const counts = selectedTds.reduce(
+      (pre, selectTd, index) => {
+        // count column span
+        const colId = selectTd.colId;
+        if (!pre[0][colId]) pre[0][colId] = 0;
+        pre[0][colId] += selectTd.rowspan;
+        // count row span
+        const rowId = selectTd.rowId;
+        if (!pre[1][rowId]) pre[1][rowId] = 0;
+        pre[1][rowId] += selectTd.colspan;
+        // merge select cell
+        if (index !== 0) {
+          selectTd.moveChildren(pre[2]);
+          selectTd.parent.remove();
+        }
+        return pre;
+      },
+      [{}, {}, selectedTds[0]],
+    );
+
+    const rowCount = Math.max(...Object.values(counts[0]));
+    const colCount = Math.max(...Object.values(counts[1]));
+    const baseTd = counts[2];
+    baseTd.colspan = colCount;
+    baseTd.rowspan = rowCount;
+
+    const tableBlot = findParentBlot(baseTd, blotName.table);
+    this.fixTableSpan(tableBlot);
   }
 }
 
