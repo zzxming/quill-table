@@ -14,11 +14,11 @@ const ERROR_LIMIT = 2;
 */
 export class TableSelection {
   constructor(table, quill, options = {}) {
-    if (!table) return null;
     this.table = table;
     this.quill = quill;
     this.options = options;
     this.optionsMerge();
+    if (!table) return null;
 
     this.startScrollX = 0;
     this.boundary = {};
@@ -38,7 +38,6 @@ export class TableSelection {
     this.quill.root.addEventListener('mousedown', this.selectingHandler, false);
     this.closeHandler = this.hideSelection.bind(this);
     this.quill.on(Quill.events.TEXT_CHANGE, this.closeHandler);
-    this.table.addEventListener('selectstart', this.preventDefault);
   }
 
   preventDefault(e) {
@@ -79,6 +78,7 @@ export class TableSelection {
     this.startScrollX = this.table.parentNode.scrollLeft;
     this.selectedTds = this.computeSelectedTds(startPoint, startPoint);
     this.showSelection();
+    this.table.addEventListener('selectstart', this.preventDefault);
 
     const mouseMoveHandler = (e) => {
       if (this.selectedTds.length > 1) {
@@ -96,10 +96,12 @@ export class TableSelection {
       this.updateSelection();
     };
     const mouseUpHandler = () => {
+      this.table.removeEventListener('selectstart', this.preventDefault);
       document.body.removeEventListener('mousemove', mouseMoveHandler, false);
       document.body.removeEventListener('mouseup', mouseUpHandler, false);
       this.dragging = false;
     };
+
     document.body.addEventListener('mousemove', mouseMoveHandler, false);
     document.body.addEventListener('mouseup', mouseUpHandler, false);
   }
@@ -107,6 +109,7 @@ export class TableSelection {
   computeSelectedTds(startPoint, endPoint) {
     // Use TableCell to calculation selected range, because TableCellInner is scrollable, the width will effect calculate
     const tableContainer = Quill.find(this.table);
+    if (!tableContainer) return;
     const tableCells = new Set(tableContainer.descendants(TableCellFormat));
 
     // set boundary to initially mouse move rectangle
@@ -157,6 +160,7 @@ export class TableSelection {
   }
 
   updateSelection() {
+    if (this.selectedTds.length === 0) return;
     const tableViewScrollLeft = this.table.parentNode.scrollLeft;
     const scrollTop = this.quill.root.parentNode.scrollTop;
 
@@ -202,7 +206,6 @@ export class TableSelection {
 
     this.quill.root.removeEventListener('mousedown', this.selectingHandler, false);
     this.quill.off(Quill.events.TEXT_CHANGE, this.closeHandler);
-    this.table.removeEventListener('selectstart', this.preventDefault);
     return null;
   }
 }
