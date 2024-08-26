@@ -1,86 +1,82 @@
 .ql {
-    &-table {
-        &-drag-line {
-            position: fixed;
-            width: 2px;
-            background-color: #409eff;
-            cursor: e-resize;
-        }
-        &-col {
-            &-header {
-                position: relative;
-                flex-shrink: 0;
-                width: 100%;
-                height: 100%;
-                background-color: #f3f4f5;
-                border: 1px solid #ccc;
-                border-left: none;
-                &:first-child {
-                    border-left: 1px solid #ccc;
-                }
-            }
-            &-separator {
-                position: absolute;
-                top: 0px;
-                bottom: 0px;
-                right: -1px;
-                width: 1px;
-                cursor: ew-resize;
-                z-index: 1;
-                &::after {
-                    right: -6px;
-                }
-                &::before {
-                    left: -6px;
-                }
-                &::after,
-                &::before {
-                    content: '';
-                    position: absolute;
-                    top: 0;
-                    display: block;
-                    width: 8px;
-                    height: 100%;
-                }
-            }
-        }
-        &-tooltip {
-            position: absolute;
-            display: flex;
-            width: calc(100% - 30px); // ql-editor 的 x padding
-            overflow: hidden;
-            &.ql-hidden {
-                display: none;
-            }
-        }
+  &-table {
+    &-drag-line {
+      position: fixed;
+      width: 2px;
+      background-color: #409eff;
+      cursor: e-resize;
     }
-    &-toolbar {
-        &.ql-snow {
-            .ql-table {
-                &.ql-picker {
-                    .ql-picker-label {
-                        padding: 2px 4px;
-                        svg {
-                            position: static;
-                            margin-top: 0px;
-                        }
-                    }
-                    .ql-picker-options {
-                        padding: 0px;
-                    }
-                }
-            }
-            .ql-disabled-table {
-                opacity: 0.3;
-                background-color: transparent;
-                cursor: not-allowed;
-                .ql-picker-label {
-                    cursor: not-allowed;
-                }
-                .ql-picker-options {
-                    display: none;
-                }
-            }
+    &-col {
+      &-header {
+        position: relative;
+        flex-shrink: 0;
+        width: 100%;
+        height: 100%;
+        background-color: #f3f4f5;
+        border: 1px solid #ccc;
+      }
+      &-separator {
+        position: absolute;
+        top: 0px;
+        bottom: 0px;
+        right: -2px;
+        width: 2px;
+        cursor: ew-resize;
+        z-index: 1;
+        &::after {
+          right: -6px;
         }
+        &::before {
+          left: -6px;
+        }
+        &::after,
+        &::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          display: block;
+          width: 8px;
+          height: 100%;
+        }
+      }
     }
+    &-tooltip {
+      position: absolute;
+      display: flex;
+      width: calc(100% - 30px); // ql-editor 的 x padding
+      overflow: hidden;
+      &.ql-hidden {
+        display: none;
+      }
+    }
+  }
+  &-toolbar {
+    &.ql-snow {
+      .ql-table {
+        &.ql-picker {
+          .ql-picker-label {
+            padding: 2px 4px;
+            svg {
+              position: static;
+              margin-top: 0px;
+            }
+          }
+          .ql-picker-options {
+            padding: 0px;
+          }
+        }
+      }
+      .ql-disabled-table {
+        opacity: 0.3;
+        background-color: transparent;
+        cursor: not-allowed;
+        .ql-picker-label {
+          cursor: not-allowed;
+        }
+        .ql-picker-options {
+          display: none;
+        }
+      }
+    }
+  }
 }
