@@ -254,7 +254,6 @@ export class TableTooltip {
           resX = rect.x + CELL_MIN_WIDTH;
         }
       }
-      resX = Math.floor(resX);
       tipColBreak.style.left = `${resX}px`;
       tipColBreak.dataset.w = resX - rect.x;
     };

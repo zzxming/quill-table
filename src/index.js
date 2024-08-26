@@ -336,11 +336,8 @@ class TableModule {
   // 以下为 table module 生成表格相关功能函数
 
   insertTable(rows, columns) {
-    if (rows >= 100 || columns >= 100) {
-      throw new Error('Both rows and columns must be less than 100.');
-    }
-    if (this.options.fullWidth && rows > 30) {
-      throw new Error(`Full width table rows must be less than 30.`);
+    if (rows >= 30 || columns >= 30) {
+      throw new Error('Both rows and columns must be less than 30.');
     }
 
     this.quill.focus();
@@ -739,3 +736,6 @@ export {
   TableSelection,
   TableTooltip,
 };
+
+// TODO: redo and undo
+// TODO: ctrl + x will break table uncompletely
