@@ -35,7 +35,6 @@ class TableRowFormat extends Container {
   // return the minus skip column number
   // [2, 3]. means next line should skip 2 columns. next next line skip 3 columns
   insertCell(targetIndex, value) {
-    // TODO: use getCellByColumIndex
     const skip = [];
     const next = this.children.iterator();
     let index = 0;
