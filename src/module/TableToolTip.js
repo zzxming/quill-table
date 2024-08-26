@@ -222,7 +222,6 @@ export class TableTooltip {
     this.root.classList.add('ql-hidden');
   }
 
-  // TODO: drag click will set NaN width
   bindDrag() {
     let tipColBreak = null;
     let curColIndex = -1;
