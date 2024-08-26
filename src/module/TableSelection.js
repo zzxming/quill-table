@@ -73,13 +73,12 @@ export class TableSelection {
     if (e.button !== 0 || !e.target.closest('.ql-table')) return;
 
     const startTableId = e.target.closest('.ql-table').dataset.tableId;
-    this.dragging = true;
     const startPoint = { x: e.clientX, y: e.clientY };
     this.startScrollX = this.table.parentNode.scrollLeft;
     this.selectedTds = this.computeSelectedTds(startPoint, startPoint);
     this.showSelection();
-    this.table.addEventListener('selectstart', this.preventDefault);
 
+    console.log(this.table);
     const mouseMoveHandler = (e) => {
       if (this.selectedTds.length > 1) {
         e.preventDefault();
@@ -91,12 +90,14 @@ export class TableSelection {
       ) {
         return;
       }
+      this.table.classList.add('ql-table-dragging');
+      this.dragging = true;
       const movePoint = { x: e.clientX, y: e.clientY };
       this.selectedTds = this.computeSelectedTds(startPoint, movePoint);
       this.updateSelection();
     };
     const mouseUpHandler = () => {
-      this.table.removeEventListener('selectstart', this.preventDefault);
+      this.table.classList.remove('ql-table-dragging');
       document.body.removeEventListener('mousemove', mouseMoveHandler, false);
       document.body.removeEventListener('mouseup', mouseUpHandler, false);
       this.dragging = false;
