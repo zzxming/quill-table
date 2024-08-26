@@ -173,7 +173,7 @@ export class TableTooltip {
     const rootScrollTop = this.quill.root.scrollTop;
     css(this.root, {
       top: `${tableTop - rootScrollTop - TIP_HEIGHT}px`,
-      left: `${rect.x}px`, // table 距离 editor 的 padding
+      left: `${rect.x + this.tableWrapper.domNode.scrollLeft}px`,
     });
   };
 
@@ -320,6 +320,12 @@ export class TableTooltip {
 
       const divDom = document.createElement('div');
       divDom.classList.add('ql-table-drag-line');
+
+      // set drag init width
+      const fullWidth = this.table.domNode.getBoundingClientRect().width;
+      const colWidthAttr = Number.parseFloat(tableColHeads[curColIndex].style.width);
+      const width = this.table.full ? colWidthAttr / 100 * fullWidth : colWidthAttr;
+      divDom.dataset.w = width;
 
       const tableRect = this.tableWrapper.domNode.getBoundingClientRect();
       css(divDom, {
