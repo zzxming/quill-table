@@ -31,6 +31,7 @@ class TableCellInnerFormat extends ContainerFormat {
   }
 
   set rowId(value) {
+    this.parent && (this.parent.rowId = value);
     this.domNode.dataset.rowId = value;
   }
 
@@ -39,6 +40,7 @@ class TableCellInnerFormat extends ContainerFormat {
   }
 
   set colId(value) {
+    this.parent && (this.parent.colId = value);
     this.domNode.dataset.colId = value;
   }
 

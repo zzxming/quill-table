@@ -1,5 +1,6 @@
 import Quill from 'quill';
 import { blotName } from '../assets/const';
+import { findParentBlot } from '../utils';
 import { TableCellInnerFormat } from './TableCellInnerFormat';
 
 const Container = Quill.import('blots/container');
@@ -34,6 +35,7 @@ class TableRowFormat extends Container {
   // return the minus skip column number
   // [2, 3]. means next line should skip 2 columns. next next line skip 3 columns
   insertCell(targetIndex, value) {
+    // TODO: use getCellByColumIndex
     const skip = [];
     const next = this.children.iterator();
     let index = 0;
@@ -91,10 +93,18 @@ class TableRowFormat extends Container {
     if (!cur) return skip;
     if (index - cur.colspan < targetIndex || cur.colspan > 1) {
       const [tableCell] = cur.descendants(TableCellInnerFormat);
-      tableCell.colspan -= 1;
+
+      if (cur.colspan !== 1 && targetIndex === index - cur.colspan) {
+        // if delete index is cell start index. update cell colId to next colId
+        const tableBlot = findParentBlot(this, blotName.table);
+        const colIds = tableBlot.getColIds();
+        tableCell.colId = colIds[colIds.indexOf(tableCell.colId) + 1];
+      }
       if (cur.rowspan !== 1) {
         skip.skipRowNum = cur.rowspan - 1;
       }
+
+      tableCell.colspan -= 1;
     }
     else {
       cur.remove();

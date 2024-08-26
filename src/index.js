@@ -1046,13 +1046,6 @@ class TableModule {
     const colspanCount = Math.max(...Object.values(colspanMap));
     const columnIndex = baseTd.getColumnIndex();
 
-    const [colgroup] = tableBlot.descendants(TableColgroupFormat);
-    if (colgroup) {
-      for (let i = 0; i < colspanCount; i++) {
-        colgroup.removeColByIndex(columnIndex);
-      }
-    }
-
     const trs = tableBlot.descendants(TableRowFormat);
     for (let i = 0; i < colspanCount; i++) {
       const spanCols = [];
@@ -1072,6 +1065,15 @@ class TableModule {
         }
       }
     }
+    // delete col need after remove cell. remove cell need all column id
+    // manual delete col. use fixTableSpan to delete col will delete extra cells
+    const [colgroup] = tableBlot.descendants(TableColgroupFormat);
+    if (colgroup) {
+      for (let i = 0; i < colspanCount; i++) {
+        colgroup.removeColByIndex(columnIndex);
+      }
+    }
+
     this.fixTableSpan(tableBlot);
   }
 
