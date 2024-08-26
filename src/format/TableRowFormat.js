@@ -69,10 +69,10 @@ class TableRowFormat extends Container {
 
   getCellByColumIndex(stopIndex) {
     const skip = [];
-    if (stopIndex < 0) return skip;
-    const next = this.children.iterator();
-    let cellEndIndex = 0;
     let cur;
+    let cellEndIndex = 0;
+    if (stopIndex < 0) return [cur, cellEndIndex, skip];
+    const next = this.children.iterator();
     while ((cur = next())) {
       cellEndIndex += cur.colspan;
       if (cur.rowspan !== 1) {

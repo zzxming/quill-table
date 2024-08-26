@@ -875,7 +875,7 @@ class TableModule {
           const spanCol = spanCols.shift() || 0;
           let nextSpanCols = [];
           if (skipRowNum > 0) {
-            nextSpanCols = tr.getCellByColumIndex(index - spanCol);
+            nextSpanCols = tr.getCellByColumIndex(index - spanCol)[2];
             skipRowNum -= 1;
           }
           else {
