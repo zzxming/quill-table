@@ -481,7 +481,7 @@ class TableModule {
     }
   }
 
-  appendRowv2(isDown) {
+  appendRow(isDown) {
     const selectedTds = this.tableSelection.selectedTds;
     if (selectedTds.length <= 0) return;
     // find baseTd and baseTr
@@ -498,7 +498,7 @@ class TableModule {
     tableBodyBlot.insertRow(insertRowIndex);
   }
 
-  removeRowv2() {
+  removeRow() {
     const selectedTds = this.tableSelection.selectedTds;
     if (selectedTds.length <= 0) return;
     const baseTd = selectedTds[0];
@@ -550,7 +550,7 @@ class TableModule {
     this.fixTableSpan(tableBlot);
   }
 
-  appendColv2(isRight) {
+  appendCol(isRight) {
     const selectedTds = this.tableSelection.selectedTds;
     if (selectedTds.length <= 0) return;
 
@@ -607,7 +607,7 @@ class TableModule {
     }
   }
 
-  removeColv2() {
+  removeCol() {
     const selectedTds = this.tableSelection.selectedTds;
     if (selectedTds.length <= 0) return;
     const baseTd = selectedTds[0];
@@ -683,7 +683,7 @@ class TableModule {
     }
   }
 
-  mergeCellsv2() {
+  mergeCells() {
     const selectedTds = this.tableSelection.selectedTds;
     if (selectedTds.length <= 1) return;
     const counts = selectedTds.reduce(

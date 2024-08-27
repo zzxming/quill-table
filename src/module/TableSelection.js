@@ -40,10 +40,6 @@ export class TableSelection {
     this.quill.on(Quill.events.TEXT_CHANGE, this.closeHandler);
   }
 
-  preventDefault(e) {
-    e.preventDefault();
-  }
-
   optionsMerge() {
     this.options?.primaryColor && (PRIMARY_COLOR = this.options.primaryColor);
   }
@@ -78,7 +74,6 @@ export class TableSelection {
     this.selectedTds = this.computeSelectedTds(startPoint, startPoint);
     this.showSelection();
 
-    console.log(this.table);
     const mouseMoveHandler = (e) => {
       if (this.selectedTds.length > 1) {
         e.preventDefault();

@@ -68,7 +68,7 @@ describe('Table', () => {
     table.tableSelection = new TableSelection(null, quill);
     const tds = quill.scroll.descendants(TableCellInnerFormat, 0);
     table.tableSelection.selectedTds = [tds[3], tds[4], tds[6], tds[7]];
-    table.mergeCellsv2();
+    table.mergeCells();
     await vi.runAllTimersAsync();
     expect(quill.root).toEqualHTML(
       `
@@ -116,7 +116,7 @@ describe('Table', () => {
     table.tableSelection = new TableSelection(null, quill);
     const tds = quill.scroll.descendants(TableCellInnerFormat, 0);
     table.tableSelection.selectedTds = [tds[1], tds[2], tds[3], tds[6], tds[7], tds[8]];
-    table.mergeCellsv2();
+    table.mergeCells();
     await vi.runAllTimersAsync();
     expect(quill.root).toEqualHTML(
       `
@@ -167,13 +167,13 @@ describe('Table', () => {
     table.tableSelection = new TableSelection(null, quill);
     const tds = quill.scroll.descendants(TableCellInnerFormat, 0);
     table.tableSelection.selectedTds = [tds[7], tds[8], tds[9], tds[14], tds[15], tds[16], tds[21], tds[22], tds[23]];
-    table.mergeCellsv2();
+    table.mergeCells();
     await vi.runAllTimersAsync();
     table.tableSelection.selectedTds = [tds[25], tds[26], tds[27], tds[32], tds[33], tds[34], tds[39], tds[40], tds[41]];
-    table.mergeCellsv2();
+    table.mergeCells();
     await vi.runAllTimersAsync();
     table.tableSelection.selectedTds = [tds[3], tds[4], tds[5], tds[10], tds[11], tds[12], tds[17], tds[18], tds[19]];
-    table.mergeCellsv2();
+    table.mergeCells();
     await vi.runAllTimersAsync();
     expect(quill.root).toEqualHTML(
       `
@@ -241,7 +241,7 @@ describe('Table', () => {
     table.tableSelection = new TableSelection(null, quill);
     const tds = quill.scroll.descendants(TableCellInnerFormat, 0);
     table.tableSelection.selectedTds = [tds[0], tds[1], tds[3], tds[4]];
-    table.mergeCellsv2();
+    table.mergeCells();
     await vi.runAllTimersAsync();
     table.tableSelection.selectedTds = [tds[0]];
     table.splitCell();
@@ -294,7 +294,7 @@ describe('Table', () => {
     table.tableSelection = new TableSelection(null, quill);
     const tds = quill.scroll.descendants(TableCellInnerFormat);
     table.tableSelection.selectedTds = [tds[0]];
-    table.appendColv2(false);
+    table.appendCol(false);
     await vi.runAllTimersAsync();
     expect(quill.root).toEqualHTML(
       `
@@ -334,10 +334,10 @@ describe('Table', () => {
     table.tableSelection = new TableSelection(null, quill);
     const tds = quill.scroll.descendants(TableCellInnerFormat);
     table.tableSelection.selectedTds = [tds[2], tds[3]];
-    table.mergeCellsv2();
+    table.mergeCells();
     await vi.runAllTimersAsync();
     table.tableSelection.selectedTds = [tds[1]];
-    table.appendColv2(false);
+    table.appendCol(false);
     await vi.runAllTimersAsync();
     expect(quill.root).toEqualHTML(
       `
@@ -381,7 +381,7 @@ describe('Table', () => {
     table.tableSelection = new TableSelection(null, quill);
     const tds = quill.scroll.descendants(TableCellInnerFormat);
     table.tableSelection.selectedTds = [tds[1]];
-    table.appendColv2(true);
+    table.appendCol(true);
     await vi.runAllTimersAsync();
     expect(quill.root).toEqualHTML(
       `
@@ -421,10 +421,10 @@ describe('Table', () => {
     table.tableSelection = new TableSelection(null, quill);
     const tds = quill.scroll.descendants(TableCellInnerFormat);
     table.tableSelection.selectedTds = [tds[2], tds[3]];
-    table.mergeCellsv2();
+    table.mergeCells();
     await vi.runAllTimersAsync();
     table.tableSelection.selectedTds = [tds[0]];
-    table.appendColv2(true);
+    table.appendCol(true);
     await vi.runAllTimersAsync();
     expect(quill.root).toEqualHTML(
       `
@@ -468,10 +468,10 @@ describe('Table', () => {
     table.tableSelection = new TableSelection(null, quill);
     const tds = quill.scroll.descendants(TableCellInnerFormat);
     table.tableSelection.selectedTds = [tds[0], tds[1]];
-    table.mergeCellsv2();
+    table.mergeCells();
     await vi.runAllTimersAsync();
     table.tableSelection.selectedTds = [tds[0]];
-    table.appendColv2(true);
+    table.appendCol(true);
     await vi.runAllTimersAsync();
     expect(quill.root).toEqualHTML(
       `
@@ -520,13 +520,13 @@ describe('Table', () => {
     table.tableSelection = new TableSelection(null, quill);
     const tds = quill.scroll.descendants(TableCellInnerFormat);
     table.tableSelection.selectedTds = [tds[3], tds[4], tds[5], tds[6], tds[7], tds[8], tds[9], tds[10], tds[11]];
-    table.mergeCellsv2();
+    table.mergeCells();
     await vi.runAllTimersAsync();
     table.tableSelection.selectedTds = [tds[12], tds[13], tds[15], tds[16]];
-    table.mergeCellsv2();
+    table.mergeCells();
     await vi.runAllTimersAsync();
     table.tableSelection.selectedTds = [tds[0]];
-    table.appendColv2(true);
+    table.appendCol(true);
     await vi.runAllTimersAsync();
     expect(quill.root).toEqualHTML(
       `
@@ -592,7 +592,7 @@ describe('Table', () => {
     table.tableSelection = new TableSelection(null, quill);
     const tds = quill.scroll.descendants(TableCellInnerFormat);
     table.tableSelection.selectedTds = [tds[0]];
-    table.appendRowv2(false);
+    table.appendRow(false);
     await vi.runAllTimersAsync();
     expect(quill.root).toEqualHTML(
       `
@@ -631,13 +631,13 @@ describe('Table', () => {
     table.tableSelection = new TableSelection(null, quill);
     const tds = quill.scroll.descendants(TableCellInnerFormat);
     table.tableSelection.selectedTds = [tds[0], tds[1], tds[2], tds[5], tds[6], tds[7]];
-    table.mergeCellsv2();
+    table.mergeCells();
     await vi.runAllTimersAsync();
     table.tableSelection.selectedTds = [tds[9], tds[14]];
-    table.mergeCellsv2();
+    table.mergeCells();
     await vi.runAllTimersAsync();
     table.tableSelection.selectedTds = [tds[8]];
-    table.appendRowv2();
+    table.appendRow();
     await vi.runAllTimersAsync();
     expect(quill.root).toEqualHTML(
       `
@@ -701,7 +701,7 @@ describe('Table', () => {
     table.tableSelection = new TableSelection(null, quill);
     const tds = quill.scroll.descendants(TableCellInnerFormat);
     table.tableSelection.selectedTds = [tds[2]];
-    table.appendRowv2(true);
+    table.appendRow(true);
     await vi.runAllTimersAsync();
     expect(quill.root).toEqualHTML(
       `
@@ -740,10 +740,10 @@ describe('Table', () => {
     table.tableSelection = new TableSelection(null, quill);
     const tds = quill.scroll.descendants(TableCellInnerFormat);
     table.tableSelection.selectedTds = [tds[1], tds[2], tds[3], tds[6], tds[7], tds[8]];
-    table.mergeCellsv2();
+    table.mergeCells();
     await vi.runAllTimersAsync();
     table.tableSelection.selectedTds = [tds[0]];
-    table.appendRowv2(true);
+    table.appendRow(true);
     await vi.runAllTimersAsync();
     expect(quill.root).toEqualHTML(
       `
@@ -798,7 +798,7 @@ describe('Table', () => {
     table.tableSelection = new TableSelection(null, quill);
     const tds = quill.scroll.descendants(TableCellInnerFormat);
     table.tableSelection.selectedTds = [tds[0], tds[1], tds[3], tds[4]];
-    table.removeColv2();
+    table.removeCol();
     await vi.runAllTimersAsync();
     expect(quill.root).toEqualHTML(
       `
@@ -836,13 +836,13 @@ describe('Table', () => {
     table.tableSelection = new TableSelection(null, quill);
     const tds = quill.scroll.descendants(TableCellInnerFormat);
     table.tableSelection.selectedTds = [tds[4], tds[5], tds[6], tds[8], tds[9], tds[10]];
-    table.mergeCellsv2();
+    table.mergeCells();
     await vi.runAllTimersAsync();
     table.tableSelection.selectedTds = [tds[13], tds[14], tds[15]];
-    table.mergeCellsv2();
+    table.mergeCells();
     await vi.runAllTimersAsync();
     table.tableSelection.selectedTds = [tds[1], tds[2]];
-    table.removeColv2();
+    table.removeCol();
     await vi.runAllTimersAsync();
     expect(quill.root).toEqualHTML(
       `
@@ -904,7 +904,7 @@ describe('Table', () => {
     table.tableSelection = new TableSelection(null, quill);
     const tds = quill.scroll.descendants(TableCellInnerFormat);
     table.tableSelection.selectedTds = [tds[0], tds[1], tds[2], tds[3], tds[4], tds[5]];
-    table.removeRowv2();
+    table.removeRow();
     await vi.runAllTimersAsync();
     expect(quill.root).toEqualHTML(
       `
@@ -938,10 +938,10 @@ describe('Table', () => {
     table.tableSelection = new TableSelection(null, quill);
     const tds = quill.scroll.descendants(TableCellInnerFormat);
     table.tableSelection.selectedTds = [tds[1], tds[2], tds[4], tds[5]];
-    table.mergeCellsv2();
+    table.mergeCells();
     await vi.runAllTimersAsync();
     table.tableSelection.selectedTds = [tds[0]];
-    table.removeRowv2();
+    table.removeRow();
     await vi.runAllTimersAsync();
     expect(quill.root).toEqualHTML(
       `
