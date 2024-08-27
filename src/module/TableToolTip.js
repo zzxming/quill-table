@@ -347,4 +347,4 @@ export class TableTooltip {
 }
 
 // 在 table 内时禁用的 tool 的 name
-TableTooltip.disableToolNames = [toolName.table];
+TableTooltip.disableToolNames = [toolName.table, 'code-block'];
