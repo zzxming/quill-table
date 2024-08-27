@@ -105,7 +105,7 @@ export class TableSelection {
   computeSelectedTds(startPoint, endPoint) {
     // Use TableCell to calculation selected range, because TableCellInner is scrollable, the width will effect calculate
     const tableContainer = Quill.find(this.table);
-    if (!tableContainer) return;
+    if (!tableContainer) return [];
     const tableCells = new Set(tableContainer.descendants(TableCellFormat));
 
     // set boundary to initially mouse move rectangle
