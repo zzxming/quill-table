@@ -20,6 +20,15 @@ class TableColgroupFormat extends Container {
     }
   }
 
+  deleteAt(index, length) {
+    if (index === 0 && length === this.length()) {
+      return this.parent.remove();
+    }
+    this.children.forEachAt(index, length, (child, offset, length) => {
+      child.deleteAt(offset, length);
+    });
+  }
+
   findCol(index) {
     const next = this.children.iterator();
     let i = 0;
