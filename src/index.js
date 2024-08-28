@@ -125,8 +125,8 @@ class TableModule {
         toolbar.addHandler(TableModule.toolName, this.handleSelectDisplay.bind(this));
       }
     }
-    this.pasteTableHandler();
 
+    this.pasteTableHandler();
     // 绑定 table 的选择事件
     this.quill.root.addEventListener(
       'click',
@@ -190,6 +190,7 @@ class TableModule {
     if (isUndefined(this.options.dragResize) || this.options.dragResize) {
       this.quill.theme.TableTooltip = new TableTooltip(this.quill, this.options.tableToolTip);
     }
+
     this.listenBalanceCells();
   }
 
@@ -842,6 +843,42 @@ class TableModule {
 TableModule.moduleName = moduleName.table;
 TableModule.toolName = toolName.table;
 
+TableModule.keyboradHandler = {
+  'forbid remove table by backspace': {
+    key: 'backspace',
+    collapsed: true,
+    offset: 0,
+    handler(range, context) {
+      const [blot] = this.quill.getLine(range.index);
+      if (blot.prev instanceof TableWrapperFormat) return false;
+
+      if (context.format[blotName.tableCellInner]) {
+        const offset = blot.offset(findParentBlot(blot, blotName.tableCellInner));
+        if (offset === 0) {
+          return false;
+        }
+      }
+      return true;
+    },
+  },
+  'forbid remove table by delete': {
+    key: 'delete',
+    collapsed: true,
+    handler(range, context) {
+      const [blot, offsetInline] = this.quill.getLine(range.index);
+      if (blot.next instanceof TableWrapperFormat && offsetInline === blot.length() - 1) return false;
+
+      if (context.format[blotName.tableCellInner]) {
+        const tableInnerBlot = findParentBlot(blot, blotName.tableCellInner);
+        const offsetInTableInner = blot.offset(tableInnerBlot);
+        if (offsetInTableInner + offsetInline === tableInnerBlot.length() - 1) {
+          return false;
+        }
+      }
+      return true;
+    },
+  },
+};
 TableModule.createEventName = CREATE_TABLE;
 icons[TableModule.toolName] = TableSvg;
 
@@ -861,6 +898,5 @@ export {
 };
 
 // TODO: redo and undo
-// TODO: when cursor at first cell and first index. keyboard backspace should not delete. because will delete col
-// TODO: ctrl + x will break table uncompletely
-// TODO: in cell. keyboard delete. colspan wrong
+// TODO: ctrl + x will break table uncompletely. start and end both in table
+// TODO: maybe col need change to EmbedBlock

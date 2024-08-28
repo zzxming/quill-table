@@ -29,6 +29,11 @@ const quill = new Quill('#editor', {
 
       [{ table: [] }],
     ],
+    keyboard: {
+      bindings: {
+        ...TableModule.keyboradHandler,
+      },
+    },
     [`${TableModule.moduleName}`]: {
       fullWidth: true,
       tableToolTip: {
