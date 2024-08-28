@@ -767,6 +767,76 @@ describe('insert column into table', () => {
       { ignoreAttrs: ['class', 'style', 'data-table-id', 'data-row-id', 'data-col-id', 'data-rowspan', 'data-colspan'] },
     );
   });
+
+  it('insert column. tr.insertCell should find correct index and skip index', async () => {
+    const quill = createQuillWithTableModule(`<p><br></p>`, {
+      fullWidth: true,
+      dragResize: false,
+    });
+    const table = quill.getModule('table');
+    table.insertTable(4, 5);
+    await vi.runAllTimersAsync();
+    table.tableSelection = new TableSelection(null, quill);
+    const tds = quill.scroll.descendants(TableCellInnerFormat);
+    table.tableSelection.selectedTds = [tds[2], tds[3], tds[4], tds[7], tds[8], tds[9], tds[12], tds[13], tds[14]];
+    table.mergeCells();
+    await vi.runAllTimersAsync();
+    table.tableSelection.selectedTds = [tds[1]];
+    table.appendCol(true);
+    await vi.runAllTimersAsync();
+    expect(quill.root).toEqualHTML(
+      `
+        <p><br></p>
+        <p>
+          <table cellpadding="0" cellspacing="0" data-full>
+            <colgroup>
+              <col width="14%" data-full="true" contenteditable="false" />
+              <col width="20%" data-full="true" contenteditable="false" />
+              <col width="6%" data-full="true" contenteditable="false" />
+              <col width="20%" data-full="true" contenteditable="false" />
+              <col width="20%" data-full="true" contenteditable="false" />
+              <col width="20%" data-full="true" contenteditable="false" />
+            </colgroup>
+            <tbody>
+              <tr>
+                <td rowspan="1" colspan="1"><p><p><br></p></p></td>
+                <td rowspan="1" colspan="1"><p><p><br></p></p></td>
+                <td rowspan="1" colspan="1"><p><p><br></p></p></td>
+                <td rowspan="3" colspan="3">
+                  <p>
+                    <p><br></p>
+                    <p><br></p>
+                    <p><br></p>
+                    <p><br></p>
+                    <p><br></p>
+                    <p><br></p>
+                    <p><br></p>
+                    <p><br></p>
+                    <p><br></p>
+                  </p>
+                </td>
+              </tr>
+              <tr>
+                <td rowspan="1" colspan="1"><p><p><br></p></p></td>
+                <td rowspan="1" colspan="1"><p><p><br></p></p></td>
+                <td rowspan="1" colspan="1"><p><p><br></p></p></td>
+              </tr>
+              <tr>
+                <td rowspan="1" colspan="1"><p><p><br></p></p></td>
+                <td rowspan="1" colspan="1"><p><p><br></p></p></td>
+                <td rowspan="1" colspan="1"><p><p><br></p></p></td>
+              </tr>
+              <tr>
+                ${new Array(6).fill(0).map(() => `<td rowspan="1" colspan="1"><p><p><br></p></p></td>`).join('\n')}
+              </tr>
+            </tbody>
+          </table>
+        </p>
+        <p><br></p>
+      `,
+      { ignoreAttrs: ['class', 'style', 'data-table-id', 'data-row-id', 'data-col-id', 'data-rowspan', 'data-colspan'] },
+    );
+  });
 });
 
 describe('insert row into table', () => {
