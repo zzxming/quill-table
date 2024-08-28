@@ -1,5 +1,6 @@
 import Quill from 'quill';
 import { blotName } from '../assets/const';
+import { findParentBlot } from '../utils';
 import { TableCellInnerFormat } from './TableCellInnerFormat';
 
 const Parchment = Quill.import('parchment');
@@ -63,7 +64,30 @@ class TableCellFormat extends Container {
 
   optimize() {
     super.optimize();
-    const { colId, rowId } = this.domNode.dataset;
+    const { colId, rowId, colspan, rowspan } = this.domNode.dataset;
+
+    // td need only child tableCellInner. but for MutationObserver. tableCell need allow break
+    // make sure tableCellInner is only child
+    const tableBlot = findParentBlot(this, blotName.table);
+    const cellInner = this.getCellInner();
+    if (!cellInner) {
+      // eslint-disable-next-line unicorn/no-array-for-each
+      this.children.forEach((child) => {
+        child.remove();
+      });
+      const tableCellInner = Parchment.create(blotName.tableCellInner, {
+        tableId: tableBlot.tableId,
+        rowId,
+        colId,
+        colspan: colspan || 1,
+        rowspan: rowspan || 1,
+      });
+      const block = Parchment.create('block');
+      block.appendChild(Parchment.create('break'));
+      tableCellInner.appendChild(block);
+      this.appendChild(tableCellInner);
+    }
+
     const next = this.next;
     if (
       next != null
