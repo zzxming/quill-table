@@ -6,10 +6,10 @@ import { CELL_MIN_PRE, CELL_MIN_WIDTH, blotName, toolName } from '../assets/cons
 
 let TIP_HEIGHT = 12;
 /*
-	options = {
-		tipHeight: 12,	// tooltip height
-		disableToolNames: [],	// 表格内禁用项， toolbar 的 name
-	}
+  options = {
+    tipHeight: 12,  // tooltip height
+    disableToolNames: [],   // 表格内禁用项， toolbar 的 name
+  }
 */
 export class TableTooltip {
   constructor(quill, options = {}) {
@@ -194,8 +194,8 @@ export class TableTooltip {
             width = `${col.domNode.getBoundingClientRect().width}px`;
           }
           return `<div class="ql-table-col-header" style="width: ${width}">
-            			<div class="ql-table-col-separator" style="height: ${tableWrapperRect.height + TIP_HEIGHT - 3}px"></div>
-            		</div>`; // -3 为 border-width: 2, top: 1
+            <div class="ql-table-col-separator" style="height: ${tableWrapperRect.height + TIP_HEIGHT - 3}px"></div>
+          </div>`; // -3 为 border-width: 2, top: 1
         })
         .join('');
 

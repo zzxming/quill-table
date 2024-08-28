@@ -8,9 +8,9 @@ let PRIMARY_COLOR = '#0589f3';
 const ERROR_LIMIT = 2;
 
 /*
-	options = {
-		primaryColor: Hex color code
-	}
+  options = {
+    primaryColor: Hex color code
+  }
 */
 export class TableSelection {
   constructor(table, quill, options = {}) {
