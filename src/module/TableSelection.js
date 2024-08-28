@@ -65,34 +65,38 @@ export class TableSelection {
     });
   }
 
-  mouseDownHandler(e) {
-    if (e.button !== 0 || !e.target.closest('.ql-table')) return;
+  // TODO: preventDefault select
+  mouseDownHandler(mousedownEvent) {
+    const { button, target, clientX, clientY } = mousedownEvent;
+    const closestTable = target.closest('.ql-table');
+    if (button !== 0 || !closestTable) return;
 
-    const startTableId = e.target.closest('.ql-table').dataset.tableId;
-    const startPoint = { x: e.clientX, y: e.clientY };
+    const startTableId = closestTable.dataset.tableId;
+    const startPoint = { x: clientX, y: clientY };
     this.startScrollX = this.table.parentNode.scrollLeft;
     this.selectedTds = this.computeSelectedTds(startPoint, startPoint);
     this.showSelection();
 
-    const mouseMoveHandler = (e) => {
+    const mouseMoveHandler = (mousemoveEvent) => {
+      const { button, target, clientX, clientY } = mousemoveEvent;
       if (this.selectedTds.length > 1) {
-        e.preventDefault();
+        mousemoveEvent.preventDefault();
       }
+      const closestTable = target.closest('.ql-table');
       if (
-        e.button !== 0
-        || !e.target.closest('.ql-table')
-        || e.target.closest('.ql-table').dataset.tableId !== startTableId
+        button !== 0
+        || !closestTable
+        || closestTable.dataset.tableId !== startTableId
       ) {
         return;
       }
-      this.table.classList.add('ql-table-dragging');
+
       this.dragging = true;
-      const movePoint = { x: e.clientX, y: e.clientY };
+      const movePoint = { x: clientX, y: clientY };
       this.selectedTds = this.computeSelectedTds(startPoint, movePoint);
       this.updateSelection();
     };
     const mouseUpHandler = () => {
-      this.table.classList.remove('ql-table-dragging');
       document.body.removeEventListener('mousemove', mouseMoveHandler, false);
       document.body.removeEventListener('mouseup', mouseUpHandler, false);
       this.dragging = false;
