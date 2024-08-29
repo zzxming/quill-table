@@ -737,8 +737,8 @@ class TableModule {
     this.fixTableByRemove(tableBlot);
   }
 
-  // fix tr missing cell
-  fixTableByAppend(tableBlot) {
+  // handle unusual delete cell
+  fixUnusuaDeletelTable(tableBlot) {
     // calculate all cells
     const trBlots = tableBlot.getRows();
     const tableColIds = tableBlot.getColIds();
@@ -798,25 +798,16 @@ class TableModule {
 
       // if td not match all exist td. Indicates that a cell has been inserted
       if (indexTd < tds.length) {
-        // redistribution colId and remove extra cell
-        let colIndex = 0;
-        for (let i = 0; i < tableColIds.length; i++) {
-          if (tableColIds[colIndex]) {
-            tds[i].getCellInner().colId = tableColIds[colIndex];
-            colIndex += tds[i].colspan;
-          }
-          else {
-            tds[i].remove();
-          }
+        for (let i = indexTd; i < tds.length; i++) {
+          tds[i].remove();
         }
       }
     }
   }
 
   balanceTables() {
-    console.log('balan');
     for (const tableBlot of this.quill.scroll.descendants(TableFormat)) {
-      this.fixTableByAppend(tableBlot);
+      this.fixUnusuaDeletelTable(tableBlot);
     }
   }
 
@@ -825,6 +816,7 @@ class TableModule {
     this.quill.on(
       Quill.events.SCROLL_OPTIMIZE,
       (mutations) => {
+        console.log(mutations);
         mutations.some((mutation) => {
           if (
             // TODO: if need add ['COL', 'COLGROUP']
@@ -898,5 +890,4 @@ export {
 };
 
 // TODO: redo and undo
-// TODO: ctrl + x will break table uncompletely. start and end both in table
 // TODO: maybe col need change to EmbedBlock
