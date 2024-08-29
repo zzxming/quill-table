@@ -742,6 +742,9 @@ class TableModule {
     // calculate all cells
     const trBlots = tableBlot.getRows();
     const tableColIds = tableBlot.getColIds();
+    if (trBlots.length === 0 || tableColIds.length === 0) {
+      return tableBlot.remove();
+    }
     // append by col
     const cellSpanMap = new Array(trBlots.length).fill(0).map(() => new Array(tableColIds.length).fill(false));
     const tableId = tableBlot.tableId;
@@ -816,7 +819,6 @@ class TableModule {
     this.quill.on(
       Quill.events.SCROLL_OPTIMIZE,
       (mutations) => {
-        console.log(mutations);
         mutations.some((mutation) => {
           if (
             // TODO: if need add ['COL', 'COLGROUP']
