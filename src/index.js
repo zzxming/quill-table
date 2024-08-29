@@ -12,12 +12,13 @@ import {
   TableRowFormat,
   TableWrapperFormat,
 } from './format';
-
-import { findParentBlot, isFunction, isUndefined, randomId, showTableSelector } from './utils';
+import { debounce, findParentBlot, isFunction, isUndefined, randomId, showTableSelector } from './utils';
 import { CELL_MIN_PRE, CELL_MIN_WIDTH, CREATE_TABLE, blotName, moduleName, toolName } from './assets/const';
 import TableSvg from './assets/icons/table.svg';
 
+const Parchment = Quill.import('parchment');
 const Delta = Quill.import('delta');
+const Break = Quill.import('blots/break');
 const BlockEmbed = Quill.import('blots/block/embed');
 const Block = Quill.import('blots/block');
 const Container = Quill.import('blots/container');
@@ -39,7 +40,8 @@ TableColgroupFormat.requiredContainer = TableFormat;
 TableRowFormat.allowedChildren = [TableCellFormat];
 TableRowFormat.requiredContainer = TableBodyFormat;
 
-TableCellFormat.allowedChildren = [TableCellInnerFormat];
+// Break to handle user select mutiple line cell to delete. MutationObserver will have `a addNodes: [br]` for td
+TableCellFormat.allowedChildren = [TableCellInnerFormat, Break];
 TableCellFormat.requiredContainer = TableRowFormat;
 
 TableCellInnerFormat.requiredContainer = TableCellFormat;
@@ -65,17 +67,33 @@ Quill.register(
 );
 
 // 不可插入至表格的 blot
-export const tableCantInsert = [blotName.tableCell];
-export const isForbidInTableBlot = (blot) => {
+export const tableCantInsert = [blotName.tableCell, 'code-block'];
+export function isForbidInTableBlot(blot) {
   return tableCantInsert.includes(blot.statics.blotName);
 };
 
-export const isForbidInTable = (current) => {
+export function isForbidInTable(current) {
   return current && current.parent
     ? isForbidInTableBlot(current.parent)
       ? true
       : isForbidInTable(current.parent)
     : false;
+};
+function createCell({ tableId, rowId, colId }) {
+  const value = {
+    tableId,
+    rowId,
+    colId,
+    colspan: 1,
+    rowspan: 1,
+  };
+  const tableCell = Parchment.create(blotName.tableCell, value);
+  const tableCellInner = Parchment.create(blotName.tableCellInner, value);
+  const block = Parchment.create('block');
+  block.appendChild(Parchment.create('break'));
+  tableCellInner.appendChild(block);
+  tableCell.appendChild(tableCellInner);
+  return tableCell;
 };
 
 class TableModule {
@@ -107,8 +125,8 @@ class TableModule {
         toolbar.addHandler(TableModule.toolName, this.handleSelectDisplay.bind(this));
       }
     }
-    this.pasteTableHandler();
 
+    this.pasteTableHandler();
     // 绑定 table 的选择事件
     this.quill.root.addEventListener(
       'click',
@@ -172,6 +190,8 @@ class TableModule {
     if (isUndefined(this.options.dragResize) || this.options.dragResize) {
       this.quill.theme.TableTooltip = new TableTooltip(this.quill, this.options.tableToolTip);
     }
+
+    this.listenBalanceCells();
   }
 
   showTableTools(table, quill, options) {
@@ -289,8 +309,9 @@ class TableModule {
   async buildCustomSelect(customSelect, tagName, customButton) {
     const dom = document.createElement('div');
     dom.classList.add('ql-custom-select');
-    const selector
-            = customSelect && isFunction(customSelect) ? await customSelect() : this.createSelect(customButton);
+    const selector = customSelect && isFunction(customSelect)
+      ? await customSelect()
+      : this.createSelect(customButton);
     dom.appendChild(selector);
 
     let appendTo = this.controlItem;
@@ -336,11 +357,8 @@ class TableModule {
   // 以下为 table module 生成表格相关功能函数
 
   insertTable(rows, columns) {
-    if (rows >= 100 || columns >= 100) {
-      throw new Error('Both rows and columns must be less than 100.');
-    }
-    if (this.options.fullWidth && rows > 30) {
-      throw new Error(`Full width table rows must be less than 30.`);
+    if (rows >= 30 || columns >= 30) {
+      throw new Error('Both rows and columns must be less than 30.');
     }
 
     this.quill.focus();
@@ -415,10 +433,10 @@ class TableModule {
   /**
    * after insert or remove cell. handle cell colspan and rowspan merge
    */
-  fixTableSpan(tableBlot) {
+  fixTableByRemove(tableBlot) {
     // calculate all cells
     // maybe will get empty tr
-    const trBlots = tableBlot.descendants(TableRowFormat);
+    const trBlots = tableBlot.getRows();
     const tableCols = tableBlot.getCols();
     const colIdMap = tableCols.reduce((idMap, col) => {
       idMap[col.colId] = 0;
@@ -484,7 +502,7 @@ class TableModule {
     }
   }
 
-  appendRowv2(isDown) {
+  appendRow(isDown) {
     const selectedTds = this.tableSelection.selectedTds;
     if (selectedTds.length <= 0) return;
     // find baseTd and baseTr
@@ -501,7 +519,7 @@ class TableModule {
     tableBodyBlot.insertRow(insertRowIndex);
   }
 
-  removeRowv2() {
+  removeRow() {
     const selectedTds = this.tableSelection.selectedTds;
     if (selectedTds.length <= 0) return;
     const baseTd = selectedTds[0];
@@ -550,10 +568,10 @@ class TableModule {
       }
     }
 
-    this.fixTableSpan(tableBlot);
+    this.fixTableByRemove(tableBlot);
   }
 
-  appendColv2(isRight) {
+  appendCol(isRight) {
     const selectedTds = this.tableSelection.selectedTds;
     if (selectedTds.length <= 0) return;
 
@@ -610,7 +628,7 @@ class TableModule {
     }
   }
 
-  removeColv2() {
+  removeCol() {
     const selectedTds = this.tableSelection.selectedTds;
     if (selectedTds.length <= 0) return;
     const baseTd = selectedTds[0];
@@ -643,7 +661,7 @@ class TableModule {
       }
     }
     // delete col need after remove cell. remove cell need all column id
-    // manual delete col. use fixTableSpan to delete col will delete extra cells
+    // manual delete col. use fixTableByRemove to delete col will delete extra cells
     const [colgroup] = tableBlot.descendants(TableColgroupFormat);
     if (colgroup) {
       for (let i = 0; i < colspanCount; i++) {
@@ -651,7 +669,7 @@ class TableModule {
       }
     }
 
-    this.fixTableSpan(tableBlot);
+    this.fixTableByRemove(tableBlot);
   }
 
   splitCell() {
@@ -686,7 +704,7 @@ class TableModule {
     }
   }
 
-  mergeCellsv2() {
+  mergeCells() {
     const selectedTds = this.tableSelection.selectedTds;
     if (selectedTds.length <= 1) return;
     const counts = selectedTds.reduce(
@@ -716,13 +734,145 @@ class TableModule {
     baseTd.rowspan = rowCount;
 
     const tableBlot = findParentBlot(baseTd, blotName.table);
-    this.fixTableSpan(tableBlot);
+    this.fixTableByRemove(tableBlot);
+  }
+
+  // handle unusual delete cell
+  fixUnusuaDeletelTable(tableBlot) {
+    // calculate all cells
+    const trBlots = tableBlot.getRows();
+    const tableColIds = tableBlot.getColIds();
+    if (trBlots.length === 0 || tableColIds.length === 0) {
+      return tableBlot.remove();
+    }
+    // append by col
+    const cellSpanMap = new Array(trBlots.length).fill(0).map(() => new Array(tableColIds.length).fill(false));
+    const tableId = tableBlot.tableId;
+    for (const [indexTr, tr] of trBlots.entries()) {
+      let indexTd = 0;
+      let indexCol = 0;
+      const curCellSpan = cellSpanMap[indexTr];
+      const tds = tr.descendants(TableCellFormat);
+      // loop every row and column
+      while (indexCol < tableColIds.length) {
+        // skip when rowspan or colspan
+        if (curCellSpan[indexCol]) {
+          indexCol += 1;
+          continue;
+        }
+        const curTd = tds[indexTd];
+        // if colId does not match. insert a new one
+        if (!curTd || curTd.colId !== tableColIds[indexCol]) {
+          tr.insertBefore(
+            createCell(
+              {
+                tableId,
+                colId: tableColIds[indexCol],
+                rowId: tr.rowId,
+              },
+            ),
+            curTd,
+          );
+        }
+        else {
+          if (indexTr + curTd.rowspan - 1 >= trBlots.length) {
+            curTd.getCellInner().rowspan = trBlots.length - indexTr;
+          }
+
+          const { colspan, rowspan } = curTd;
+          // skip next column cell
+          if (colspan > 1) {
+            for (let c = 1; c < colspan; c++) {
+              curCellSpan[indexCol + c] = true;
+            }
+          }
+          // skip next rowspan cell
+          if (rowspan > 1) {
+            for (let r = indexTr + 1; r < indexTr + rowspan; r++) {
+              for (let c = 0; c < colspan; c++) {
+                cellSpanMap[r][indexCol + c] = true;
+              }
+            }
+          }
+          indexTd += 1;
+        }
+        indexCol += 1;
+      }
+
+      // if td not match all exist td. Indicates that a cell has been inserted
+      if (indexTd < tds.length) {
+        for (let i = indexTd; i < tds.length; i++) {
+          tds[i].remove();
+        }
+      }
+    }
+  }
+
+  balanceTables() {
+    for (const tableBlot of this.quill.scroll.descendants(TableFormat)) {
+      this.fixUnusuaDeletelTable(tableBlot);
+    }
+  }
+
+  listenBalanceCells() {
+    this.fixTableByLisenter = debounce(this.balanceTables, 100);
+    this.quill.on(
+      Quill.events.SCROLL_OPTIMIZE,
+      (mutations) => {
+        mutations.some((mutation) => {
+          if (
+            // TODO: if need add ['COL', 'COLGROUP']
+            ['TD', 'TR', 'TBODY', 'TABLE'].includes(mutation.target.tagName)
+          ) {
+            this.fixTableByLisenter();
+            return true;
+          }
+          return false;
+        });
+      },
+    );
   }
 }
 
 TableModule.moduleName = moduleName.table;
 TableModule.toolName = toolName.table;
 
+TableModule.keyboradHandler = {
+  'forbid remove table by backspace': {
+    key: 'backspace',
+    collapsed: true,
+    offset: 0,
+    handler(range, context) {
+      const [blot] = this.quill.getLine(range.index);
+      if (blot.prev instanceof TableWrapperFormat) return false;
+
+      if (context.format[blotName.tableCellInner]) {
+        const offset = blot.offset(findParentBlot(blot, blotName.tableCellInner));
+        if (offset === 0) {
+          return false;
+        }
+      }
+      return true;
+    },
+  },
+  'forbid remove table by delete': {
+    key: 'delete',
+    collapsed: true,
+    handler(range, context) {
+      const [blot, offsetInline] = this.quill.getLine(range.index);
+      if (blot.next instanceof TableWrapperFormat && offsetInline === blot.length() - 1) return false;
+
+      if (context.format[blotName.tableCellInner]) {
+        const tableInnerBlot = findParentBlot(blot, blotName.tableCellInner);
+        const offsetInTableInner = blot.offset(tableInnerBlot);
+        if (offsetInTableInner + offsetInline === tableInnerBlot.length() - 1) {
+          return false;
+        }
+      }
+      return true;
+    },
+  },
+};
 TableModule.createEventName = CREATE_TABLE;
 icons[TableModule.toolName] = TableSvg;
 
@@ -733,9 +883,13 @@ export const rewirteFormats = () =>
     },
     true,
   );
+
 export default TableModule;
 export {
   TableOperationMenu,
   TableSelection,
   TableTooltip,
 };
+
+// TODO: redo and undo
+// TODO: maybe col need change to EmbedBlock

@@ -6,7 +6,7 @@ const MENU_ITEMS_DEFAULT = {
     text: '在左侧插入一列',
     handler() {
       const tableModule = this.quill.getModule(moduleName.table);
-      tableModule.appendColv2();
+      tableModule.appendCol();
       tableModule.hideTableTools();
     },
   },
@@ -14,7 +14,7 @@ const MENU_ITEMS_DEFAULT = {
     text: '在右侧插入一列',
     handler() {
       const tableModule = this.quill.getModule(moduleName.table);
-      tableModule.appendColv2(true);
+      tableModule.appendCol(true);
       tableModule.hideTableTools();
     },
   },
@@ -22,7 +22,7 @@ const MENU_ITEMS_DEFAULT = {
     text: '在上方插入一行',
     handler() {
       const tableModule = this.quill.getModule(moduleName.table);
-      tableModule.appendRowv2();
+      tableModule.appendRow();
       tableModule.hideTableTools();
     },
   },
@@ -31,7 +31,7 @@ const MENU_ITEMS_DEFAULT = {
     groupEnd: true,
     handler() {
       const tableModule = this.quill.getModule(moduleName.table);
-      tableModule.appendRowv2(true);
+      tableModule.appendRow(true);
       tableModule.hideTableTools();
     },
   },
@@ -39,7 +39,7 @@ const MENU_ITEMS_DEFAULT = {
     text: '删除所在列',
     handler() {
       const tableModule = this.quill.getModule(moduleName.table);
-      tableModule.removeColv2();
+      tableModule.removeCol();
       tableModule.hideTableTools();
     },
   },
@@ -47,7 +47,7 @@ const MENU_ITEMS_DEFAULT = {
     text: '删除所在行',
     handler() {
       const tableModule = this.quill.getModule(moduleName.table);
-      tableModule.removeRowv2();
+      tableModule.removeRow();
       tableModule.hideTableTools();
     },
   },
@@ -64,7 +64,7 @@ const MENU_ITEMS_DEFAULT = {
     text: '合并单元格',
     handler() {
       const tableModule = this.quill.getModule(moduleName.table);
-      tableModule.mergeCellsv2();
+      tableModule.mergeCells();
       tableModule.hideTableTools();
     },
   },

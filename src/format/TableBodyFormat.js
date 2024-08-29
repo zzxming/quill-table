@@ -23,7 +23,7 @@ class TableBodyFormat extends Container {
 
   deleteAt(index, length) {
     if (index === 0 && length === this.length()) {
-      this.parent.remove();
+      return this.parent.remove();
     }
     this.children.forEachAt(index, length, (child, offset, length) => {
       child.deleteAt(offset, length);

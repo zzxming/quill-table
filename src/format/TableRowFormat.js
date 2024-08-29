@@ -41,16 +41,16 @@ class TableRowFormat extends Container {
     let cur;
     while ((cur = next())) {
       index += cur.colspan;
+      if (index > targetIndex) break;
       if (cur.rowspan !== 1) {
         for (let i = 0; i < cur.rowspan - 1; i++) {
           skip[i] = (skip[i] || 0) + cur.colspan;
         }
       }
-      if (index > targetIndex) break;
     }
 
     if (cur && index - cur.colspan < targetIndex) {
-      const [tableCell] = cur.descendants(TableCellInnerFormat);
+      const tableCell = cur.getCellInner();
       tableCell.colspan += 1;
       if (cur.rowspan !== 1) {
         skip.skipRowNum = cur.rowspan - 1;

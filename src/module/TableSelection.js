@@ -8,9 +8,9 @@ let PRIMARY_COLOR = '#0589f3';
 const ERROR_LIMIT = 2;
 
 /*
-	options = {
-		primaryColor: Hex color code
-	}
+  options = {
+    primaryColor: Hex color code
+  }
 */
 export class TableSelection {
   constructor(table, quill, options = {}) {
@@ -40,10 +40,6 @@ export class TableSelection {
     this.quill.on(Quill.events.TEXT_CHANGE, this.closeHandler);
   }
 
-  preventDefault(e) {
-    e.preventDefault();
-  }
-
   optionsMerge() {
     this.options?.primaryColor && (PRIMARY_COLOR = this.options.primaryColor);
   }
@@ -69,34 +65,38 @@ export class TableSelection {
     });
   }
 
-  mouseDownHandler(e) {
-    if (e.button !== 0 || !e.target.closest('.ql-table')) return;
+  // TODO: preventDefault select
+  mouseDownHandler(mousedownEvent) {
+    const { button, target, clientX, clientY } = mousedownEvent;
+    const closestTable = target.closest('.ql-table');
+    if (button !== 0 || !closestTable) return;
 
-    const startTableId = e.target.closest('.ql-table').dataset.tableId;
-    this.dragging = true;
-    const startPoint = { x: e.clientX, y: e.clientY };
+    const startTableId = closestTable.dataset.tableId;
+    const startPoint = { x: clientX, y: clientY };
     this.startScrollX = this.table.parentNode.scrollLeft;
     this.selectedTds = this.computeSelectedTds(startPoint, startPoint);
     this.showSelection();
-    this.table.addEventListener('selectstart', this.preventDefault);
 
-    const mouseMoveHandler = (e) => {
+    const mouseMoveHandler = (mousemoveEvent) => {
+      const { button, target, clientX, clientY } = mousemoveEvent;
       if (this.selectedTds.length > 1) {
-        e.preventDefault();
+        mousemoveEvent.preventDefault();
       }
+      const closestTable = target.closest('.ql-table');
       if (
-        e.button !== 0
-        || !e.target.closest('.ql-table')
-        || e.target.closest('.ql-table').dataset.tableId !== startTableId
+        button !== 0
+        || !closestTable
+        || closestTable.dataset.tableId !== startTableId
       ) {
         return;
       }
-      const movePoint = { x: e.clientX, y: e.clientY };
+
+      this.dragging = true;
+      const movePoint = { x: clientX, y: clientY };
       this.selectedTds = this.computeSelectedTds(startPoint, movePoint);
       this.updateSelection();
     };
     const mouseUpHandler = () => {
-      this.table.removeEventListener('selectstart', this.preventDefault);
       document.body.removeEventListener('mousemove', mouseMoveHandler, false);
       document.body.removeEventListener('mouseup', mouseUpHandler, false);
       this.dragging = false;
@@ -109,7 +109,7 @@ export class TableSelection {
   computeSelectedTds(startPoint, endPoint) {
     // Use TableCell to calculation selected range, because TableCellInner is scrollable, the width will effect calculate
     const tableContainer = Quill.find(this.table);
-    if (!tableContainer) return;
+    if (!tableContainer) return [];
     const tableCells = new Set(tableContainer.descendants(TableCellFormat));
 
     // set boundary to initially mouse move rectangle

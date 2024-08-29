@@ -332,12 +332,20 @@
     return Array.isArray(val);
   }
 
+  function debounce(func, wait) {
+    let timeout;
+    return function (...args) {
+      clearTimeout(timeout);
+      timeout = setTimeout(() => func.apply(this, args), wait);
+    };
+  }
+
   const MENU_ITEMS_DEFAULT = {
     insertColumnLeft: {
       text: '在左侧插入一列',
       handler() {
         const tableModule = this.quill.getModule(moduleName.table);
-        tableModule.appendColv2();
+        tableModule.appendCol();
         tableModule.hideTableTools();
       },
     },
@@ -345,7 +353,7 @@
       text: '在右侧插入一列',
       handler() {
         const tableModule = this.quill.getModule(moduleName.table);
-        tableModule.appendColv2(true);
+        tableModule.appendCol(true);
         tableModule.hideTableTools();
       },
     },
@@ -353,7 +361,7 @@
       text: '在上方插入一行',
       handler() {
         const tableModule = this.quill.getModule(moduleName.table);
-        tableModule.appendRowv2();
+        tableModule.appendRow();
         tableModule.hideTableTools();
       },
     },
@@ -362,7 +370,7 @@
       groupEnd: true,
       handler() {
         const tableModule = this.quill.getModule(moduleName.table);
-        tableModule.appendRowv2(true);
+        tableModule.appendRow(true);
         tableModule.hideTableTools();
       },
     },
@@ -370,7 +378,7 @@
       text: '删除所在列',
       handler() {
         const tableModule = this.quill.getModule(moduleName.table);
-        tableModule.removeColv2();
+        tableModule.removeCol();
         tableModule.hideTableTools();
       },
     },
@@ -378,7 +386,7 @@
       text: '删除所在行',
       handler() {
         const tableModule = this.quill.getModule(moduleName.table);
-        tableModule.removeRowv2();
+        tableModule.removeRow();
         tableModule.hideTableTools();
       },
     },
@@ -395,7 +403,7 @@
       text: '合并单元格',
       handler() {
         const tableModule = this.quill.getModule(moduleName.table);
-        tableModule.mergeCellsv2();
+        tableModule.mergeCells();
         tableModule.hideTableTools();
       },
     },
@@ -614,7 +622,7 @@
   }
 
   const Container$7 = Quill.import('blots/container');
-  const Parchment$9 = Quill.import('parchment');
+  const Parchment$a = Quill.import('parchment');
 
   class ContainerFormat extends Container$7 {
     static create() {
@@ -637,7 +645,7 @@
 
     replace(target) {
       if (target.statics.blotName !== this.statics.blotName) {
-        const item = Parchment$9.create(this.statics.defaultChild);
+        const item = Parchment$a.create(this.statics.defaultChild);
         target.moveChildren(item);
         this.appendChild(item);
       }
@@ -648,10 +656,10 @@
 
   ContainerFormat.blotName = blotName.contain;
   ContainerFormat.tagName = 'contain';
-  ContainerFormat.scope = Parchment$9.Scope.BLOCK_BLOT;
+  ContainerFormat.scope = Parchment$a.Scope.BLOCK_BLOT;
   ContainerFormat.defaultChild = 'block';
 
-  const Parchment$8 = Quill.import('parchment');
+  const Parchment$9 = Quill.import('parchment');
 
   class TableCellInnerFormat extends ContainerFormat {
     static create(value) {
@@ -766,14 +774,14 @@
       // 父级非表格，则将当前 blot 放入表格中
       const { tableId, colId, rowId, rowspan, colspan } = this.domNode.dataset;
       if (parent != null && parent.statics.blotName !== blotName.tableCell) {
-        const mark = Parchment$8.create('block');
+        const mark = Parchment$9.create('block');
 
         this.parent.insertBefore(mark, this.next);
-        const tableWrapper = Parchment$8.create(blotName.tableWrapper, tableId);
-        const table = Parchment$8.create(blotName.table, tableId);
-        const tableBody = Parchment$8.create(blotName.tableBody);
-        const tr = Parchment$8.create(blotName.tableRow, rowId);
-        const td = Parchment$8.create(blotName.tableCell, {
+        const tableWrapper = Parchment$9.create(blotName.tableWrapper, tableId);
+        const table = Parchment$9.create(blotName.table, tableId);
+        const tableBody = Parchment$9.create(blotName.tableBody);
+        const tr = Parchment$9.create(blotName.tableRow, rowId);
+        const td = Parchment$9.create(blotName.tableCell, {
           tableId,
           rowId,
           colId,
@@ -805,7 +813,7 @@
   TableCellInnerFormat.className = 'ql-table-cell-inner';
 
   const Container$6 = Quill.import('blots/container');
-  const Parchment$7 = Quill.import('parchment');
+  const Parchment$8 = Quill.import('parchment');
 
   class TableRowFormat extends Container$6 {
     static create(value) {
@@ -842,26 +850,26 @@
       let cur;
       while ((cur = next())) {
         index += cur.colspan;
+        if (index > targetIndex) break;
         if (cur.rowspan !== 1) {
           for (let i = 0; i < cur.rowspan - 1; i++) {
             skip[i] = (skip[i] || 0) + cur.colspan;
           }
         }
-        if (index > targetIndex) break;
       }
 
       if (cur && index - cur.colspan < targetIndex) {
-        const [tableCell] = cur.descendants(TableCellInnerFormat);
+        const tableCell = cur.getCellInner();
         tableCell.colspan += 1;
         if (cur.rowspan !== 1) {
           skip.skipRowNum = cur.rowspan - 1;
         }
       }
       else {
-        const tableCell = Parchment$7.create(blotName.tableCell, value);
-        const tableCellInner = Parchment$7.create(blotName.tableCellInner, value);
-        const block = Parchment$7.create('block');
-        block.appendChild(Parchment$7.create('break'));
+        const tableCell = Parchment$8.create(blotName.tableCell, value);
+        const tableCellInner = Parchment$8.create(blotName.tableCellInner, value);
+        const block = Parchment$8.create('block');
+        block.appendChild(Parchment$8.create('break'));
         tableCellInner.appendChild(block);
         tableCell.appendChild(tableCellInner);
         this.insertBefore(tableCell, cur);
@@ -926,10 +934,10 @@
   TableRowFormat.blotName = blotName.tableRow;
   TableRowFormat.tagName = 'tr';
   TableRowFormat.className = 'ql-table-row';
-  TableRowFormat.scope = Parchment$7.Scope.BLOCK_BLOT;
+  TableRowFormat.scope = Parchment$8.Scope.BLOCK_BLOT;
 
   const Container$5 = Quill.import('blots/container');
-  const Parchment$6 = Quill.import('parchment');
+  const Parchment$7 = Quill.import('parchment');
 
   class TableBodyFormat extends Container$5 {
     optimize() {
@@ -948,7 +956,7 @@
 
     deleteAt(index, length) {
       if (index === 0 && length === this.length()) {
-        this.parent.remove();
+        return this.parent.remove();
       }
       this.children.forEachAt(index, length, (child, offset, length) => {
         child.deleteAt(offset, length);
@@ -983,23 +991,23 @@
       }
       // append new row
       const rowId = randomId();
-      const tr = Parchment$6.create(blotName.tableRow, rowId);
+      const tr = Parchment$7.create(blotName.tableRow, rowId);
       for (const colId of insertColIds) {
-        const td = Parchment$6.create(blotName.tableCell, {
+        const td = Parchment$7.create(blotName.tableCell, {
           rowId,
           colId,
           rowspan: 1,
           colspan: 1,
         });
-        const tdInner = Parchment$6.create(blotName.tableCellInner, {
+        const tdInner = Parchment$7.create(blotName.tableCellInner, {
           tableId: tableBlot.tableId,
           rowId,
           colId,
           rowspan: 1,
           colspan: 1,
         });
-        const block = Parchment$6.create('block');
-        block.appendChild(Parchment$6.create('break'));
+        const block = Parchment$7.create('block');
+        block.appendChild(Parchment$7.create('break'));
         tdInner.appendChild(block);
         td.appendChild(tdInner);
         tr.appendChild(td);
@@ -1009,9 +1017,9 @@
   }
   TableBodyFormat.blotName = blotName.tableBody;
   TableBodyFormat.tagName = 'tbody';
-  TableBodyFormat.scope = Parchment$6.Scope.BLOCK_BLOT;
+  TableBodyFormat.scope = Parchment$7.Scope.BLOCK_BLOT;
 
-  const Parchment$5 = Quill.import('parchment');
+  const Parchment$6 = Quill.import('parchment');
   const Container$4 = Quill.import('blots/container');
 
   class TableCellFormat extends Container$4 {
@@ -1072,7 +1080,30 @@
 
     optimize() {
       super.optimize();
-      const { colId, rowId } = this.domNode.dataset;
+      const { colId, rowId, colspan, rowspan } = this.domNode.dataset;
+
+      // td need only child tableCellInner. but for MutationObserver. tableCell need allow break
+      // make sure tableCellInner is only child
+      const tableBlot = findParentBlot(this, blotName.table);
+      const cellInner = this.getCellInner();
+      if (!cellInner) {
+        // eslint-disable-next-line unicorn/no-array-for-each
+        this.children.forEach((child) => {
+          child.remove();
+        });
+        const tableCellInner = Parchment$6.create(blotName.tableCellInner, {
+          tableId: tableBlot.tableId,
+          rowId,
+          colId,
+          colspan: colspan || 1,
+          rowspan: rowspan || 1,
+        });
+        const block = Parchment$6.create('block');
+        block.appendChild(Parchment$6.create('break'));
+        tableCellInner.appendChild(block);
+        this.appendChild(tableCellInner);
+      }
+
       const next = this.next;
       if (
         next != null
@@ -1104,9 +1135,9 @@
   TableCellFormat.blotName = blotName.tableCell;
   TableCellFormat.tagName = 'td';
   TableCellFormat.className = 'ql-table-cell';
-  TableCellFormat.scope = Parchment$5.Scope.BLOCK_BLOT;
+  TableCellFormat.scope = Parchment$6.Scope.BLOCK_BLOT;
 
-  const Parchment$4 = Quill.import('parchment');
+  const Parchment$5 = Quill.import('parchment');
 
   class TableColFormat extends ContainerFormat {
     static create(value) {
@@ -1155,15 +1186,15 @@
 
       const parent = this.parent;
       if (parent != null && parent.statics.blotName !== blotName.tableColGroup) {
-        const mark = Parchment$4.create('block');
+        const mark = Parchment$5.create('block');
         this.parent.insertBefore(mark, this.next);
 
-        const tableWrapper = Parchment$4.create(blotName.tableWrapper, this.domNode.dataset.tableId);
-        const table = Parchment$4.create(blotName.table, this.domNode.dataset.tableId);
+        const tableWrapper = Parchment$5.create(blotName.tableWrapper, this.domNode.dataset.tableId);
+        const table = Parchment$5.create(blotName.table, this.domNode.dataset.tableId);
 
         this.full && (table.full = true);
 
-        const tableColgroup = Parchment$4.create(blotName.tableColGroup);
+        const tableColgroup = Parchment$5.create(blotName.tableColGroup);
 
         tableColgroup.appendChild(this);
         table.appendChild(tableColgroup);
@@ -1187,10 +1218,10 @@
   }
   TableColFormat.blotName = blotName.tableCol;
   TableColFormat.tagName = 'col';
-  TableColFormat.scope = Parchment$4.Scope.BLOCK_BLOT;
+  TableColFormat.scope = Parchment$5.Scope.BLOCK_BLOT;
 
   const Container$3 = Quill.import('blots/container');
-  const Parchment$3 = Quill.import('parchment');
+  const Parchment$4 = Quill.import('parchment');
 
   class TableFormat extends Container$3 {
     constructor(domNode, value) {
@@ -1272,10 +1303,10 @@
 
   TableFormat.blotName = blotName.table;
   TableFormat.tagName = 'table';
-  TableFormat.scope = Parchment$3.Scope.BLOCK_BLOT;
+  TableFormat.scope = Parchment$4.Scope.BLOCK_BLOT;
 
   const Container$2 = Quill.import('blots/container');
-  const Parchment$2 = Quill.import('parchment');
+  const Parchment$3 = Quill.import('parchment');
 
   class TableColgroupFormat extends Container$2 {
     optimize() {
@@ -1290,6 +1321,15 @@
         next.moveChildren(this);
         next.remove();
       }
+    }
+
+    deleteAt(index, length) {
+      if (index === 0 && length === this.length()) {
+        return this.parent.remove();
+      }
+      this.children.forEachAt(index, length, (child, offset, length) => {
+        child.deleteAt(offset, length);
+      });
     }
 
     findCol(index) {
@@ -1311,7 +1351,7 @@
         throw new TypeError('TableColgroupFormat should be child of TableFormat');
       }
       const col = this.findCol(index);
-      const tableCellInner = Parchment$2.create(blotName.tableCol, value);
+      const tableCellInner = Parchment$3.create(blotName.tableCol, value);
       if (table.full) {
       // TODO: first minus column should be near by
         const next = this.children.iterator();
@@ -1343,10 +1383,10 @@
   }
   TableColgroupFormat.blotName = blotName.tableColGroup;
   TableColgroupFormat.tagName = 'colgroup';
-  TableColgroupFormat.scope = Parchment$2.Scope.BLOCK_BLOT;
+  TableColgroupFormat.scope = Parchment$3.Scope.BLOCK_BLOT;
 
   const Container$1 = Quill.import('blots/container');
-  const Parchment$1 = Quill.import('parchment');
+  const Parchment$2 = Quill.import('parchment');
 
   class TableWrapperFormat extends Container$1 {
     static create(value) {
@@ -1422,9 +1462,9 @@
   TableWrapperFormat.blotName = blotName.tableWrapper;
   TableWrapperFormat.tagName = 'p';
   TableWrapperFormat.className = 'ql-table-wrapper';
-  TableWrapperFormat.scope = Parchment$1.Scope.BLOCK_BLOT;
+  TableWrapperFormat.scope = Parchment$2.Scope.BLOCK_BLOT;
 
-  const Parchment = Quill.import('parchment');
+  const Parchment$1 = Quill.import('parchment');
   const ListItem = Quill.import('formats/list/item');
 
   class ListItemRewrite extends ListItem {
@@ -1436,7 +1476,7 @@
       }
       else {
         if (name === blotName.tableCellInner) {
-          const replacement = typeof name === 'string' ? Parchment.create(name, value) : name;
+          const replacement = typeof name === 'string' ? Parchment$1.create(name, value) : name;
           replacement.replace(this.parent);
           this.attributes.copy(replacement);
           return replacement;
@@ -1453,9 +1493,9 @@
   const ERROR_LIMIT = 2;
 
   /*
-  	options = {
-  		primaryColor: Hex color code
-  	}
+    options = {
+      primaryColor: Hex color code
+    }
   */
   class TableSelection {
     constructor(table, quill, options = {}) {
@@ -1485,10 +1525,6 @@
       this.quill.on(Quill.events.TEXT_CHANGE, this.closeHandler);
     }
 
-    preventDefault(e) {
-      e.preventDefault();
-    }
-
     optionsMerge() {
       this.options?.primaryColor && (PRIMARY_COLOR = this.options.primaryColor);
     }
@@ -1514,34 +1550,38 @@
       });
     }
 
-    mouseDownHandler(e) {
-      if (e.button !== 0 || !e.target.closest('.ql-table')) return;
+    // TODO: preventDefault select
+    mouseDownHandler(mousedownEvent) {
+      const { button, target, clientX, clientY } = mousedownEvent;
+      const closestTable = target.closest('.ql-table');
+      if (button !== 0 || !closestTable) return;
 
-      const startTableId = e.target.closest('.ql-table').dataset.tableId;
-      this.dragging = true;
-      const startPoint = { x: e.clientX, y: e.clientY };
+      const startTableId = closestTable.dataset.tableId;
+      const startPoint = { x: clientX, y: clientY };
       this.startScrollX = this.table.parentNode.scrollLeft;
       this.selectedTds = this.computeSelectedTds(startPoint, startPoint);
       this.showSelection();
-      this.table.addEventListener('selectstart', this.preventDefault);
 
-      const mouseMoveHandler = (e) => {
+      const mouseMoveHandler = (mousemoveEvent) => {
+        const { button, target, clientX, clientY } = mousemoveEvent;
         if (this.selectedTds.length > 1) {
-          e.preventDefault();
+          mousemoveEvent.preventDefault();
         }
+        const closestTable = target.closest('.ql-table');
         if (
-          e.button !== 0
-          || !e.target.closest('.ql-table')
-          || e.target.closest('.ql-table').dataset.tableId !== startTableId
+          button !== 0
+          || !closestTable
+          || closestTable.dataset.tableId !== startTableId
         ) {
           return;
         }
-        const movePoint = { x: e.clientX, y: e.clientY };
+
+        this.dragging = true;
+        const movePoint = { x: clientX, y: clientY };
         this.selectedTds = this.computeSelectedTds(startPoint, movePoint);
         this.updateSelection();
       };
       const mouseUpHandler = () => {
-        this.table.removeEventListener('selectstart', this.preventDefault);
         document.body.removeEventListener('mousemove', mouseMoveHandler, false);
         document.body.removeEventListener('mouseup', mouseUpHandler, false);
         this.dragging = false;
@@ -1554,7 +1594,7 @@
     computeSelectedTds(startPoint, endPoint) {
       // Use TableCell to calculation selected range, because TableCellInner is scrollable, the width will effect calculate
       const tableContainer = Quill.find(this.table);
-      if (!tableContainer) return;
+      if (!tableContainer) return [];
       const tableCells = new Set(tableContainer.descendants(TableCellFormat));
 
       // set boundary to initially mouse move rectangle
@@ -1659,10 +1699,10 @@
 
   let TIP_HEIGHT = 12;
   /*
-  	options = {
-  		tipHeight: 12,	// tooltip height
-  		disableToolNames: [],	// 表格内禁用项， toolbar 的 name
-  	}
+    options = {
+      tipHeight: 12,  // tooltip height
+      disableToolNames: [],   // 表格内禁用项， toolbar 的 name
+    }
   */
   class TableTooltip {
     constructor(quill, options = {}) {
@@ -1847,8 +1887,8 @@
               width = `${col.domNode.getBoundingClientRect().width}px`;
             }
             return `<div class="ql-table-col-header" style="width: ${width}">
-            			<div class="ql-table-col-separator" style="height: ${tableWrapperRect.height + TIP_HEIGHT - 3}px"></div>
-            		</div>`; // -3 为 border-width: 2, top: 1
+            <div class="ql-table-col-separator" style="height: ${tableWrapperRect.height + TIP_HEIGHT - 3}px"></div>
+          </div>`; // -3 为 border-width: 2, top: 1
           })
           .join('');
 
@@ -1907,7 +1947,6 @@
             resX = rect.x + CELL_MIN_WIDTH;
           }
         }
-        resX = Math.floor(resX);
         tipColBreak.style.left = `${resX}px`;
         tipColBreak.dataset.w = resX - rect.x;
       };
@@ -2001,11 +2040,13 @@
   }
 
   // 在 table 内时禁用的 tool 的 name
-  TableTooltip.disableToolNames = [toolName.table];
+  TableTooltip.disableToolNames = [toolName.table, 'code-block'];
 
   var TableSvg = "<svg viewBox=\"0 0 24 24\"><path class=\"ql-stroke\" fill=\"none\" stroke=\"currentColor\" stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M3 5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5zm0 5h18M10 3v18\"/></svg>";
 
+  const Parchment = Quill.import('parchment');
   const Delta = Quill.import('delta');
+  const Break = Quill.import('blots/break');
   const BlockEmbed = Quill.import('blots/block/embed');
   const Block = Quill.import('blots/block');
   const Container = Quill.import('blots/container');
@@ -2027,7 +2068,8 @@
   TableRowFormat.allowedChildren = [TableCellFormat];
   TableRowFormat.requiredContainer = TableBodyFormat;
 
-  TableCellFormat.allowedChildren = [TableCellInnerFormat];
+  // Break to handle user select mutiple line cell to delete. MutationObserver will have `a addNodes: [br]` for td
+  TableCellFormat.allowedChildren = [TableCellInnerFormat, Break];
   TableCellFormat.requiredContainer = TableRowFormat;
 
   TableCellInnerFormat.requiredContainer = TableCellFormat;
@@ -2051,19 +2093,32 @@
   );
 
   // 不可插入至表格的 blot
-  const tableCantInsert = [blotName.tableCell];
-  const isForbidInTableBlot = (blot) => {
+  const tableCantInsert = [blotName.tableCell, 'code-block'];
+  function isForbidInTableBlot(blot) {
     return tableCantInsert.includes(blot.statics.blotName);
-  };
-
-  const isForbidInTable = (current) => {
+  }
+  function isForbidInTable(current) {
     return current && current.parent
       ? isForbidInTableBlot(current.parent)
         ? true
         : isForbidInTable(current.parent)
       : false;
-  };
-
+  }function createCell({ tableId, rowId, colId }) {
+    const value = {
+      tableId,
+      rowId,
+      colId,
+      colspan: 1,
+      rowspan: 1,
+    };
+    const tableCell = Parchment.create(blotName.tableCell, value);
+    const tableCellInner = Parchment.create(blotName.tableCellInner, value);
+    const block = Parchment.create('block');
+    block.appendChild(Parchment.create('break'));
+    tableCellInner.appendChild(block);
+    tableCell.appendChild(tableCellInner);
+    return tableCell;
+  }
   class TableModule {
     constructor(quill, options) {
       this.quill = quill;
@@ -2093,8 +2148,8 @@
           toolbar.addHandler(TableModule.toolName, this.handleSelectDisplay.bind(this));
         }
       }
-      this.pasteTableHandler();
 
+      this.pasteTableHandler();
       // 绑定 table 的选择事件
       this.quill.root.addEventListener(
         'click',
@@ -2158,6 +2213,8 @@
       if (isUndefined(this.options.dragResize) || this.options.dragResize) {
         this.quill.theme.TableTooltip = new TableTooltip(this.quill, this.options.tableToolTip);
       }
+
+      this.listenBalanceCells();
     }
 
     showTableTools(table, quill, options) {
@@ -2275,8 +2332,9 @@
     async buildCustomSelect(customSelect, tagName, customButton) {
       const dom = document.createElement('div');
       dom.classList.add('ql-custom-select');
-      const selector
-              = customSelect && isFunction(customSelect) ? await customSelect() : this.createSelect(customButton);
+      const selector = customSelect && isFunction(customSelect)
+        ? await customSelect()
+        : this.createSelect(customButton);
       dom.appendChild(selector);
 
       let appendTo = this.controlItem;
@@ -2322,11 +2380,8 @@
     // 以下为 table module 生成表格相关功能函数
 
     insertTable(rows, columns) {
-      if (rows >= 100 || columns >= 100) {
-        throw new Error('Both rows and columns must be less than 100.');
-      }
-      if (this.options.fullWidth && rows > 30) {
-        throw new Error(`Full width table rows must be less than 30.`);
+      if (rows >= 30 || columns >= 30) {
+        throw new Error('Both rows and columns must be less than 30.');
       }
 
       this.quill.focus();
@@ -2401,10 +2456,10 @@
     /**
      * after insert or remove cell. handle cell colspan and rowspan merge
      */
-    fixTableSpan(tableBlot) {
+    fixTableByRemove(tableBlot) {
       // calculate all cells
       // maybe will get empty tr
-      const trBlots = tableBlot.descendants(TableRowFormat);
+      const trBlots = tableBlot.getRows();
       const tableCols = tableBlot.getCols();
       const colIdMap = tableCols.reduce((idMap, col) => {
         idMap[col.colId] = 0;
@@ -2470,7 +2525,7 @@
       }
     }
 
-    appendRowv2(isDown) {
+    appendRow(isDown) {
       const selectedTds = this.tableSelection.selectedTds;
       if (selectedTds.length <= 0) return;
       // find baseTd and baseTr
@@ -2487,7 +2542,7 @@
       tableBodyBlot.insertRow(insertRowIndex);
     }
 
-    removeRowv2() {
+    removeRow() {
       const selectedTds = this.tableSelection.selectedTds;
       if (selectedTds.length <= 0) return;
       const baseTd = selectedTds[0];
@@ -2536,10 +2591,10 @@
         }
       }
 
-      this.fixTableSpan(tableBlot);
+      this.fixTableByRemove(tableBlot);
     }
 
-    appendColv2(isRight) {
+    appendCol(isRight) {
       const selectedTds = this.tableSelection.selectedTds;
       if (selectedTds.length <= 0) return;
 
@@ -2596,7 +2651,7 @@
       }
     }
 
-    removeColv2() {
+    removeCol() {
       const selectedTds = this.tableSelection.selectedTds;
       if (selectedTds.length <= 0) return;
       const baseTd = selectedTds[0];
@@ -2629,7 +2684,7 @@
         }
       }
       // delete col need after remove cell. remove cell need all column id
-      // manual delete col. use fixTableSpan to delete col will delete extra cells
+      // manual delete col. use fixTableByRemove to delete col will delete extra cells
       const [colgroup] = tableBlot.descendants(TableColgroupFormat);
       if (colgroup) {
         for (let i = 0; i < colspanCount; i++) {
@@ -2637,7 +2692,7 @@
         }
       }
 
-      this.fixTableSpan(tableBlot);
+      this.fixTableByRemove(tableBlot);
     }
 
     splitCell() {
@@ -2672,7 +2727,7 @@
       }
     }
 
-    mergeCellsv2() {
+    mergeCells() {
       const selectedTds = this.tableSelection.selectedTds;
       if (selectedTds.length <= 1) return;
       const counts = selectedTds.reduce(
@@ -2702,13 +2757,145 @@
       baseTd.rowspan = rowCount;
 
       const tableBlot = findParentBlot(baseTd, blotName.table);
-      this.fixTableSpan(tableBlot);
+      this.fixTableByRemove(tableBlot);
+    }
+
+    // handle unusual delete cell
+    fixUnusuaDeletelTable(tableBlot) {
+      // calculate all cells
+      const trBlots = tableBlot.getRows();
+      const tableColIds = tableBlot.getColIds();
+      if (trBlots.length === 0 || tableColIds.length === 0) {
+        return tableBlot.remove();
+      }
+      // append by col
+      const cellSpanMap = new Array(trBlots.length).fill(0).map(() => new Array(tableColIds.length).fill(false));
+      const tableId = tableBlot.tableId;
+      for (const [indexTr, tr] of trBlots.entries()) {
+        let indexTd = 0;
+        let indexCol = 0;
+        const curCellSpan = cellSpanMap[indexTr];
+        const tds = tr.descendants(TableCellFormat);
+        // loop every row and column
+        while (indexCol < tableColIds.length) {
+          // skip when rowspan or colspan
+          if (curCellSpan[indexCol]) {
+            indexCol += 1;
+            continue;
+          }
+          const curTd = tds[indexTd];
+          // if colId does not match. insert a new one
+          if (!curTd || curTd.colId !== tableColIds[indexCol]) {
+            tr.insertBefore(
+              createCell(
+                {
+                  tableId,
+                  colId: tableColIds[indexCol],
+                  rowId: tr.rowId,
+                },
+              ),
+              curTd,
+            );
+          }
+          else {
+            if (indexTr + curTd.rowspan - 1 >= trBlots.length) {
+              curTd.getCellInner().rowspan = trBlots.length - indexTr;
+            }
+
+            const { colspan, rowspan } = curTd;
+            // skip next column cell
+            if (colspan > 1) {
+              for (let c = 1; c < colspan; c++) {
+                curCellSpan[indexCol + c] = true;
+              }
+            }
+            // skip next rowspan cell
+            if (rowspan > 1) {
+              for (let r = indexTr + 1; r < indexTr + rowspan; r++) {
+                for (let c = 0; c < colspan; c++) {
+                  cellSpanMap[r][indexCol + c] = true;
+                }
+              }
+            }
+            indexTd += 1;
+          }
+          indexCol += 1;
+        }
+
+        // if td not match all exist td. Indicates that a cell has been inserted
+        if (indexTd < tds.length) {
+          for (let i = indexTd; i < tds.length; i++) {
+            tds[i].remove();
+          }
+        }
+      }
+    }
+
+    balanceTables() {
+      for (const tableBlot of this.quill.scroll.descendants(TableFormat)) {
+        this.fixUnusuaDeletelTable(tableBlot);
+      }
+    }
+
+    listenBalanceCells() {
+      this.fixTableByLisenter = debounce(this.balanceTables, 100);
+      this.quill.on(
+        Quill.events.SCROLL_OPTIMIZE,
+        (mutations) => {
+          mutations.some((mutation) => {
+            if (
+              // TODO: if need add ['COL', 'COLGROUP']
+              ['TD', 'TR', 'TBODY', 'TABLE'].includes(mutation.target.tagName)
+            ) {
+              this.fixTableByLisenter();
+              return true;
+            }
+            return false;
+          });
+        },
+      );
     }
   }
 
   TableModule.moduleName = moduleName.table;
   TableModule.toolName = toolName.table;
 
+  TableModule.keyboradHandler = {
+    'forbid remove table by backspace': {
+      key: 'backspace',
+      collapsed: true,
+      offset: 0,
+      handler(range, context) {
+        const [blot] = this.quill.getLine(range.index);
+        if (blot.prev instanceof TableWrapperFormat) return false;
+
+        if (context.format[blotName.tableCellInner]) {
+          const offset = blot.offset(findParentBlot(blot, blotName.tableCellInner));
+          if (offset === 0) {
+            return false;
+          }
+        }
+        return true;
+      },
+    },
+    'forbid remove table by delete': {
+      key: 'delete',
+      collapsed: true,
+      handler(range, context) {
+        const [blot, offsetInline] = this.quill.getLine(range.index);
+        if (blot.next instanceof TableWrapperFormat && offsetInline === blot.length() - 1) return false;
+
+        if (context.format[blotName.tableCellInner]) {
+          const tableInnerBlot = findParentBlot(blot, blotName.tableCellInner);
+          const offsetInTableInner = blot.offset(tableInnerBlot);
+          if (offsetInTableInner + offsetInline === tableInnerBlot.length() - 1) {
+            return false;
+          }
+        }
+        return true;
+      },
+    },
+  };
   TableModule.createEventName = CREATE_TABLE;
   icons[TableModule.toolName] = TableSvg;
 
@@ -2719,6 +2906,9 @@
       },
       true,
     );
+
+  // TODO: redo and undo
+  // TODO: maybe col need change to EmbedBlock
 
   Quill.register(
     {
@@ -2740,14 +2930,19 @@
         [{ direction: 'rtl' }],
         [{ size: ['small', false, 'large', 'huge'] }],
         [{ header: [1, 2, 3, 4, 5, 6, false] }],
-        // [{ color: [] }, { background: [] }],
-        // [{ font: [] }],
-        // [{ align: ['', 'center', 'right', 'justify'] }],
-        // ['clean'],
-        // ['image', 'video'],
+        [{ color: [] }, { background: [] }],
+        [{ font: [] }],
+        [{ align: ['', 'center', 'right', 'justify'] }],
+        ['clean'],
+        ['image', 'video'],
 
         [{ table: [] }],
       ],
+      keyboard: {
+        bindings: {
+          ...TableModule.keyboradHandler,
+        },
+      },
       [`${TableModule.moduleName}`]: {
         fullWidth: true,
         tableToolTip: {
@@ -2814,25 +3009,77 @@
     },
   });
 
-  // quill.setContents([
-  //   { insert: '\n' },
-  //   { attributes: { col: { tableId: 'fwgtd4onbc', colId: 'lvgnvscz4zo', width: '25%', full: true } }, insert: '\n' },
-  //   { attributes: { col: { tableId: 'fwgtd4onbc', colId: 'ordetcm8owk', width: '25%', full: true } }, insert: '\n' },
-  //   { attributes: { col: { tableId: 'fwgtd4onbc', colId: '1tvfio9reyi', width: '25%', full: true } }, insert: '\n' },
-  //   { attributes: { col: { tableId: 'fwgtd4onbc', colId: 'anlt4bylddp', width: '25%', full: true } }, insert: '\n' },
-  //   { attributes: { tableCellInner: { tableId: 'fwgtd4onbc', rowId: 'fhaunl5mrrw', colId: 'lvgnvscz4zo', rowspan: '2', colspan: '2' } }, insert: '\n\n\n\n' },
-  //   { attributes: { tableCellInner: { tableId: 'fwgtd4onbc', rowId: 'fhaunl5mrrw', colId: '1tvfio9reyi', rowspan: '1', colspan: '1' } }, insert: '\n' },
-  //   { attributes: { tableCellInner: { tableId: 'fwgtd4onbc', rowId: 'fhaunl5mrrw', colId: 'anlt4bylddp', rowspan: '1', colspan: '1' } }, insert: '\n' },
-  //   { attributes: { tableCellInner: { tableId: 'fwgtd4onbc', rowId: 'rg6ou87kqs', colId: '1tvfio9reyi', rowspan: '1', colspan: '1' } }, insert: '\n' },
-  //   { attributes: { tableCellInner: { tableId: 'fwgtd4onbc', rowId: 'rg6ou87kqs', colId: 'anlt4bylddp', rowspan: '2', colspan: '1' } }, insert: '\n\n' },
-  //   { attributes: { tableCellInner: { tableId: 'fwgtd4onbc', rowId: 'dob7l26fysl', colId: 'lvgnvscz4zo', rowspan: '1', colspan: '1' } }, insert: '\n' },
-  //   { attributes: { tableCellInner: { tableId: 'fwgtd4onbc', rowId: 'dob7l26fysl', colId: 'ordetcm8owk', rowspan: '2', colspan: '1' } }, insert: '\n\n' },
-  //   { attributes: { tableCellInner: { tableId: 'fwgtd4onbc', rowId: 'dob7l26fysl', colId: '1tvfio9reyi', rowspan: '1', colspan: '1' } }, insert: '\n' },
-  //   { attributes: { tableCellInner: { tableId: 'fwgtd4onbc', rowId: '1jqp0eb81w7', colId: 'lvgnvscz4zo', rowspan: '1', colspan: '1' } }, insert: '\n' },
-  //   { attributes: { tableCellInner: { tableId: 'fwgtd4onbc', rowId: '1jqp0eb81w7', colId: '1tvfio9reyi', rowspan: '1', colspan: '1' } }, insert: '\n' },
-  //   { attributes: { tableCellInner: { tableId: 'fwgtd4onbc', rowId: '1jqp0eb81w7', colId: 'anlt4bylddp', rowspan: '1', colspan: '1' } }, insert: '\n' },
-  //   { insert: '\n' },
-  // ]);
+  quill.setContents([
+    { insert: '\n' },
+    { attributes: { col: { tableId: '3f9v65d1jea', colId: 'dm2iv5nk59i', width: '20%', full: true } }, insert: '\n' },
+    { attributes: { col: { tableId: '3f9v65d1jea', colId: '110vmas75gg', width: '20%', full: true } }, insert: '\n' },
+    { attributes: { col: { tableId: '3f9v65d1jea', colId: 'xngnqidm9qq', width: '20%', full: true } }, insert: '\n' },
+    { attributes: { col: { tableId: '3f9v65d1jea', colId: 'uf00txcv6fi', width: '20%', full: true } }, insert: '\n' },
+    { attributes: { col: { tableId: '3f9v65d1jea', colId: 'n53lvqhi2p', width: '20%', full: true } }, insert: '\n' },
+    { attributes: { tableCellInner: { tableId: '3f9v65d1jea', rowId: 'nmyr8vn3828', colId: 'dm2iv5nk59i', rowspan: '3', colspan: '3' } }, insert: '\n\n\n\n\n\n\n\n\n' },
+    { attributes: { tableCellInner: { tableId: '3f9v65d1jea', rowId: 'nmyr8vn3828', colId: 'uf00txcv6fi', rowspan: '1', colspan: '1' } }, insert: '\n' },
+    { attributes: { tableCellInner: { tableId: '3f9v65d1jea', rowId: 'nmyr8vn3828', colId: 'n53lvqhi2p', rowspan: '4', colspan: '1' } }, insert: '\n\n\n\n' },
+    { attributes: { tableCellInner: { tableId: '3f9v65d1jea', rowId: 'oepb5fr3urk', colId: 'uf00txcv6fi', rowspan: '1', colspan: '1' } }, insert: '\n' },
+    { attributes: { tableCellInner: { tableId: '3f9v65d1jea', rowId: 'gt997kxksnc', colId: 'uf00txcv6fi', rowspan: '1', colspan: '1' } }, insert: '\n' },
+    { attributes: { tableCellInner: { tableId: '3f9v65d1jea', rowId: 'umw8jbf0ha', colId: 'dm2iv5nk59i', rowspan: '1', colspan: '1' } }, insert: '\n' },
+    { attributes: { tableCellInner: { tableId: '3f9v65d1jea', rowId: 'umw8jbf0ha', colId: '110vmas75gg', rowspan: '1', colspan: '1' } }, insert: '\n' },
+    { attributes: { tableCellInner: { tableId: '3f9v65d1jea', rowId: 'umw8jbf0ha', colId: 'xngnqidm9qq', rowspan: '2', colspan: '2' } }, insert: '\n\n\n\n' },
+    { attributes: { tableCellInner: { tableId: '3f9v65d1jea', rowId: 'cvuztwvj1hl', colId: 'dm2iv5nk59i', rowspan: '1', colspan: '1' } }, insert: '\n' },
+    { attributes: { tableCellInner: { tableId: '3f9v65d1jea', rowId: 'cvuztwvj1hl', colId: '110vmas75gg', rowspan: '1', colspan: '1' } }, insert: '\n' },
+    { attributes: { tableCellInner: { tableId: '3f9v65d1jea', rowId: 'cvuztwvj1hl', colId: 'n53lvqhi2p', rowspan: '1', colspan: '1' } }, insert: '\n' },
+    { insert: '\n' },
+
+    // { insert: '\n' },
+    // { attributes: { col: { tableId: 'fwgtd4onbc', colId: 'lvgnvscz4zo', width: '25%', full: true } }, insert: '\n' },
+    // { attributes: { col: { tableId: 'fwgtd4onbc', colId: 'ordetcm8owk', width: '25%', full: true } }, insert: '\n' },
+    // { attributes: { col: { tableId: 'fwgtd4onbc', colId: '1tvfio9reyi', width: '25%', full: true } }, insert: '\n' },
+    // { attributes: { col: { tableId: 'fwgtd4onbc', colId: 'anlt4bylddp', width: '25%', full: true } }, insert: '\n' },
+    // { attributes: { tableCellInner: { tableId: 'fwgtd4onbc', rowId: 'fhaunl5mrrw', colId: 'lvgnvscz4zo', rowspan: '2', colspan: '2' } }, insert: '\n\n\n\n' },
+    // { attributes: { tableCellInner: { tableId: 'fwgtd4onbc', rowId: 'fhaunl5mrrw', colId: '1tvfio9reyi', rowspan: '1', colspan: '1' } }, insert: '\n' },
+    // { attributes: { tableCellInner: { tableId: 'fwgtd4onbc', rowId: 'fhaunl5mrrw', colId: 'anlt4bylddp', rowspan: '1', colspan: '1' } }, insert: '\n' },
+    // { attributes: { tableCellInner: { tableId: 'fwgtd4onbc', rowId: 'rg6ou87kqs', colId: '1tvfio9reyi', rowspan: '1', colspan: '1' } }, insert: '\n' },
+    // { attributes: { tableCellInner: { tableId: 'fwgtd4onbc', rowId: 'rg6ou87kqs', colId: 'anlt4bylddp', rowspan: '2', colspan: '1' } }, insert: '\n\n' },
+    // { attributes: { tableCellInner: { tableId: 'fwgtd4onbc', rowId: 'dob7l26fysl', colId: 'lvgnvscz4zo', rowspan: '1', colspan: '1' } }, insert: '\n' },
+    // { attributes: { tableCellInner: { tableId: 'fwgtd4onbc', rowId: 'dob7l26fysl', colId: 'ordetcm8owk', rowspan: '2', colspan: '1' } }, insert: '\n\n' },
+    // { attributes: { tableCellInner: { tableId: 'fwgtd4onbc', rowId: 'dob7l26fysl', colId: '1tvfio9reyi', rowspan: '1', colspan: '1' } }, insert: '\n' },
+    // { attributes: { tableCellInner: { tableId: 'fwgtd4onbc', rowId: '1jqp0eb81w7', colId: 'lvgnvscz4zo', rowspan: '1', colspan: '1' } }, insert: '\n' },
+    // { attributes: { tableCellInner: { tableId: 'fwgtd4onbc', rowId: '1jqp0eb81w7', colId: '1tvfio9reyi', rowspan: '1', colspan: '1' } }, insert: '\n' },
+    // { attributes: { tableCellInner: { tableId: 'fwgtd4onbc', rowId: '1jqp0eb81w7', colId: 'anlt4bylddp', rowspan: '1', colspan: '1' } }, insert: '\n' },
+    // { insert: '\n' },
+
+    // { insert: '\n' },
+    // { attributes: { col: { tableId: 'nqpbqv26gi', colId: '4mje7sphg32', width: '14.285714285714285%', full: true } }, insert: '\n' },
+    // { attributes: { col: { tableId: 'nqpbqv26gi', colId: '3aca3uqy7yc', width: '14.285714285714285%', full: true } }, insert: '\n' },
+    // { attributes: { col: { tableId: 'nqpbqv26gi', colId: 'qubz0ty6iw', width: '14.285714285714285%', full: true } }, insert: '\n' },
+    // { attributes: { col: { tableId: 'nqpbqv26gi', colId: 'bve2xew43i9', width: '14.285714285714285%', full: true } }, insert: '\n' },
+    // { attributes: { col: { tableId: 'nqpbqv26gi', colId: 'qgyxngips6f', width: '14.285714285714285%', full: true } }, insert: '\n' },
+    // { attributes: { col: { tableId: 'nqpbqv26gi', colId: '2q8xeoz6g3i', width: '14.285714285714285%', full: true } }, insert: '\n' },
+    // { attributes: { col: { tableId: 'nqpbqv26gi', colId: 'ppp6xwdr14', width: '14.285714285714285%', full: true } }, insert: '\n' },
+    // { attributes: { tableCellInner: { tableId: 'nqpbqv26gi', rowId: '3h2erf0dceh', colId: '4mje7sphg32', rowspan: '3', colspan: '3' } }, insert: '\n\n\n\n\n\n\n\n\n' },
+    // { attributes: { tableCellInner: { tableId: 'nqpbqv26gi', rowId: '3h2erf0dceh', colId: 'bve2xew43i9', rowspan: '1', colspan: '1' } }, insert: '\n' },
+    // { attributes: { tableCellInner: { tableId: 'nqpbqv26gi', rowId: '3h2erf0dceh', colId: 'qgyxngips6f', rowspan: '1', colspan: '1' } }, insert: '\n' },
+    // { attributes: { tableCellInner: { tableId: 'nqpbqv26gi', rowId: '3h2erf0dceh', colId: '2q8xeoz6g3i', rowspan: '1', colspan: '1' } }, insert: '\n' },
+    // { attributes: { tableCellInner: { tableId: 'nqpbqv26gi', rowId: '3h2erf0dceh', colId: 'ppp6xwdr14', rowspan: '1', colspan: '1' } }, insert: '\n' },
+    // { attributes: { tableCellInner: { tableId: 'nqpbqv26gi', rowId: '6n8dzt17a1q', colId: 'bve2xew43i9', rowspan: '1', colspan: '1' } }, insert: '\n' },
+    // { attributes: { tableCellInner: { tableId: 'nqpbqv26gi', rowId: '6n8dzt17a1q', colId: 'qgyxngips6f', rowspan: '1', colspan: '1' } }, insert: '\n' },
+    // { attributes: { tableCellInner: { tableId: 'nqpbqv26gi', rowId: '6n8dzt17a1q', colId: '2q8xeoz6g3i', rowspan: '4', colspan: '2' } }, insert: '\n\n\n\n\n\n\n\n' },
+    // { attributes: { tableCellInner: { tableId: 'nqpbqv26gi', rowId: 'gu36zjl3wyr', colId: 'bve2xew43i9', rowspan: '1', colspan: '1' } }, insert: '\n' },
+    // { attributes: { tableCellInner: { tableId: 'nqpbqv26gi', rowId: 'gu36zjl3wyr', colId: 'qgyxngips6f', rowspan: '1', colspan: '1' } }, insert: '\n' },
+    // { attributes: { tableCellInner: { tableId: 'nqpbqv26gi', rowId: 'sv9kfvu8gxd', colId: '4mje7sphg32', rowspan: '1', colspan: '1' } }, insert: '\n' },
+    // { attributes: { tableCellInner: { tableId: 'nqpbqv26gi', rowId: 'sv9kfvu8gxd', colId: '3aca3uqy7yc', rowspan: '1', colspan: '1' } }, insert: '\n' },
+    // { attributes: { tableCellInner: { tableId: 'nqpbqv26gi', rowId: 'sv9kfvu8gxd', colId: 'qubz0ty6iw', rowspan: '4', colspan: '3' } }, insert: '\n\n\n\n\n\n\n\n\n\n\n\n' },
+    // { attributes: { tableCellInner: { tableId: 'nqpbqv26gi', rowId: 'yka62c3nfmc', colId: '4mje7sphg32', rowspan: '1', colspan: '1' } }, insert: '\n' },
+    // { attributes: { tableCellInner: { tableId: 'nqpbqv26gi', rowId: 'yka62c3nfmc', colId: '3aca3uqy7yc', rowspan: '1', colspan: '1' } }, insert: '\n' },
+    // { attributes: { tableCellInner: { tableId: 'nqpbqv26gi', rowId: 'leu19xpaefj', colId: '4mje7sphg32', rowspan: '1', colspan: '1' } }, insert: '\n' },
+    // { attributes: { tableCellInner: { tableId: 'nqpbqv26gi', rowId: 'leu19xpaefj', colId: '3aca3uqy7yc', rowspan: '1', colspan: '1' } }, insert: '\n' },
+    // { attributes: { tableCellInner: { tableId: 'nqpbqv26gi', rowId: 'leu19xpaefj', colId: '2q8xeoz6g3i', rowspan: '1', colspan: '1' } }, insert: '\n' },
+    // { attributes: { tableCellInner: { tableId: 'nqpbqv26gi', rowId: 'leu19xpaefj', colId: 'ppp6xwdr14', rowspan: '1', colspan: '1' } }, insert: '\n' },
+    // { attributes: { tableCellInner: { tableId: 'nqpbqv26gi', rowId: 'le0nqzcr19', colId: '4mje7sphg32', rowspan: '1', colspan: '1' } }, insert: '\n' },
+    // { attributes: { tableCellInner: { tableId: 'nqpbqv26gi', rowId: 'le0nqzcr19', colId: '3aca3uqy7yc', rowspan: '1', colspan: '1' } }, insert: '\n' },
+    // { attributes: { tableCellInner: { tableId: 'nqpbqv26gi', rowId: 'le0nqzcr19', colId: '2q8xeoz6g3i', rowspan: '1', colspan: '1' } }, insert: '\n' },
+    // { attributes: { tableCellInner: { tableId: 'nqpbqv26gi', rowId: 'le0nqzcr19', colId: 'ppp6xwdr14', rowspan: '1', colspan: '1' } }, insert: '\n' },
+    // { insert: '\n' },
+  ]);
 
   const contentDisplay = document.getElementsByClassName('contentDisplay')[0];
   document.getElementsByClassName('getContent')[0].addEventListener('click', () => {
