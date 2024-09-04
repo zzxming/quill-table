@@ -2612,12 +2612,13 @@
       const columnIndex = baseTd.getColumnIndex() + (isRight ? baseTd.colspan : 0);
 
       const tableBlot = findParentBlot(baseTd, blotName.table);
+      const tableId = tableBlot.tableId;
       const newColId = randomId();
 
       const [colgroup] = tableBlot.descendants(TableColgroupFormat);
       if (colgroup) {
         colgroup.insertColByIndex(columnIndex, {
-          tableId: tableBlot.tableId,
+          tableId,
           colId: newColId,
           width: tableBlot.full ? '6%' : '160px',
           full: tableBlot.full,
@@ -2637,6 +2638,7 @@
           continue;
         }
         const nextSpanCols = tr.insertCell(columnIndex - spanCol, {
+          tableId,
           rowId: tr.rowId,
           colId: newColId,
           rowspan: 1,
@@ -2909,6 +2911,7 @@
 
   // TODO: redo and undo
   // TODO: maybe col need change to EmbedBlock
+  // TODO: BlockEmbed can not setContents to insert table
 
   Quill.register(
     {
