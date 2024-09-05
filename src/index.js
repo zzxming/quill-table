@@ -557,9 +557,11 @@ class TableModule {
 
     if (trs[nextTrIndex]) {
       const nextTr = trs[nextTrIndex];
+      const tableId = tableBlot.tableId;
       // insert cell in nextTr to patch exceed cell
       for (const [colId, { colIndex, colspan, rowspan }] of Object.entries(patchTds)) {
         nextTr.insertCell(colIndex, {
+          tableId,
           rowId: nextTr.rowId,
           colId,
           colspan,
@@ -681,6 +683,7 @@ class TableModule {
     if (baseTd.colspan === 1 && baseTd.rowspan === 1) return;
     const baseTr = findParentBlot(baseTd, blotName.tableRow);
     const tableBlot = findParentBlot(baseTd, blotName.table);
+    const tableId = tableBlot.tableId;
     const colIndex = baseTd.getColumnIndex();
     const colIds = tableBlot.getColIds().slice(colIndex, colIndex + baseTd.colspan).reverse();
 
@@ -694,6 +697,7 @@ class TableModule {
         // keep baseTd. baseTr should insert at baseTd's column index + 1
         if (curTr === baseTr && id === baseTd.colId) continue;
         curTr.insertCell(colIndex + (curTr === baseTr ? 1 : 0), {
+          tableId,
           rowId: curTr.rowId,
           colId: id,
           rowspan: 1,
@@ -896,3 +900,4 @@ export {
 // TODO: redo and undo
 // TODO: maybe col need change to EmbedBlock
 // TODO: BlockEmbed can not setContents to insert table
+// TODO: don't allow index at col
