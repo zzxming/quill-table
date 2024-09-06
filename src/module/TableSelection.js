@@ -94,6 +94,9 @@ export class TableSelection {
       this.dragging = true;
       const movePoint = { x: clientX, y: clientY };
       this.selectedTds = this.computeSelectedTds(startPoint, movePoint);
+      if (this.selectedTds.length > 1) {
+        this.quill.blur();
+      }
       this.updateSelection();
     };
     const mouseUpHandler = () => {
