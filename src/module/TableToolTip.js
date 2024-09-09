@@ -1,7 +1,7 @@
 /* eslint-disable unused-imports/no-unused-vars */
 import Quill from 'quill';
 import { TableWrapperFormat } from '../format';
-import { css, getRelativeRect } from '../utils';
+import { css } from '../utils';
 import { CELL_MIN_PRE, CELL_MIN_WIDTH, blotName, toolName } from '../assets/const';
 
 let TIP_HEIGHT = 12;
@@ -168,12 +168,12 @@ export class TableTooltip {
   }
 
   position = () => {
-    const rect = getRelativeRect(this.table.domNode.getBoundingClientRect(), this.quill.root);
-    const tableTop = this.table.domNode.offsetTop;
-    const rootScrollTop = this.quill.root.scrollTop;
+    const tableMainRect = this.table.domNode.getBoundingClientRect();
+    const rootRect = this.quill.root.getBoundingClientRect();
+
     css(this.root, {
-      top: `${tableTop - rootScrollTop - TIP_HEIGHT}px`,
-      left: `${rect.x + this.tableWrapper.domNode.scrollLeft}px`,
+      top: `${tableMainRect.y - rootRect.y - TIP_HEIGHT}px`,
+      left: `${tableMainRect.x - rootRect.x + this.tableWrapper.domNode.scrollLeft}px`,
     });
   };
 
